@@ -100,6 +100,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         val_list_t1.append(val_t1)
         val_list_x2.append(val_x2)
         val_list_t2.append(val_t2)
+        
         train_list.append(avg_loss/len(trainloader))
         print("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, val_x1, val_t1, val_x2, val_t2))
         if avg_val < best_loss_val:
