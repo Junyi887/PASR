@@ -140,6 +140,7 @@ parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # neares
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 1.0)
+parser.add_argument('--data_path',type = str,default = "../dataset/nskt16000_1024")
 args = parser.parse_args()
 print(args)
 
