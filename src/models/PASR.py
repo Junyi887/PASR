@@ -637,13 +637,13 @@ class NODE(nn.Module):
             nn.Tanh()
         ) 
         self.int_method = ode_method
-    def forward(self, x,ode_steps = 1,task_dt = 1.0):
-        h = task_dt / ode_steps
+    def forward(self, x,ode_step = 1,task_dt = 1.0):
+        h = task_dt / ode_step
         if self.int_method == "Euler":
-            for i in range(ode_steps):
+            for i in range(ode_step):
                 x = x + self.model(x) 
         elif self.int_method == "RK4":
-            for i in range(ode_steps):
+            for i in range(ode_step):
                 f1 = self.model(x)
                 f2 = self.model(x+h/2.0*f1)
                 f3 = self.model(x+h/2.0*f2)
@@ -867,7 +867,7 @@ class PASR(nn.Module):
                 x = self.conv_first(x)                                              #Shallow Feature Extraction
                 x = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
                 if time_evol == True:
-                    x = self.ode(x,task_dt,ode_step)                                #ODE time interpolation
+                    x = self.ode(x,task_dt = task_dt,ode_step = ode_step)                                #ODE time interpolation
                 x = self.conv_before_upsample(x)                 #HQ Image Reconstruction
                 x = self.conv_last(self.upsample(x))  
                 x = self.shiftMean_func(x,"add")
