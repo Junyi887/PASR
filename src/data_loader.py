@@ -9,7 +9,7 @@ from PIL import Image, ImageFilter
 import torchvision.transforms.functional as F
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 
-def getData(data_name = "nskt_16k", data_path = "../dataset/nskt16000_1024" , upscale_factor = 4,timescale_factor = 4, noise_ratio = 0.0, crop_size = 1024, method = "uniform", batch_size = 1, std = [0.6703, 0.6344, 8.3615]):  
+def getData(data_name = "nskt_16k", data_path = "../superbench/datasets/nskt16000_1024" , upscale_factor = 4,timescale_factor = 4, noise_ratio = 0.0, crop_size = 1024, method = "uniform", batch_size = 1, std = [0.6703, 0.6344, 8.3615]):  
     '''
     Loading data from four dataset folders: (a) nskt_16k; (b) nskt_32k; (c) cosmo; (d) era5.
     Each dataset contains: 
