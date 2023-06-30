@@ -7,7 +7,7 @@ import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 import numpy as np
 import matplotlib.pyplot as plt
-
+# 0.005
 import logging
 import torch.nn.init as init
 from math import log10
@@ -38,7 +38,8 @@ def validation(args,model, val1_loader,val2_loader,device):
         with torch.no_grad():
             input, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_t = model(input,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True) 
+            out_t2 = model(input,task_dt = 0.5,n_snapshot = args.n_snapshot,ode_step = 8,time_evol = True) 
+            out_t1 = model(input,task_dt = 0.5,n_snapshot = 1,ode_step = 4, time_evol = True)
             out_x = model(input,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
             target_loss = criterion_Data(out_t[:,-1,...], target[:,-1,...]) # Experiment change to criterion 1
             input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
@@ -84,12 +85,15 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
             optimizer.zero_grad()
-            out_x = model(inputs,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False)
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True)
+            out_x = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = args.ode_step,time_evol = False)
+            out_t2 = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = 4,time_evol = True)
+            out_t1 = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = 2,time_evol = True)
 
-            loss_t = criterion_Data(out_t[:,-1,...], target[:,-1,...]) # Experiment change to criterion 1
-            loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
-            loss = loss_t + lamb*loss_x
+            loss_t2 = criterion_Data(out_t2, target[:,-1,...]) # Experiment change to criterion 1
+            loss_t1 = criterion_Data(out_t1, target[:,1,...]) # Experiment change to criterion 1
+
+            loss_x = criterion_Data(out_x[:,...], target[:,0,...])
+            loss = loss_t2 +loss_t1 + lamb*loss_x
             loss.backward()
             optimizer.step()
             avg_loss += loss.item()
@@ -128,7 +132,7 @@ parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 4)
 parser.add_argument('--batch_size', type = int, default= 1)
-parser.add_argument('--crop_size', type = int, default= 512, help= 'should be same as image dimension')
+parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
 parser.add_argument('--epochs', type = int, default= 1)
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
@@ -140,7 +144,7 @@ parser.add_argument('--down_method', type = str, default= "uniform") # bicubic
 parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 parser.add_argument('--lr', type = float, default= 1e-4)
-parser.add_argument('--lamb', type = float, default= 1.0)
+parser.add_argument('--lamb', type = float, default= 0.3)
 parser.add_argument('--data_path',type = str,default = "../dataset/nskt16000_1024")
 args = parser.parse_args()
 print(args)
@@ -166,7 +170,7 @@ if __name__ == "__main__":
     model = PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type)
     model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    savedpath = str("PASR_" + str(args.ode_step) + 
+    savedpath = str("PASR2_" + str(args.ode_step) + 
                 "_crop_size_" + str(args.crop_size) +
                 "_ode_step_" + str(args.ode_step) +
                 "ode_method_" + str(args.ode_method) +

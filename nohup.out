@@ -1,0 +1,91 @@
+Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
+Number of samples per file: 1200
+Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
+Number of samples per file: 200
+Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
+Number of samples per file: 200
+Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
+Number of samples per file: 400
+Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
+Number of samples per file: 400
+Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
+Traceback (most recent call last):
+  File "/home/raocp/Desktop/PASR/eval.py", line 160, in <module>
+    err1_interpolate,err2_interpolate = test_RFNE_half(model,test1_loader)
+  File "/home/raocp/Desktop/PASR/eval.py", line 36, in test_RFNE_half
+    output_half = model(inputs,task_dt = args.task_dt/2,
+NameError: name 'inputs' is not defined
+Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
+Number of samples per file: 1200
+Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
+Number of samples per file: 200
+Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
+Number of samples per file: 200
+Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
+Number of samples per file: 400
+Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
+Number of samples per file: 400
+Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
+Traceback (most recent call last):
+  File "/home/raocp/Desktop/PASR/eval.py", line 160, in <module>
+    err1_interpolate,err2_interpolate = test_RFNE_half(model,test1_loader)
+  File "/home/raocp/Desktop/PASR/eval.py", line 41, in test_RFNE_half
+    RFNE_half2 = torch.norm(output_half[i,1,...]-target[i,3,...])/torch.norm(target[i,3,...])
+IndexError: index 1 is out of bounds for dimension 1 with size 1
+Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
+Number of samples per file: 1200
+Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
+Number of samples per file: 200
+Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
+Number of samples per file: 200
+Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
+Number of samples per file: 400
+Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
+Number of samples per file: 400
+Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
+torch.Size([4, 1, 1, 512, 512])
+Traceback (most recent call last):
+  File "/home/raocp/Desktop/PASR/eval.py", line 161, in <module>
+    err1_interpolate,err2_interpolate = test_RFNE_half(model,test1_loader)
+  File "/home/raocp/Desktop/PASR/eval.py", line 42, in test_RFNE_half
+    RFNE_half2 = torch.norm(output_half[i,1,...]-target[i,3,...])/torch.norm(target[i,3,...])
+IndexError: index 1 is out of bounds for dimension 1 with size 1
+/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torchvision/transforms/transforms.py:257: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
+  warnings.warn(
+Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
+Number of samples per file: 1200
+Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
+Number of samples per file: 200
+Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
+Number of samples per file: 200
+Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
+Number of samples per file: 400
+Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
+Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
+Number of samples per file: 400
+Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
+  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:08<01:34,  8.63s/it] 17%|█▋        | 2/12 [00:09<00:40,  4.06s/it] 25%|██▌       | 3/12 [00:10<00:23,  2.58s/it] 33%|███▎      | 4/12 [00:11<00:15,  1.91s/it] 42%|████▏     | 5/12 [00:12<00:10,  1.52s/it] 50%|█████     | 6/12 [00:12<00:07,  1.28s/it] 58%|█████▊    | 7/12 [00:13<00:05,  1.15s/it] 67%|██████▋   | 8/12 [00:14<00:04,  1.05s/it] 75%|███████▌  | 9/12 [00:15<00:02,  1.02it/s] 83%|████████▎ | 10/12 [00:16<00:01,  1.06it/s] 92%|█████████▏| 11/12 [00:17<00:00,  1.10it/s]100%|██████████| 12/12 [00:17<00:00,  1.14it/s]100%|██████████| 12/12 [00:17<00:00,  1.49s/it]
+  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:00<00:09,  1.14it/s] 17%|█▋        | 2/12 [00:01<00:08,  1.18it/s] 25%|██▌       | 3/12 [00:02<00:07,  1.18it/s] 33%|███▎      | 4/12 [00:03<00:06,  1.17it/s] 42%|████▏     | 5/12 [00:04<00:05,  1.18it/s] 50%|█████     | 6/12 [00:05<00:05,  1.20it/s] 58%|█████▊    | 7/12 [00:05<00:04,  1.18it/s] 67%|██████▋   | 8/12 [00:06<00:03,  1.18it/s] 75%|███████▌  | 9/12 [00:07<00:02,  1.19it/s] 83%|████████▎ | 10/12 [00:08<00:01,  1.18it/s] 92%|█████████▏| 11/12 [00:09<00:00,  1.19it/s]100%|██████████| 12/12 [00:10<00:00,  1.20it/s]100%|██████████| 12/12 [00:10<00:00,  1.19it/s]
+  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:01<00:16,  1.51s/it] 17%|█▋        | 2/12 [00:03<00:15,  1.51s/it] 25%|██▌       | 3/12 [00:04<00:13,  1.52s/it] 33%|███▎      | 4/12 [00:06<00:11,  1.50s/it] 42%|████▏     | 5/12 [00:07<00:10,  1.51s/it] 50%|█████     | 6/12 [00:09<00:09,  1.51s/it] 58%|█████▊    | 7/12 [00:10<00:07,  1.49s/it] 67%|██████▋   | 8/12 [00:12<00:05,  1.50s/it] 75%|███████▌  | 9/12 [00:13<00:04,  1.51s/it] 83%|████████▎ | 10/12 [00:15<00:02,  1.50s/it] 92%|█████████▏| 11/12 [00:16<00:01,  1.51s/it]100%|██████████| 12/12 [00:18<00:00,  1.51s/it]100%|██████████| 12/12 [00:18<00:00,  1.51s/it]
+  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:01<00:16,  1.47s/it] 17%|█▋        | 2/12 [00:02<00:14,  1.48s/it] 25%|██▌       | 3/12 [00:04<00:13,  1.49s/it] 33%|███▎      | 4/12 [00:05<00:11,  1.49s/it] 42%|████▏     | 5/12 [00:07<00:10,  1.48s/it] 50%|█████     | 6/12 [00:08<00:09,  1.50s/it] 58%|█████▊    | 7/12 [00:10<00:07,  1.50s/it] 67%|██████▋   | 8/12 [00:11<00:05,  1.49s/it] 75%|███████▌  | 9/12 [00:13<00:04,  1.50s/it] 83%|████████▎ | 10/12 [00:14<00:03,  1.50s/it] 92%|█████████▏| 11/12 [00:16<00:01,  1.50s/it]100%|██████████| 12/12 [00:17<00:00,  1.51s/it]100%|██████████| 12/12 [00:17<00:00,  1.50s/it]
+RFNE_half_interpolate --- test1 error: 20.43726 %, test2 error: 27.95231 %
+RFNE_half_extrapolate --- test1 error: 39.77306 %, test2 error: 44.31455 %
+RFNE_quater_interpolate --- test1 error: 18.23777 %, test2 error: 20.48851 %
+RFNE_quater_interpolate --- test3 error: 24.09940 %, test4 error: 27.90158 %
+RFNE_quater_extrapolate --- test1 error: 40.24200 %, test2 error: 39.82817 %
+RFNE_quater_extrapolate --- test3 error: 41.24068 %, test4 error: 44.25938 %

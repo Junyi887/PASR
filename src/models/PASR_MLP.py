@@ -575,7 +575,7 @@ class PatchUnEmbed(nn.Module):
 
     def forward(self, x, x_size):
         B, HW, C = x.shape
-        x = x.transpose(1, 2).view(B, self.embed_dim, x_size[0], x_size[1])  # B Ph，Pw C
+        x = x.transpose(1, 2).view(B, self.embed_dim, x_size[0], x_size[1])  # B Ph*Pw C
         return x
 
     def flops(self):

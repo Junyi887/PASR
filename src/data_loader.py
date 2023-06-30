@@ -9,32 +9,33 @@ from PIL import Image, ImageFilter
 import torchvision.transforms.functional as F
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 
-def getData(data_name = "nskt_16k", data_path = "../superbench/datasets/nskt16000_1024" , upscale_factor = 4,timescale_factor = 4, noise_ratio = 0.0, crop_size = 1024, method = "uniform", batch_size = 1, std = [0.6703, 0.6344, 8.3615]):  
+def getData(data_name = "nskt_16k", data_path = "../superbench/datasets/nskt16000_1024" , upscale_factor = 4,timescale_factor = 4, noise_ratio = 0.0, crop_size = 1024, method = "bicubic", batch_size = 1, std = [0.6703, 0.6344, 8.3615]):  
     '''
     Loading data from four dataset folders: (a) nskt_16k; (b) nskt_32k; (c) cosmo; (d) era5.
     Each dataset contains: 
         - 1 train dataset, 
         - 2 validation sets (interpolation and extrapolation), 
-        - 2 test sets (interpolation and extrapolation)
+        - 2 test sets (interpolation and extrapolation),
         
     ===
     std: the channel-wise standard deviation of each dataset, list: [#channels]
     '''
+    num_snapshots = 2
 
-    train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor,timescale_factor,noise_ratio, crop_size, method, batch_size, std)
-    val1_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor,timescale_factor,noise_ratio, crop_size, method, batch_size, std)
-    val2_loader = get_data_loader(data_name, data_path, '/valid_2', "val", upscale_factor,timescale_factor,noise_ratio, crop_size, method, batch_size, std) 
-    test1_loader = get_data_loader(data_name, data_path, '/test_1', "test", upscale_factor,timescale_factor, noise_ratio, crop_size, method, batch_size, std)
-    test2_loader = get_data_loader(data_name, data_path, '/test_2', "test", upscale_factor,timescale_factor, noise_ratio, crop_size, method, batch_size, std)
+    train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
+    val1_loader = get_data_loader(data_name, data_path, '/train', "val", upscale_factor, timescale_factor//2,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
+    val2_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor,timescale_factor//2,num_snapshots,noise_ratio, crop_size, method, batch_size, std) 
+    test1_loader = get_data_loader(data_name, data_path, '/train', "test", upscale_factor,timescale_factor//4, num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
+    test2_loader = get_data_loader(data_name, data_path, '/valid_1', "test", upscale_factor,timescale_factor//4, num_snapshots*2, noise_ratio, crop_size, method, batch_size, std)
     
     return train_loader, val1_loader, val2_loader, test1_loader, test2_loader 
 
-def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, timescale_factor, noise_ratio, crop_size, method, batch_size, std):
+def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std):
     
     transform = torch.from_numpy
 
     if data_name in ['nskt_16k']:
-        dataset = GetFluidDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, noise_ratio, std, crop_size, method) 
+        dataset = GetFluidDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
 
     if state == "train":
         shuffle = True
@@ -55,7 +56,7 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
 
 class GetFluidDataset(Dataset):
     '''Dataloader class for NSKT and cosmo datasets'''
-    def __init__(self, location, state, transform, upscale_factor,timescale_factor, noise_ratio, std,crop_size, method):
+    def __init__(self, location, state, transform, upscale_factor,timescale_factor,num_snapshots, noise_ratio, std,crop_size, method):
         self.location = location
         self.upscale_factor = upscale_factor
         self.state = state
@@ -66,6 +67,7 @@ class GetFluidDataset(Dataset):
         self.crop_size = crop_size
         self.crop_transform = transforms.CenterCrop(crop_size)
         self.method = method
+        self.num_snapshots = num_snapshots
         self.timescale_factor = timescale_factor
         if method == "bicubic":
             self.input_transform = transforms.Compose([transforms.CenterCrop(crop_size),
@@ -100,12 +102,11 @@ class GetFluidDataset(Dataset):
         self.files[file_idx] = _file['fields']  
 
     def __len__(self):
-        return self.n_samples_total//self.timescale_factor - 1
+        return self.n_samples_total-self.timescale_factor*self.num_snapshots
 
-    def __getitem__(self, batch_idx):
+    def __getitem__(self, global_idx):
         # print("batch_idx: {}".format(batch_idx))
         y_list = []
-        global_idx = batch_idx * self.timescale_factor
         file_idx, local_idx = self.get_indices(global_idx)
         if self.files[file_idx] is None:
                 self._open_file(file_idx)
@@ -114,23 +115,27 @@ class GetFluidDataset(Dataset):
         y = y[-1].unsqueeze(0) # get vorticity and adding the channel dimension
         X = self.get_X(y) # getting the input
         # getting the future samples
-        for i in range(1, self.timescale_factor +1):
-            file_idx, local_idx_future = self.get_indices(global_idx + i)
+        y_list.append(y)
+        for i in range(1, self.num_snapshots+1):
+            file_idx, local_idx_future = self.get_indices(global_idx + i*self.timescale_factor)
             #open image file for future sample
             if self.files[file_idx] is None:
                 self._open_file(file_idx)
             y = self.transform(self.files[file_idx][local_idx_future])
             y = self.target_transform(y)
-            y = y[-1].unsqueeze(0) # adding the channel dimension
+            y = y[-1].unsqueeze(0) # adding the channel dimension and get vorticity
             y_list.append(y)
-        y = torch.stack(y_list,dim = 0)
-        if self.state == "train":
-            return X,torch.stack([y[0,...],y[-1]],dim= 0)
-        if self.state == "val":
-            return X,torch.stack([y[0,...],y[-1]],dim= 0)
-        if self.state == 'test':
-            return X,y
-        return 0,0
+        y = torch.stack(y_list,dim = 0) 
+        return X,y
+        # if self.state == "train":
+        #     return X,y
+        #     #return X,torch.stack([y[0,...],y[self.timescale_factor/2,...],y[-1]],dim= 0)
+        # if self.state == "val":
+        #     return X,y
+        #     #return X,torch.stack([y[0,...],y[-1]],dim= 0)
+        # if self.state == 'test':
+        #     return X,y
+        # return 0,0
            # raise IndexError("Index out of bound or not valid due to timescale factor")
 
 
@@ -161,12 +166,13 @@ class GetFluidDataset(Dataset):
 
 
 if __name__ == "__main__":
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(batch_size= 12)
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(batch_size= 1)
     for idx, (input,target) in enumerate (train_loader):
         input = input
         target = target
     print(input.shape)
     print(target.shape)
+    print(idx)
     for idx, (input,target) in enumerate (val1_loader):
         input = input
         target = target
@@ -178,7 +184,7 @@ if __name__ == "__main__":
     print(input.shape)
     print(target.shape)
     list = []
-    for i in range(1):
+    for i in range(2):
         x = torch.rand(1,1,128)
         list.append(x)
     x = torch.stack(list,dim = 0)

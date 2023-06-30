@@ -31,14 +31,17 @@ def test_RFNE_half(model,test1_loader):
     list_half1 = []
     list_half2 = []
     with torch.no_grad():
-        for batch_idx,(data,target) in enumerate((test1_loader)):
+        for batch_idx,(data,target) in enumerate(tqdm(test1_loader)):
             data,target = data.to(device).float() , target.to(device).float()
-            output_half = model(inputs,task_dt = args.task_dt/2,
-                                n_snapshot = 2,ode_step = args.ode_step,
+            output_half1 = model(data,task_dt = args.task_dt/2,
+                                n_snapshot = 1,ode_step = args.ode_step,
                                 time_evol = True)
-            for i in range (target.shape[0])
-                RFNE_half1 = torch.norm(output_half[i,0,...]-target[i,1,...])/torch.norm(target[i,1,...])
-                RFNE_half2 = torch.norm(output_half[i,1,...]-target[i,3,...])/torch.norm(target[i,3,...])
+            output_half2 = model(data,task_dt = args.task_dt,
+                                n_snapshot = 1,ode_step = args.ode_step,
+                                time_evol = True)
+            for i in range (target.shape[0]):
+                RFNE_half1 = torch.norm(output_half1[i,0,...]-target[i,1,...])/torch.norm(target[i,1,...])
+                RFNE_half2 = torch.norm(output_half2[i,0,...]-target[i,3,...])/torch.norm(target[i,3,...])
                 list_half1.append(RFNE_half1)
                 list_half2.append(RFNE_half2)
     avg_half1 = torch.mean(torch.stack(list_half1),dim=0).item()
@@ -51,16 +54,25 @@ def test_RFNE_quater(model,test1_loader):
     list_quater3 = []
     list_quater4 = []
     with torch.no_grad():
-        for batch_idx,(data,target) in enumerate((test1_loader)):
+        for batch_idx,(data,target) in enumerate(tqdm(test1_loader)):
             data,target = data.to(device).float() , target.to(device).float()
-            output_quater = model(inputs,task_dt = args.task_dt/4,
-                                n_snapshot = 4,ode_step = args.ode_step,
+            output_quater1 = model(data,task_dt = args.task_dt*1/4,
+                                n_snapshot = 1,ode_step = args.ode_step,
                                 time_evol = True)
-            for i in range (target.shape[0])
-                RFNE_quater1 = torch.norm(output_half[i,0,...]-target[i,0,...])/torch.norm(target[i,0,...])
-                RFNE_quater2 = torch.norm(output_half[i,1,...]-target[i,1,...])/torch.norm(target[i,1,...])
-                RFNE_quater3 = torch.norm(output_half[i,2,...]-target[i,2,...])/torch.norm(target[i,2,...])
-                RFNE_quater4 = torch.norm(output_half[i,3,...]-target[i,3,...])/torch.norm(target[i,3,...])
+            output_quater2 = model(data,task_dt = args.task_dt*2/4,
+                                n_snapshot = 1,ode_step = args.ode_step,
+                                time_evol = True)
+            output_quater3 = model(data,task_dt = args.task_dt*3/4,
+                                n_snapshot = 1,ode_step = args.ode_step,
+                                time_evol = True)
+            output_quater4 = model(data,task_dt = args.task_dt,
+                                n_snapshot = 1,ode_step = args.ode_step,
+                                time_evol = True)
+            for i in range (target.shape[0]):
+                RFNE_quater1 = torch.norm(output_quater1[i,0,...]-target[i,0,...])/torch.norm(target[i,0,...])
+                RFNE_quater2 = torch.norm(output_quater2[i,0,...]-target[i,1,...])/torch.norm(target[i,1,...])
+                RFNE_quater3 = torch.norm(output_quater3[i,0,...]-target[i,2,...])/torch.norm(target[i,2,...])
+                RFNE_quater4 = torch.norm(output_quater4[i,0,...]-target[i,3,...])/torch.norm(target[i,3,...])
                 
                 list_quater1.append(RFNE_quater1)
                 list_quater2.append(RFNE_quater2)
@@ -101,9 +113,11 @@ if __name__ == "__main__":
         data_type = torch.float32
     else: 
         data_type = torch.float64
+
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     torch.set_default_dtype(data_type)
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     trainloader,val1_loader,val2_loader,test1_loader,test2_loader = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path)
     mean = [0.1429] 
@@ -157,10 +171,15 @@ if __name__ == "__main__":
 
 
 
-    err1_interpolate,err2_interpolate = test_RFNE_half(model,test1_loader)
-    err1_extrapolate,err2_extrapolate = test_RFNE_half(model,test2_loader)
+    err1_interpolate,err2_interpolate = test_RFNE_half(model,val1_loader)
+    err1_extrapolate,err2_extrapolate = test_RFNE_half(model,val2_loader)
 
-    err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_half(model,test1_loader)
-    err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test2_loader)
+    err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_quater(model,val1_loader)
+    err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,val2_loader)
 
-    print()
+    print("RFNE_half_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0))
+    print("RFNE_half_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0))
+    print("RFNE_quater_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate_q*100.0, err2_interpolate_q*100.0))
+    print("RFNE_quater_interpolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_interpolate_q*100.0, err4_interpolate_q*100.0))
+    print("RFNE_quater_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate_q*100.0, err2_extrapolate_q*100.0))
+    print("RFNE_quater_extrapolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_extrapolate_q*100.0, err4_extrapolate_q*100.0))
