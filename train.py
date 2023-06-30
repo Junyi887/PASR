@@ -38,13 +38,14 @@ def validation(args,model, val1_loader,val2_loader,device):
         with torch.no_grad():
             input, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_t2 = model(input,task_dt = 0.5,n_snapshot = args.n_snapshot,ode_step = 8,time_evol = True) 
-            out_t1 = model(input,task_dt = 0.5,n_snapshot = 1,ode_step = 4, time_evol = True)
+            out_t2 = model(input,task_dt = 0.5,n_snapshot = 1,ode_step = 4,time_evol = True) 
+            out_t1 = model(input,task_dt = 0.25,n_snapshot = 1,ode_step = 2, time_evol = True)
             out_x = model(input,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
-            target_loss = criterion_Data(out_t[:,-1,...], target[:,-1,...]) # Experiment change to criterion 1
+            loss_t2 = criterion_Data(out_t2[:,0,...], target[:,-1,...]) # Experiment change to criterion 1
+            loss_t1 = criterion_Data(out_t1[:,0,...], target[:,1,...]) # Experiment change to criterion 1
             input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
 #            inerpolation_loss = criterion_Data(out[:,1,...], target[:,1,...]) # Experiment change to criterion 1
-            target_loss1 += target_loss.item()
+            target_loss1 += loss_t2.item() + loss_t1.item()
             input_loss1 += input_loss.item()
 
     target_loss2 = 0 
@@ -54,15 +55,16 @@ def validation(args,model, val1_loader,val2_loader,device):
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True) 
-            out_x = model(inputs,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
-            target_loss = criterion_Data(out_t[:,-1,...], target[:,-1,...]) # Experiment change to criterion 1
-            input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
-#            inerpolation_loss = criterion_Data(out[:,1,...], target[:,1,...]) # Experiment change to criterion 1
-            target_loss2 += target_loss.item()
+            out_t2 = model(input,task_dt = 0.5,n_snapshot = 1,ode_step = 4,time_evol = True) 
+            out_t1 = model(input,task_dt = 0.25,n_snapshot = 1,ode_step = 2, time_evol = True)
+            out_x = model(input,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
+            loss_t2 = criterion_Data(out_t2[:,0,...], target[:,-1,...]) # Experiment change to criterion 1
+            loss_t1 = criterion_Data(out_t1[:,0,...], target[:,1,...]) # Experiment change to criterion 1
+#         inerpolation_loss = criterion_Data(out[:,1,...], target[:,1,...]) # Experiment change to criterion 1
+            target_loss2 += loss_t2.item() + loss_t1.item()
             input_loss2 += input_loss.item()
 
-    return input_loss1/len(val1_loader), target_loss1/len(val1_loader), input_loss2/len(val2_loader), target_loss2/len(val2_loader)
+    return input_loss1/len(val1_loader), target_loss1/len(val1_loader)/2, input_loss2/len(val2_loader), target_loss2/len(val2_loader)/2
 
 def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath):
     lamb = args.lamb
@@ -86,13 +88,13 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             model.train()
             optimizer.zero_grad()
             out_x = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = args.ode_step,time_evol = False)
-            out_t2 = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = 4,time_evol = True)
-            out_t1 = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = 2,time_evol = True)
+            out_t2 = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = 8,time_evol = True)
+            out_t1 = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = 4,time_evol = True)
 
-            loss_t2 = criterion_Data(out_t2, target[:,-1,...]) # Experiment change to criterion 1
-            loss_t1 = criterion_Data(out_t1, target[:,1,...]) # Experiment change to criterion 1
+            loss_t2 = criterion_Data(out_t2[:,0,...], target[:,-1,...]) # Experiment change to criterion 1
+            loss_t1 = criterion_Data(out_t1[:,0,...], target[:,1,...]) # Experiment change to criterion 1
 
-            loss_x = criterion_Data(out_x[:,...], target[:,0,...])
+            loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
             loss = loss_t2 +loss_t1 + lamb*loss_x
             loss.backward()
             optimizer.step()
@@ -131,7 +133,7 @@ parser.add_argument('--data', type =str ,default= 'NSKT')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 4)
-parser.add_argument('--batch_size', type = int, default= 1)
+parser.add_argument('--batch_size', type = int, default= 4)
 parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
 parser.add_argument('--epochs', type = int, default= 1)
 parser.add_argument('--dtype', type = str, default= "float32")
