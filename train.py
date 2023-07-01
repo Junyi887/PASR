@@ -142,7 +142,7 @@ parser.add_argument('--ode_step',type =int, default= 3)
 parser.add_argument('--ode_method',type =str, default= "Euler")
 parser.add_argument('--task_dt',type =float, default= 1)
 parser.add_argument('--n_snapshot',type =int, default= 1)
-parser.add_argument('--down_method', type = str, default= "uniform") # bicubic 
+parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 parser.add_argument('--lr', type = float, default= 1e-4)
