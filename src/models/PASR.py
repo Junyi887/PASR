@@ -859,9 +859,8 @@ class PASR(nn.Module):
         predictions = []
         H, W = x.shape[2:]
         x = self.check_image_size(x)
-        
-        for i in range (n_snapshot):
-            x = self.shiftMean_func(x,"sub")
+        x = self.shiftMean_func(x,"sub")
+        for i in range (n_snapshot):   
             if self.upsampler == 'pixelshuffle':
             # load initial condition
                 x = self.conv_first(x)                                              #Shallow Feature Extraction
