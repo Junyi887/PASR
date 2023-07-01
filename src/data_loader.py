@@ -23,10 +23,10 @@ def getData(data_name = "nskt_16k", data_path = "../superbench/datasets/nskt1600
     num_snapshots = 2
 
     train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-    val1_loader = get_data_loader(data_name, data_path, '/train', "val", upscale_factor, timescale_factor//2,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-    val2_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor,timescale_factor//2,num_snapshots,noise_ratio, crop_size, method, batch_size, std) 
-    test1_loader = get_data_loader(data_name, data_path, '/valid_2', "test", upscale_factor,timescale_factor//4, num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
-    test2_loader = get_data_loader(data_name, data_path, '/valid_1', "test", upscale_factor,timescale_factor//4, num_snapshots*2, noise_ratio, crop_size, method, batch_size, std)
+    val1_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor, timescale_factor//2,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
+    val2_loader = get_data_loader(data_name, data_path, '/valid_2', "val", upscale_factor,timescale_factor//2,num_snapshots,noise_ratio, crop_size, method, batch_size, std) 
+    test1_loader = get_data_loader(data_name, data_path, '/test_1', "test", upscale_factor,timescale_factor//4, num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
+    test2_loader = get_data_loader(data_name, data_path, '/test_2', "test", upscale_factor,timescale_factor//4, num_snapshots*2, noise_ratio, crop_size, method, batch_size, std)
     
     return train_loader, val1_loader, val2_loader, test1_loader, test2_loader 
 

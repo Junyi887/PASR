@@ -857,20 +857,22 @@ class PASR(nn.Module):
         # during train task_dt is 1, then n_snapshot should be 1
         # if we want to intermediate snapshot change task dt to 0.5, then n_snapshot should be 2
         predictions = []
+        latent = []
         H, W = x.shape[2:]
         x = self.check_image_size(x)
         x = self.shiftMean_func(x,"sub")
+        x = self.conv_first(x)     #Shallow Feature Extraction
+        z0 = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
         for i in range (n_snapshot):   
             if self.upsampler == 'pixelshuffle':
             # load initial condition
-                x = self.conv_first(x)                                              #Shallow Feature Extraction
-                x = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
                 if time_evol == True:
-                    x = self.ode(x,task_dt = task_dt,ode_step = ode_step)                                #ODE time interpolation
-                x = self.conv_before_upsample(x)                 #HQ Image Reconstruction
-                x = self.conv_last(self.upsample(x))  
-                x = self.shiftMean_func(x,"add")
-                predictions.append(x)
+                    z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
+                y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
+                y1 = self.conv_last(self.upsample(y1))  
+                y1 = self.shiftMean_func(y1,"add")    
+                predictions.append(y1)
+                z0 = z1
         predictions = torch.stack(predictions, dim=1)
         return predictions
 
