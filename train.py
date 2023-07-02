@@ -26,6 +26,12 @@ import h5py
 from src.models import *
 from src.utli import *
 from src.data_loader import getData
+
+def calculate_loss(pred, target,criterion):
+    pred_reshape = pred.view(pred.shape[0]*pred.shape[1], -1)
+    target_reshape = target[:, 1:,...].contiguous().view(target.shape[0]*pred.shape[1], -1)
+    return criterion(pred_reshape, target_reshape)
+
 def validation(args,model, val1_loader,val2_loader,device):
     if args.loss_type =='L1':
         criterion_Data = nn.L1Loss().to(device)
@@ -38,14 +44,11 @@ def validation(args,model, val1_loader,val2_loader,device):
         with torch.no_grad():
             input, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_t2 = model(input,task_dt = 0.5,n_snapshot = 1,ode_step = 4,time_evol = True) 
-            out_t1 = model(input,task_dt = 0.25,n_snapshot = 1,ode_step = 2, time_evol = True)
             out_x = model(input,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
-            loss_t2 = criterion_Data(out_t2[:,0,...], target[:,-1,...]) # Experiment change to criterion 1
-            loss_t1 = criterion_Data(out_t1[:,0,...], target[:,1,...]) # Experiment change to criterion 1
             input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
-#            inerpolation_loss = criterion_Data(out[:,1,...], target[:,1,...]) # Experiment change to criterion 1
-            target_loss1 += loss_t2.item() + loss_t1.item()
+            out_t = model(input,task_dt = args.task_dt//2,n_snapshot = args.n_snapshot*2,ode_step = args.ode_step//2,time_evol = True) 
+            loss_t = calculate_loss(out_t, target,criterion_Data) # Experiment change to criterion 1
+            target_loss1 += loss_t.item() 
             input_loss1 += input_loss.item()
 
     target_loss2 = 0 
@@ -55,14 +58,13 @@ def validation(args,model, val1_loader,val2_loader,device):
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_t2 = model(input,task_dt = 0.5,n_snapshot = 1,ode_step = 4,time_evol = True) 
-            out_t1 = model(input,task_dt = 0.25,n_snapshot = 1,ode_step = 2, time_evol = True)
             out_x = model(input,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
-            loss_t2 = criterion_Data(out_t2[:,0,...], target[:,-1,...]) # Experiment change to criterion 1
-            loss_t1 = criterion_Data(out_t1[:,0,...], target[:,1,...]) # Experiment change to criterion 1
-#         inerpolation_loss = criterion_Data(out[:,1,...], target[:,1,...]) # Experiment change to criterion 1
-            target_loss2 += loss_t2.item() + loss_t1.item()
+            input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
+            out_t = model(input,task_dt = args.task_dt//2,n_snapshot = args.n_snapshot*2,ode_step = args.ode_step//2,time_evol = True) 
+            loss_t = calculate_loss(out_t, target,criterion_Data) # Experiment change to criterion 1
+            target_loss2 += loss_t.item() 
             input_loss2 += input_loss.item()
+
 
     return input_loss1/len(val1_loader), target_loss1/len(val1_loader)/2, input_loss2/len(val2_loader), target_loss2/len(val2_loader)/2
 
@@ -74,6 +76,9 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
     val_list_x2 = []
     val_list_t2 = []
     train_list = []
+    train_list_x = []
+    train_list_t = []
+
     best_loss_val = 1e9
     if args.loss_type =='L1':
         criterion_Data = nn.L1Loss().to(device)
@@ -83,19 +88,20 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
     for epoch in range(args.epochs):
         avg_loss = 0
         avg_val = 0
+        target_loss = 0
+        input_loss = 0
         for iteration, batch in enumerate(tqdm(trainloader)):
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
             optimizer.zero_grad()
             out_x = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = args.ode_step,time_evol = False)
-            out_t2 = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = 8,time_evol = True)
-            out_t1 = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = 4,time_evol = True)
-
-            loss_t2 = criterion_Data(out_t2[:,0,...], target[:,-1,...]) # Experiment change to criterion 1
-            loss_t1 = criterion_Data(out_t1[:,0,...], target[:,1,...]) # Experiment change to criterion 1
-
             loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
-            loss = loss_t2 +loss_t1 + lamb*loss_x
+            out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True)
+            loss_t = calculate_loss(out_t, target,criterion_Data)
+
+            target_loss += loss_t.item() 
+            input_loss += loss_x.item()
+            loss = loss_t + lamb*loss_x
             loss.backward()
             optimizer.step()
             avg_loss += loss.item()
@@ -106,8 +112,9 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         val_list_t1.append(val_t1)
         val_list_x2.append(val_x2)
         val_list_t2.append(val_t2)
-        
         train_list.append(avg_loss/len(trainloader))
+        train_list_x.append(input_loss/len(trainloader))
+        train_list_t.append(target_loss/len(trainloader))
         print("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, val_x1, val_t1, val_x2, val_t2))
         if avg_val < best_loss_val:
             best_loss_val = avg_val
@@ -122,6 +129,8 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             'val_t1': np.array(val_list_t1),
             'val_x2': np.array(val_list_x2),
             'val_t2': np.array(val_list_t2),
+            'train_x': np.array(train_list_x),
+            'train_t': np.array(train_list_t),
             },"results/"+savedpath + ".pt" ) # remember to change name for each experiment
         # validate 
     return 0
@@ -133,15 +142,18 @@ parser.add_argument('--data', type =str ,default= 'NSKT')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 4)
-parser.add_argument('--batch_size', type = int, default= 4)
-parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
+parser.add_argument('--task_dt',type =float, default= 4)
+parser.add_argument('--ode_step',type =int, default= 2)
+parser.add_argument('--ode_method',type =str, default= "Euler")
+
+parser.add_argument('--batch_size', type = int, default= 8)
+parser.add_argument('--crop_size', type = int, default= 128, help= 'should be same as image dimension')
 parser.add_argument('--epochs', type = int, default= 1)
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
-parser.add_argument('--ode_step',type =int, default= 3)
-parser.add_argument('--ode_method',type =str, default= "Euler")
-parser.add_argument('--task_dt',type =float, default= 1)
-parser.add_argument('--n_snapshot',type =int, default= 1)
+
+
+parser.add_argument('--n_snapshot',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
@@ -166,13 +178,19 @@ if __name__ == "__main__":
     torch.cuda.manual_seed(args.seed)
     torch.set_default_dtype(data_type)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    trainloader,val1_loader,val2_loader,_,_ = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path)
+    trainloader,val1_loader,val2_loader,_,_ = getData(upscale_factor = args.scale_factor, 
+                                                      timescale_factor= args.timescale_factor,
+                                                      batch_size = args.batch_size, 
+                                                      crop_size = args.crop_size,
+                                                      data_path = args.data_path,
+                                                      num_snapshots = args.n_snapshot,
+                                                      noise_ratio = args.noise_ratio)
     mean = [0.1429] 
     std = [8.3615]
     model = PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type)
     model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    savedpath = str("PASR2_" + str(args.ode_step) + 
+    savedpath = str("PASR_" + str(args.ode_step) + 
                 "_crop_size_" + str(args.crop_size) +
                 "_ode_step_" + str(args.ode_step) +
                 "ode_method_" + str(args.ode_method) +

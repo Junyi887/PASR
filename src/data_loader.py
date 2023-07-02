@@ -9,7 +9,10 @@ from PIL import Image, ImageFilter
 import torchvision.transforms.functional as F
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 
-def getData(data_name = "nskt_16k", data_path = "../superbench/datasets/nskt16000_1024" , upscale_factor = 4,timescale_factor = 4, noise_ratio = 0.0, crop_size = 1024, method = "bicubic", batch_size = 1, std = [0.6703, 0.6344, 8.3615]):  
+def getData(data_name = "nskt_16k", data_path = "../superbench/datasets/nskt16000_1024" ,
+             upscale_factor = 4,timescale_factor = 4, num_snapshots = 20,
+             noise_ratio = 0.0, crop_size = 1024, method = "bicubic", 
+             batch_size = 1, std = [0.6703, 0.6344, 8.3615]):  
     '''
     Loading data from four dataset folders: (a) nskt_16k; (b) nskt_32k; (c) cosmo; (d) era5.
     Each dataset contains: 
@@ -20,13 +23,12 @@ def getData(data_name = "nskt_16k", data_path = "../superbench/datasets/nskt1600
     ===
     std: the channel-wise standard deviation of each dataset, list: [#channels]
     '''
-    num_snapshots = 2
 
     train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-    val1_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor, timescale_factor//2,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-    val2_loader = get_data_loader(data_name, data_path, '/valid_2', "val", upscale_factor,timescale_factor//2,num_snapshots,noise_ratio, crop_size, method, batch_size, std) 
-    test1_loader = get_data_loader(data_name, data_path, '/test_1', "test", upscale_factor,timescale_factor//4, num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
-    test2_loader = get_data_loader(data_name, data_path, '/test_2', "test", upscale_factor,timescale_factor//4, num_snapshots*2, noise_ratio, crop_size, method, batch_size, std)
+    val1_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
+    val2_loader = get_data_loader(data_name, data_path, '/valid_2', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
+    test1_loader = get_data_loader(data_name, data_path, '/test_1', "test", upscale_factor,timescale_factor//4, num_snapshots*4,noise_ratio, crop_size, method, batch_size, std)
+    test2_loader = get_data_loader(data_name, data_path, '/test_2', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
     
     return train_loader, val1_loader, val2_loader, test1_loader, test2_loader 
 

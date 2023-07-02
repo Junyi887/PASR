@@ -868,11 +868,16 @@ class PASR(nn.Module):
             # load initial condition
                 if time_evol == True:
                     z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
-                y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
-                y1 = self.conv_last(self.upsample(y1))  
-                y1 = self.shiftMean_func(y1,"add")    
-                predictions.append(y1)
-                z0 = z1
+                    y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
+                    y1 = self.conv_last(self.upsample(y1))  
+                    y1 = self.shiftMean_func(y1,"add")    
+                    predictions.append(y1)
+                    z0 = z1
+                else:
+                    y0 = self.conv_before_upsample(z0)                 #HQ Image Reconstruction
+                    y0 = self.conv_last(self.upsample(y0))  
+                    y0 = self.shiftMean_func(y0,"add")
+                    predictions.append(y0)
         predictions = torch.stack(predictions, dim=1)
         return predictions
 
