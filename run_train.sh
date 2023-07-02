@@ -1,11 +1,12 @@
 export CUDA_VISIBLE_DEVICES=0,1
-python eval.py --crop_size 256 \
-                --batch_size 8 \
-                --epochs 200 \
-                --task_dt 1 \
+# correspond to real dt 
+python train.py --crop_size 128 \
+                --batch_size 32 \
+                --epochs 150 \
+                --task_dt 0.2 \
                 --loss_type "L1" \
                 --data_path "../superbench/datasets/nskt16000_1024" \
-                --lamb 0.1 & 
+                --lamb 0.3 & 
 PID=$!
 echo "PID for train.py: $PID" >> pid.log
 wait $PID
