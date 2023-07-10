@@ -33,15 +33,15 @@ def test_RFNE_half(model,test1_loader):
     with torch.no_grad():
         for batch_idx,(data,target) in enumerate(tqdm(test1_loader)):
             data,target = data.to(device).float() , target.to(device).float()
-            output_half1 = model(data,task_dt = args.task_dt/2,
-                                n_snapshot = 1,ode_step = args.ode_step,
+            output_half1 = model(data,task_dt = args.task_dt,
+                                n_snapshot = 1,ode_step = args.ode_step//2,
                                 time_evol = True)
-            output_half2 = model(data,task_dt = args.task_dt,
+            output_half2 = model(data,task_dt = args.task_dt//2,
                                 n_snapshot = 1,ode_step = args.ode_step,
                                 time_evol = True)
             for i in range (target.shape[0]):
-                RFNE_half1 = torch.norm(output_half1[i,0,...]-target[i,1,...])/torch.norm(target[i,1,...])
-                RFNE_half2 = torch.norm(output_half2[i,0,...]-target[i,3,...])/torch.norm(target[i,3,...])
+                RFNE_half1 = torch.norm(output_half1[i,0,...]-target[i,2,...])/torch.norm(target[i,2,...])
+                RFNE_half2 = torch.norm(output_half2[i,0,...]-target[i,2,...])/torch.norm(target[i,2,...])
                 list_half1.append(RFNE_half1)
                 list_half2.append(RFNE_half2)
     avg_half1 = torch.mean(torch.stack(list_half1),dim=0).item()
@@ -56,16 +56,16 @@ def test_RFNE_quater(model,test1_loader):
     with torch.no_grad():
         for batch_idx,(data,target) in enumerate(tqdm(test1_loader)):
             data,target = data.to(device).float() , target.to(device).float()
-            output_quater1 = model(data,task_dt = 0.125*1,
+            output_quater1 = model(data,task_dt = args.task_dt/4,
                                 n_snapshot = 1,ode_step = 1,
                                 time_evol = True)
-            output_quater2 = model(data,task_dt = 0.125*2,
+            output_quater2 = model(data,task_dt = args.task_dt/4,
                                 n_snapshot = 1,ode_step = 2,
                                 time_evol = True)
-            output_quater3 = model(data,task_dt = 0.125*3,
+            output_quater3 = model(data,task_dt = args.task_dt/4,
                                 n_snapshot = 1,ode_step = 3,
                                 time_evol = True)
-            output_quater4 = model(data,task_dt = 0.125*4,
+            output_quater4 = model(data,task_dt = args.task_dt/4,
                                 n_snapshot = 1,ode_step = 4,
                                 time_evol = True)
             for i in range (target.shape[0]):
@@ -91,15 +91,18 @@ parser.add_argument('--data', type =str ,default= 'NSKT')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 4)
-parser.add_argument('--batch_size', type = int, default= 4)
-parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
+parser.add_argument('--task_dt',type =float, default= 4)
+parser.add_argument('--ode_step',type =int, default= 2)
+parser.add_argument('--ode_method',type =str, default= "Euler")
+
+parser.add_argument('--batch_size', type = int, default= 8)
+parser.add_argument('--crop_size', type = int, default= 128, help= 'should be same as image dimension')
 parser.add_argument('--epochs', type = int, default= 1)
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
-parser.add_argument('--ode_step',type =int, default= 3)
-parser.add_argument('--ode_method',type =str, default= "Euler")
-parser.add_argument('--task_dt',type =float, default= 1)
-parser.add_argument('--n_snapshot',type =int, default= 1)
+
+parser.add_argument('--eval_task_dt',type =float, default= 1)
+parser.add_argument('--n_snapshot',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
@@ -120,13 +123,13 @@ if __name__ == "__main__":
     torch.set_default_dtype(data_type)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    trainloader,val1_loader,val2_loader,test1_loader,test2_loader = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path)
+    _,val1_loader,_,test1_loader,_ = getData(upscale_factor = args.scale_factor, timescale_factor= 1,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = 4 )
     mean = [0.1429] 
     std = [8.3615]
     model = PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type)
     model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    savedpath = str("PASR2_" + str(args.ode_step) + 
+    savedpath = str("PASR_" + str(args.ode_step) + 
                 "_crop_size_" + str(args.crop_size) +
                 "_ode_step_" + str(args.ode_step) +
                 "ode_method_" + str(args.ode_method) +
@@ -172,14 +175,14 @@ if __name__ == "__main__":
 
 
 
-    # err1_interpolate,err2_interpolate = test_RFNE_half(model,val1_loader)
+    err1_interpolate,err2_interpolate = test_RFNE_half(model,val1_loader)
     # err1_extrapolate,err2_extrapolate = test_RFNE_half(model,val2_loader)
 
-    err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_quater(model,test1_loader)
-    err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test2_loader)
+    err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_quater(model,val1_loader)
+    err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test1_loader)
 
-    # print("RFNE_half_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0))
-    # print("RFNE_half_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0))
+    print("RFNE_half_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0))
+    #print("RFNE_half_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0))
     print("RFNE_quater_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate_q*100.0, err2_interpolate_q*100.0))
     print("RFNE_quater_interpolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_interpolate_q*100.0, err4_interpolate_q*100.0))
     print("RFNE_quater_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate_q*100.0, err2_extrapolate_q*100.0))
