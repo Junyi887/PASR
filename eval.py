@@ -27,6 +27,30 @@ from src.models import *
 from src.utli import *
 from src.data_loader import getData
 
+def visualize(model,test1_loader,location =100,savedpath = 'test.png'):
+    with torch.no_grad():
+        for batch_idx,(data,target) in enumerate(tqdm(test1_loader)):
+            if batch_idx == 4:
+                data,target = data.float() , target.float()
+                output_quater1 = model(data,task_dt = args.task_dt/4,
+                                    n_snapshot = 1,ode_step = 1,
+                                    time_evol = True)[0,0,location,location]
+                output_quater2 = model(data,task_dt = args.task_dt/4,
+                                    n_snapshot = 1,ode_step = 2,
+                                    time_evol = True)[0,0,location,location]
+                output_quater3 = model(data,task_dt = args.task_dt/4,
+                                    n_snapshot = 1,ode_step = 3,
+                                    time_evol = True)[0,0,location,location]
+                output_quater4 = model(data,task_dt = args.task_dt/4,
+                                    n_snapshot = 1,ode_step = 4,
+                                    time_evol = True)[0,0,location,location]
+                target = target[0,1:,location,location]
+                plt.plot(np.array([output_quater1,output_quater2,output_quater3,output_quater4,target]))
+                plt.plot(target.numpy())
+                plt.savefig('test.png')
+                break
+    return 0
+
 def test_RFNE_half(model,test1_loader):
     list_half1 = []
     list_half2 = []
@@ -181,9 +205,10 @@ if __name__ == "__main__":
     err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_quater(model,val1_loader)
     err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test1_loader)
 
-    print("RFNE_half_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0))
-    #print("RFNE_half_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0))
-    print("RFNE_quater_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate_q*100.0, err2_interpolate_q*100.0))
-    print("RFNE_quater_interpolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_interpolate_q*100.0, err4_interpolate_q*100.0))
-    print("RFNE_quater_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate_q*100.0, err2_extrapolate_q*100.0))
-    print("RFNE_quater_extrapolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_extrapolate_q*100.0, err4_extrapolate_q*100.0))
+    # print("RFNE_half_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0))
+    # #print("RFNE_half_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0))
+    # print("RFNE_quater_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate_q*100.0, err2_interpolate_q*100.0))
+    # print("RFNE_quater_interpolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_interpolate_q*100.0, err4_interpolate_q*100.0))
+    # print("RFNE_quater_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate_q*100.0, err2_extrapolate_q*100.0))
+    # print("RFNE_quater_extrapolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_extrapolate_q*100.0, err4_extrapolate_q*100.0))
+    visualize(model,val1_loader,savepath = "results/"+savedpath+"_val1")
