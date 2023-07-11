@@ -628,40 +628,41 @@ class UpsampleOneStep(nn.Sequential):   #inside HQ Image reconstruction
         flops = H * W * self.num_feat * 3 * 9
         return flops
 
+######################
+class CDEFunc(nn.Module):
+    def __init__(self, input_channels, num_hidden_layers =3):
+        super(CDEFunc, self).__init__()
+        self.input_channels = input_channels
+        self.hidden_channels = input_channels*2
+        self.num_hidden_layers = num_hidden_layers
 
-class NODE(nn.Module):
-    def __init__(self,in_dim,ode_method ="Euler"):
-        super(NODE, self).__init__()
-        self.model = nn.Sequential(
-            nn.Linear(in_dim, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim),
-            nn.tanh()
-        ) 
-        self.in_dim = in_dim
-        self.int_method = ode_method
-    def forward(self, x,ode_step = 1,task_dt = 1.0):
-        B,C,H,W = x.shape
-        x = x.flatten(2).transpose(1, 2)  # B Ph*Pw C
-        h = task_dt / ode_step
-        if self.int_method == "Euler":
-            for i in range(ode_step):
-                x = x + self.model(x) 
-        elif self.int_method == "RK4":
-            for i in range(ode_step):
-                f1 = self.model(x)
-                f2 = self.model(x+h/2.0*f1)
-                f3 = self.model(x+h/2.0*f2)
-                f4 = self.model(x+h*f3)
-                x = x + h* (f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0) #512
-        x = x.transpose(1, 2).view(B, C, H, W) 
-        return x 
+        self.linear_in = torch.nn.Linear(input_channels, input_channels*2)
+        self.linears = torch.nn.ModuleList(torch.nn.Linear(input_channels*2, input_channels*2)
+                                           for _ in range(num_hidden_layers - 1))
+        self.linear_out = torch.nn.Linear(input_channels*2, input_channels)
+
+    def forward(self, z):
+        z = self.linear_in(z)
+        z = z.relu()
+        for linear in self.linears:
+            z = linear(z)
+            z = z.relu()
+        # Ignoring the batch dimensions, the shape of the output tensor must be a matrix,
+        # because we need it to represent a linear map from R^input_channels to R^hidden_channels.
+        z = self.linear_out(z).view(*z.shape[:-1], self.hidden_channels, self.input_channels)
+        z = z.tanh()
+        return z
+
+class NeuralCDE(torch.nn.Module):
+    def __init__(self, input_channels):
+        super(NeuralCDE, self).__init__()
+        self.func = CDEFunc(input_channels)
+
+    def forward(self,z0,coeffs):
+        X= torchcde.CubicSpline(coeffs)
+        X0 = X.evaluate(X.interval[0])
+        zt = torchcde.cdeint(X=X, z0=z0, func=self.func, t=X.interval)
+        return zt
 
 class PASR(nn.Module):
     """ PASR
@@ -869,10 +870,12 @@ class PASR(nn.Module):
         # during train task_dt is 1, then n_snapshot should be 1
         # if we want to intermediate snapshot change task dt to 0.5, then n_snapshot should be 2
         predictions = []
+        B,C,H, W = x.shape
         x = self.check_image_size(x)
         x = self.shiftMean_func(x,"sub")
         x = self.conv_first(x)     #Shallow Feature Extraction
         z0 = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
+        z0_MLP = z0.flatten(2).transpose(1, 2)  # B Ph*Pw C
         for i in range (n_snapshot):   
             if self.upsampler == 'pixelshuffle':
             # load initial condition
