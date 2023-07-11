@@ -24,7 +24,7 @@ from os.path import join
 from scipy.io import loadmat
 from tqdm import tqdm
 import h5py
-
+from torchdiffeq import odeint
 class Mlp(nn.Module):  #MLP
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -628,29 +628,65 @@ class UpsampleOneStep(nn.Sequential):   #inside HQ Image reconstruction
         flops = H * W * self.num_feat * 3 * 9
         return flops
 
+######################
+class CDEFunc(nn.Module):
+    def __init__(self, input_channels, num_hidden_layers =3):
+        super(CDEFunc, self).__init__()
+        self.input_channels = input_channels
+        self.hidden_channels = input_channels*2
+        self.num_hidden_layers = num_hidden_layers
 
-class NODE(nn.Module):
-    def __init__(self,in_dim,ode_method ="Euler"):
-        super(NODE, self).__init__()
-        self.model = nn.Sequential(
-            nn.Conv2d(in_dim, in_dim, 1, 1, 0),
-            nn.Tanh()
-        ) 
-        self.int_method = ode_method
-    def forward(self, x,ode_step = 1,task_dt = 1.0):
-        h = task_dt / ode_step
-        if self.int_method == "Euler":
-            for i in range(ode_step):
-                x = x + self.model(x) 
-        elif self.int_method == "RK4":
-            for i in range(ode_step):
-                f1 = self.model(x)
-                f2 = self.model(x+h/2.0*f1)
-                f3 = self.model(x+h/2.0*f2)
-                f4 = self.model(x+h*f3)
-                x = x + h* (f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0) #512
-        return x 
-    
+        self.linear_in = torch.nn.Linear(input_channels, input_channels*2)
+        self.linears = torch.nn.ModuleList(torch.nn.Linear(input_channels*2, input_channels*2)
+                                           for _ in range(num_hidden_layers - 1))
+        self.linear_out = torch.nn.Linear(input_channels*2, input_channels)
+
+    def forward(self, z):
+        z = self.linear_in(z)
+        z = z.relu()
+        for linear in self.linears:
+            z = linear(z)
+            z = z.relu()
+        # Ignoring the batch dimensions, the shape of the output tensor must be a matrix,
+        # because we need it to represent a linear map from R^input_channels to R^hidden_channels.
+        z = self.linear_out(z).view(*z.shape[:-1], self.hidden_channels, self.input_channels)
+        z = z.tanh()
+        return z
+
+class NeuralCDE(torch.nn.Module):
+    def __init__(self, input_channels):
+        super(NeuralCDE, self).__init__()
+        self.hidden_channels = hidden_channels
+
+        self.func = CDEFunc(input_channels, hidden_channels)
+        self.initial = torch.nn.Linear(input_channels, hidden_channels)
+        self.readout = torch.nn.Linear(hidden_channels, output_channels)
+
+    def forward(self, times, coeffs):
+        spline = controldiffeq.NaturalCubicSpline(times, coeffs)
+
+        ######################
+        # Easy to forget gotcha: Initial hidden state should be a function of the first observation.
+        ######################
+        z0 = self.initial(spline.evaluate(times[0]))
+
+        ######################
+        # Actually solve the CDE.
+        ######################
+        z_T = controldiffeq.cdeint(dX_dt=spline.derivative,
+                                   z0=z0,
+                                   func=self.func,
+                                   t=times[[0, -1]],
+                                   atol=1e-2,
+                                   rtol=1e-2)
+        ######################
+        # Both the initial value and the terminal value are returned from cdeint; extract just the terminal value,
+        # and then apply a linear map.
+        ######################
+        z_T = z_T[1]
+        pred_y = self.readout(z_T)
+        return pred_y
+
 class PASR(nn.Module):
     """ PASR
 
@@ -857,59 +893,29 @@ class PASR(nn.Module):
         # during train task_dt is 1, then n_snapshot should be 1
         # if we want to intermediate snapshot change task dt to 0.5, then n_snapshot should be 2
         predictions = []
-        H, W = x.shape[2:]
+        B,C,H, W = x.shape
         x = self.check_image_size(x)
-        
-        for i in range (n_snapshot):
-            x = self.shiftMean_func(x,"sub")
+        x = self.shiftMean_func(x,"sub")
+        x = self.conv_first(x)     #Shallow Feature Extraction
+        z0 = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
+        z0_MLP = z0.flatten(2).transpose(1, 2)  # B Ph*Pw C
+        for i in range (n_snapshot):   
             if self.upsampler == 'pixelshuffle':
             # load initial condition
-                x = self.conv_first(x)                                              #Shallow Feature Extraction
-                x = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
                 if time_evol == True:
-                    x = self.ode(x,task_dt = task_dt,ode_step = ode_step)                                #ODE time interpolation
-                x = self.conv_before_upsample(x)                 #HQ Image Reconstruction
-                x = self.conv_last(self.upsample(x))  
-                x = self.shiftMean_func(x,"add")
-                predictions.append(x)
+                    z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
+                    y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
+                    y1 = self.conv_last(self.upsample(y1))  
+                    y1 = self.shiftMean_func(y1,"add")    
+                    predictions.append(y1)
+                    z0 = z1
+                else:
+                    y0 = self.conv_before_upsample(z0)                 #HQ Image Reconstruction
+                    y0 = self.conv_last(self.upsample(y0))  
+                    y0 = self.shiftMean_func(y0,"add")
+                    predictions.append(y0)
         predictions = torch.stack(predictions, dim=1)
         return predictions
-
-
-        # elif self.upsampler == 'nearest+conv':
-            
-        #     # for real-world SR
-        #     x = self.conv_first(x)
-        #     x = self.conv_after_body(self.forward_features(x)) + x
-        #     x = self.conv_before_upsample(x)
-        #     x = self.lrelu(self.conv_up1(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-        #     if self.upscale == 4:
-        #         x = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-        #     if self.upscale == 8:
-        #         x = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-        #         x = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-        #     x = self.conv_last(self.lrelu(self.conv_hr(x)))
-        # elif self.upsampler == 'shallowdecoder':
-        #     # for real-world SR
-        #     x = self.conv_first(x)
-        #     x = self.conv_after_body(self.forward_features(x)) + x
-        #     x = self.conv_before_upsample(x)
-        #     x = self.shallowdecoder(x)
-        #     if self.upscale == 4:
-        #         x = self.shallowdecoder(x)
-        #     if self.upscale == 8:
-        #         x = self.shallowdecoder(x)
-        #         x = self.shallowdecoder(x)
-        #     x = self.conv_last(self.lrelu(self.conv_hr(x)))
-        # else:
-        #     # for image denoising and JPEG compression artifact reduction
-        #     x_first = self.conv_first(x)
-        #     res = self.conv_after_body(self.forward_features(x_first)) + x_first
-        #     x = x + self.conv_last(res)
-
-        
-
-        return x[:, :, :H*self.upscale, :W*self.upscale]
 
     def flops(self):
         flops = 0
