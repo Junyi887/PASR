@@ -25,19 +25,51 @@ import h5py
 from src.models import *
 from src.utli import *
 from src.data_loader import getData
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from scipy.interpolate import CubicSpline
+# trainloader,_,_,_,_ = getData(upscale_factor = 4, 
+#                                 timescale_factor= 4,
+#                                 batch_size = 1000, 
+#                                 crop_size = 256,
+#                                 data_path = "../dataset/nskt16000_1024",
+#                                 num_snapshots = 4,
+#                                 noise_ratio = 0)
+# _,val1,_,_,_ = getData(upscale_factor = 4, 
+#                                 timescale_factor= 4,
+#                                 batch_size = 200, 
+#                                 crop_size = 256,
+#                                 data_path = "../dataset/nskt16000_1024",
+#                                 num_snapshots = 4,
+#                                 noise_ratio = 0)
 
-trainloader,val1_loader,val2_loader,_,_ = getData(upscale_factor = args.scale_factor, 
-                                                      timescale_factor= args.timescale_factor,
-                                                      batch_size = args.batch_size, 
-                                                      crop_size = args.crop_size,
-                                                      data_path = args.data_path,
-                                                      num_snapshots = args.n_snapshot,
-                                                      noise_ratio = args.noise_ratio)
-                                                      
-# file = h5py.File('../superbench/datasets/nskt16000_256/train/nskt_train.h5', 'r')
-# data = file['fields'][()][::4,0,:,:]
+# for i,(data,target) in enumerate(trainloader):
+#     print(data.shape)
+#     print(target.shape)
 
-# # Access and manipulate the data as needed
-# print(data.shape)  # Prints the shape of the data array
 
-# file.close()
+# for i,(data,target) in enumerate(val1):
+#     print(data.shape)
+#     print(target.shape)
+
+file = h5py.File('../dataset/nskt16000_1024/train/nskt_train.h5', 'r')
+crop = 256 
+space_scale = 4 
+time_scale = 4
+window_x = (1024-crop)//2
+window_x_end = window_x + crop
+window_y = (1024-crop)//2
+window_y_end = window_y + crop
+train_poly_hr = file['fields'][()][:,-1,window_x:window_x_end,window_y:window_y_end]
+train_poly_lr = train_poly_hr[::4,::space_scale,::space_scale]
+file.close()
+print(train_poly_hr.shape)
+
+t_hr = np.linspace(0,1,train_poly_hr.shape[0])
+t_lr = np.linspace(0,1,train_poly_lr.shape[0])
+# up in time
+cs = CubicSpline(t_lr, train_poly_lr)
+train_poly_pred = torch.tensor(cs(t_hr)).unsqueeze(1)
+pred = F.interpolate(train_poly_pred , size = (256,256), mode = 'bicubic', align_corners=False)
+print(pred.shape)
