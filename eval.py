@@ -171,7 +171,7 @@ if __name__ == "__main__":
     torch.set_default_dtype(data_type)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    _,val1_loader,_,test1_loader,test2_loader = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = args.n_snapshot)
+    _,val1_loader,_,test1_loader,test2_loader = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = args.n_snapshot,data_name = args.data)
     mean = [0.1429] 
     std = [8.3615]
     model_list = {"PASR": PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +
-                "_data_" + str(args.data_name) + 
+                "_data_" + str(args.data) + 
                 "_crop_size_" + str(args.crop_size) +
                 "_ode_step_" + str(args.ode_step) +
                 "_ode_method_" + str(args.ode_method) +
