@@ -1,216 +1,0 @@
-Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
-Number of samples per file: 1200
-Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Traceback (most recent call last):
-  File "/home/raocp/Desktop/PASR/eval.py", line 160, in <module>
-    err1_interpolate,err2_interpolate = test_RFNE_half(model,test1_loader)
-  File "/home/raocp/Desktop/PASR/eval.py", line 36, in test_RFNE_half
-    output_half = model(inputs,task_dt = args.task_dt/2,
-NameError: name 'inputs' is not defined
-Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
-Number of samples per file: 1200
-Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Traceback (most recent call last):
-  File "/home/raocp/Desktop/PASR/eval.py", line 160, in <module>
-    err1_interpolate,err2_interpolate = test_RFNE_half(model,test1_loader)
-  File "/home/raocp/Desktop/PASR/eval.py", line 41, in test_RFNE_half
-    RFNE_half2 = torch.norm(output_half[i,1,...]-target[i,3,...])/torch.norm(target[i,3,...])
-IndexError: index 1 is out of bounds for dimension 1 with size 1
-Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
-Number of samples per file: 1200
-Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-torch.Size([4, 1, 1, 512, 512])
-Traceback (most recent call last):
-  File "/home/raocp/Desktop/PASR/eval.py", line 161, in <module>
-    err1_interpolate,err2_interpolate = test_RFNE_half(model,test1_loader)
-  File "/home/raocp/Desktop/PASR/eval.py", line 42, in test_RFNE_half
-    RFNE_half2 = torch.norm(output_half[i,1,...]-target[i,3,...])/torch.norm(target[i,3,...])
-IndexError: index 1 is out of bounds for dimension 1 with size 1
-/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torchvision/transforms/transforms.py:257: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
-  warnings.warn(
-Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
-Number of samples per file: 1200
-Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:08<01:34,  8.63s/it] 17%|█▋        | 2/12 [00:09<00:40,  4.06s/it] 25%|██▌       | 3/12 [00:10<00:23,  2.58s/it] 33%|███▎      | 4/12 [00:11<00:15,  1.91s/it] 42%|████▏     | 5/12 [00:12<00:10,  1.52s/it] 50%|█████     | 6/12 [00:12<00:07,  1.28s/it] 58%|█████▊    | 7/12 [00:13<00:05,  1.15s/it] 67%|██████▋   | 8/12 [00:14<00:04,  1.05s/it] 75%|███████▌  | 9/12 [00:15<00:02,  1.02it/s] 83%|████████▎ | 10/12 [00:16<00:01,  1.06it/s] 92%|█████████▏| 11/12 [00:17<00:00,  1.10it/s]100%|██████████| 12/12 [00:17<00:00,  1.14it/s]100%|██████████| 12/12 [00:17<00:00,  1.49s/it]
-  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:00<00:09,  1.14it/s] 17%|█▋        | 2/12 [00:01<00:08,  1.18it/s] 25%|██▌       | 3/12 [00:02<00:07,  1.18it/s] 33%|███▎      | 4/12 [00:03<00:06,  1.17it/s] 42%|████▏     | 5/12 [00:04<00:05,  1.18it/s] 50%|█████     | 6/12 [00:05<00:05,  1.20it/s] 58%|█████▊    | 7/12 [00:05<00:04,  1.18it/s] 67%|██████▋   | 8/12 [00:06<00:03,  1.18it/s] 75%|███████▌  | 9/12 [00:07<00:02,  1.19it/s] 83%|████████▎ | 10/12 [00:08<00:01,  1.18it/s] 92%|█████████▏| 11/12 [00:09<00:00,  1.19it/s]100%|██████████| 12/12 [00:10<00:00,  1.20it/s]100%|██████████| 12/12 [00:10<00:00,  1.19it/s]
-  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:01<00:16,  1.51s/it] 17%|█▋        | 2/12 [00:03<00:15,  1.51s/it] 25%|██▌       | 3/12 [00:04<00:13,  1.52s/it] 33%|███▎      | 4/12 [00:06<00:11,  1.50s/it] 42%|████▏     | 5/12 [00:07<00:10,  1.51s/it] 50%|█████     | 6/12 [00:09<00:09,  1.51s/it] 58%|█████▊    | 7/12 [00:10<00:07,  1.49s/it] 67%|██████▋   | 8/12 [00:12<00:05,  1.50s/it] 75%|███████▌  | 9/12 [00:13<00:04,  1.51s/it] 83%|████████▎ | 10/12 [00:15<00:02,  1.50s/it] 92%|█████████▏| 11/12 [00:16<00:01,  1.51s/it]100%|██████████| 12/12 [00:18<00:00,  1.51s/it]100%|██████████| 12/12 [00:18<00:00,  1.51s/it]
-  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:01<00:16,  1.47s/it] 17%|█▋        | 2/12 [00:02<00:14,  1.48s/it] 25%|██▌       | 3/12 [00:04<00:13,  1.49s/it] 33%|███▎      | 4/12 [00:05<00:11,  1.49s/it] 42%|████▏     | 5/12 [00:07<00:10,  1.48s/it] 50%|█████     | 6/12 [00:08<00:09,  1.50s/it] 58%|█████▊    | 7/12 [00:10<00:07,  1.50s/it] 67%|██████▋   | 8/12 [00:11<00:05,  1.49s/it] 75%|███████▌  | 9/12 [00:13<00:04,  1.50s/it] 83%|████████▎ | 10/12 [00:14<00:03,  1.50s/it] 92%|█████████▏| 11/12 [00:16<00:01,  1.50s/it]100%|██████████| 12/12 [00:17<00:00,  1.51s/it]100%|██████████| 12/12 [00:17<00:00,  1.50s/it]
-RFNE_half_interpolate --- test1 error: 20.43726 %, test2 error: 27.95231 %
-RFNE_half_extrapolate --- test1 error: 39.77306 %, test2 error: 44.31455 %
-RFNE_quater_interpolate --- test1 error: 18.23777 %, test2 error: 20.48851 %
-RFNE_quater_interpolate --- test3 error: 24.09940 %, test4 error: 27.90158 %
-RFNE_quater_extrapolate --- test1 error: 40.24200 %, test2 error: 39.82817 %
-RFNE_quater_extrapolate --- test3 error: 41.24068 %, test4 error: 44.25938 %
-bash: run_train: No such file or directory
-  File "/home/raocp/Desktop/PASR/eval.py", line 126
-    _,val1_loader,_,_,_ = getData(upscale_factor = args.scale_factor, timescale_factor= 1,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = 4 )
-                                                                                                                                                                                                 ^
-IndentationError: unindent does not match any outer indentation level
-/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torchvision/transforms/transforms.py:257: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
-  warnings.warn(
-Namespace(data='NSKT', loss_type='L1', scale_factor=4, timescale_factor=4, task_dt=0.05, ode_step=2, ode_method='Euler', batch_size=32, crop_size=128, epochs=1, dtype='float32', seed=3407, n_snapshot=20, down_method='bicubic', upsampler='pixelshuffle', noise_ratio=0.0, lr=0.0001, lamb=0.3, data_path='../superbench/datasets/nskt16000_1024')
-Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
-Number of samples per file: 1200
-Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Traceback (most recent call last):
-  File "/home/raocp/Desktop/PASR/eval.py", line 142, in <module>
-    checkpoint = torch.load("results/"+savedpath +".pt")
-  File "/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torch/serialization.py", line 579, in load
-    with _open_file_like(f, 'rb') as opened_file:
-  File "/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torch/serialization.py", line 230, in _open_file_like
-    return _open_file(name_or_buffer, mode)
-  File "/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torch/serialization.py", line 211, in __init__
-    super(_open_file, self).__init__(open(name, mode))
-FileNotFoundError: [Errno 2] No such file or directory: 'results/PASR_2_crop_size_128_ode_step_2ode_method_Euler_task_dt_0.05_num_snapshots_20_upscale_factor_4_timescale_factor_4_loss_type_L1.pt'
-/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torchvision/transforms/transforms.py:257: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
-  warnings.warn(
-Namespace(data='NSKT', loss_type='L1', scale_factor=4, timescale_factor=4, task_dt=0.2, ode_step=2, ode_method='Euler', batch_size=32, crop_size=128, epochs=1, dtype='float32', seed=3407, eval_task_dt=1, n_snapshot=20, down_method='bicubic', upsampler='pixelshuffle', noise_ratio=0.0, lr=0.0001, lamb=0.3, data_path='../superbench/datasets/nskt16000_1024')
-Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
-Number of samples per file: 1200
-Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:06<00:33,  6.61s/it] 33%|███▎      | 2/6 [00:09<00:16,  4.21s/it] 50%|█████     | 3/6 [00:11<00:10,  3.41s/it] 67%|██████▋   | 4/6 [00:14<00:06,  3.05s/it] 83%|████████▎ | 5/6 [00:16<00:02,  2.84s/it]100%|██████████| 6/6 [00:19<00:00,  2.71s/it]100%|██████████| 6/6 [00:19<00:00,  3.17s/it]
-Traceback (most recent call last):
-  File "/home/raocp/Desktop/PASR/eval.py", line 182, in <module>
-    err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test1_loader)
-NameError: name 'test1_loader' is not defined
-/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torchvision/transforms/transforms.py:257: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
-  warnings.warn(
-Namespace(data='NSKT', loss_type='L1', scale_factor=4, timescale_factor=4, task_dt=0.2, ode_step=2, ode_method='Euler', batch_size=32, crop_size=128, epochs=1, dtype='float32', seed=3407, eval_task_dt=1, n_snapshot=20, down_method='bicubic', upsampler='pixelshuffle', noise_ratio=0.0, lr=0.0001, lamb=0.3, data_path='../superbench/datasets/nskt16000_1024')
-Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
-Number of samples per file: 1200
-Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:07<00:38,  7.79s/it] 33%|███▎      | 2/6 [00:11<00:21,  5.47s/it] 50%|█████     | 3/6 [00:15<00:14,  4.69s/it] 67%|██████▋   | 4/6 [00:19<00:08,  4.33s/it] 83%|████████▎ | 5/6 [00:22<00:04,  4.13s/it]100%|██████████| 6/6 [00:26<00:00,  4.01s/it]100%|██████████| 6/6 [00:26<00:00,  4.46s/it]
-Traceback (most recent call last):
-  File "/home/raocp/Desktop/PASR/eval.py", line 182, in <module>
-    err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test1_loader)
-NameError: name 'test1_loader' is not defined
-/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torchvision/transforms/transforms.py:257: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
-  warnings.warn(
-Namespace(data='NSKT', loss_type='L1', scale_factor=4, timescale_factor=4, task_dt=0.2, ode_step=2, ode_method='Euler', batch_size=32, crop_size=128, epochs=1, dtype='float32', seed=3407, eval_task_dt=1, n_snapshot=20, down_method='bicubic', upsampler='pixelshuffle', noise_ratio=0.0, lr=0.0001, lamb=0.3, data_path='../superbench/datasets/nskt16000_1024')
-Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
-Number of samples per file: 1200
-Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:06<00:33,  6.60s/it] 33%|███▎      | 2/6 [00:09<00:17,  4.48s/it] 50%|█████     | 3/6 [00:12<00:10,  3.55s/it] 67%|██████▋   | 4/6 [00:14<00:06,  3.13s/it] 83%|████████▎ | 5/6 [00:16<00:02,  2.88s/it]100%|██████████| 6/6 [00:19<00:00,  2.74s/it]100%|██████████| 6/6 [00:19<00:00,  3.24s/it]
-  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:05<01:05,  5.93s/it] 17%|█▋        | 2/12 [00:11<00:57,  5.78s/it] 25%|██▌       | 3/12 [00:17<00:51,  5.73s/it] 33%|███▎      | 4/12 [00:22<00:44,  5.62s/it] 42%|████▏     | 5/12 [00:28<00:40,  5.72s/it] 50%|█████     | 6/12 [00:34<00:33,  5.66s/it] 58%|█████▊    | 7/12 [00:40<00:28,  5.72s/it] 67%|██████▋   | 8/12 [00:45<00:22,  5.65s/it] 75%|███████▌  | 9/12 [00:51<00:17,  5.71s/it] 83%|████████▎ | 10/12 [00:56<00:11,  5.65s/it] 92%|█████████▏| 11/12 [01:02<00:05,  5.70s/it]100%|██████████| 12/12 [01:08<00:00,  5.62s/it]100%|██████████| 12/12 [01:08<00:00,  5.68s/it]
-/home/raocp/anaconda3/envs/pr/lib/python3.9/site-packages/torchvision/transforms/transforms.py:257: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
-  warnings.warn(
-Namespace(data='NSKT', loss_type='L1', scale_factor=4, timescale_factor=4, task_dt=0.2, ode_step=2, ode_method='Euler', batch_size=32, crop_size=128, epochs=1, dtype='float32', seed=3407, eval_task_dt=1, n_snapshot=20, down_method='bicubic', upsampler='pixelshuffle', noise_ratio=0.0, lr=0.0001, lamb=0.3, data_path='../superbench/datasets/nskt16000_1024')
-Getting file stats from ../superbench/datasets/nskt16000_1024/train/nskt_train.h5
-Number of samples per file: 1200
-Found data at path ../superbench/datasets/nskt16000_1024/train. Number of examples: 1200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_1/nskt_val_1.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_1. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/valid_2/nskt_val_2.h5
-Number of samples per file: 200
-Found data at path ../superbench/datasets/nskt16000_1024/valid_2. Number of examples: 200. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_1/nskt_test_1.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_1. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-Getting file stats from ../superbench/datasets/nskt16000_1024/test_2/nskt_test_2.h5
-Number of samples per file: 400
-Found data at path ../superbench/datasets/nskt16000_1024/test_2. Number of examples: 400. Image Shape: 1024 x 1024 x 3
-  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:06<00:31,  6.26s/it] 33%|███▎      | 2/6 [00:08<00:16,  4.19s/it] 50%|█████     | 3/6 [00:11<00:09,  3.27s/it] 67%|██████▋   | 4/6 [00:13<00:05,  2.82s/it] 83%|████████▎ | 5/6 [00:15<00:02,  2.57s/it]100%|██████████| 6/6 [00:17<00:00,  2.43s/it]100%|██████████| 6/6 [00:17<00:00,  2.93s/it]
-  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:02<00:12,  2.47s/it] 33%|███▎      | 2/6 [00:04<00:09,  2.42s/it] 50%|█████     | 3/6 [00:07<00:07,  2.41s/it] 67%|██████▋   | 4/6 [00:09<00:04,  2.42s/it] 83%|████████▎ | 5/6 [00:12<00:02,  2.41s/it]100%|██████████| 6/6 [00:14<00:00,  2.40s/it]100%|██████████| 6/6 [00:14<00:00,  2.41s/it]
-  0%|          | 0/12 [00:00<?, ?it/s]  8%|▊         | 1/12 [00:04<00:50,  4.57s/it] 17%|█▋        | 2/12 [00:08<00:42,  4.22s/it] 25%|██▌       | 3/12 [00:12<00:36,  4.10s/it] 33%|███▎      | 4/12 [00:16<00:32,  4.05s/it] 42%|████▏     | 5/12 [00:20<00:28,  4.08s/it] 50%|█████     | 6/12 [00:24<00:24,  4.06s/it] 58%|█████▊    | 7/12 [00:28<00:20,  4.06s/it] 67%|██████▋   | 8/12 [00:32<00:16,  4.06s/it] 75%|███████▌  | 9/12 [00:36<00:12,  4.05s/it] 83%|████████▎ | 10/12 [00:40<00:08,  4.05s/it] 92%|█████████▏| 11/12 [00:44<00:04,  4.05s/it]100%|██████████| 12/12 [00:48<00:00,  4.03s/it]100%|██████████| 12/12 [00:48<00:00,  4.07s/it]
-RFNE_half_interpolate --- test1 error: 24.06470 %, test2 error: 37.53258 %
-RFNE_quater_interpolate --- test1 error: 24.07855 %, test2 error: 37.54411 %
-RFNE_quater_interpolate --- test3 error: 45.45897 %, test4 error: 50.79600 %
-RFNE_quater_extrapolate --- test1 error: 23.52935 %, test2 error: 39.32132 %
-RFNE_quater_extrapolate --- test3 error: 51.32362 %, test4 error: 56.68845 %

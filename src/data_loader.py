@@ -29,17 +29,17 @@ def getData(data_name = "nskt_16k", data_path =  "../dedalus/rbc_44/",
     std: the channel-wise standard deviation of each dataset, list: [#channels]
     '''
     if data_name == "RBC":
-        train_loader = get_data_loader(data_name, data_path, 'train/', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-        val1_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
-        # val2_loader = get_data_loader(data_name, data_path, '/valid_2', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
+        train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
+        val1_loader = get_data_loader(data_name, data_path, '', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
+        val2_loader = get_data_loader(data_name, data_path, '/valid_2', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
         # test1_loader = get_data_loader(data_name, data_path, '/test_1', "test", upscale_factor,timescale_factor//4, num_snapshots*4,noise_ratio, crop_size, method, batch_size, std)
         # test2_loader = get_data_loader(data_name, data_path, '/test_2', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
     elif data_name == "nskt_16k":
         train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-        val1_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
-        val2_loader = get_data_loader(data_name, data_path, '/valid_2', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
-        test1_loader = get_data_loader(data_name, data_path, '/test_1', "test", upscale_factor,timescale_factor//4, num_snapshots*4,noise_ratio, crop_size, method, batch_size, std)
-        test2_loader = get_data_loader(data_name, data_path, '/test_2', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
+        val1_loader = get_data_loader(data_name, data_path, '/train', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
+        val2_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
+        test1_loader = get_data_loader(data_name, data_path, '/train', "test", upscale_factor,timescale_factor//4, num_snapshots*4,noise_ratio, crop_size, method, batch_size, std)
+        test2_loader = get_data_loader(data_name, data_path, '/valid_1', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
     # val1_loader, val2_loader, test1_loader, test2_loader  = 0,0,0,0
     return train_loader, val1_loader, val2_loader, test1_loader, test2_loader 
 
@@ -57,7 +57,7 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
 
     dataloader = DataLoader(dataset,
                             batch_size = int(batch_size),
-                            num_workers = 0, # TODO: make a param
+                            num_workers = 10, # TODO: make a param
                             shuffle = shuffle, 
                             sampler = None,
                             drop_last = True,
@@ -65,17 +65,17 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
 
     return dataloader
 
-    if data_name in ['nskt_16k']:
-        dataset = GetFluidDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
-    elif data_name in ['RBC']:
-        dataset = GetRBCDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
-        trianset,val1set = random_split(dataset,[0.9,0.1],generator=torch.Generator().manual_seed(args.seed))
-        testset,val2set = random_split(dataset,[0.9,0.1],generator=torch.Generator().manual_seed(args.seed))
-    if state == "train":
-        shuffle = False
+    # if data_name in ['nskt_16k']:
+    #     dataset = GetFluidDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
+    # elif data_name in ['RBC']:
+    #     dataset = GetRBCDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
+    #     trianset,val1set = random_split(dataset,[0.9,0.1],generator=torch.Generator().manual_seed(args.seed))
+    #     testset,val2set = random_split(dataset,[0.9,0.1],generator=torch.Generator().manual_seed(args.seed))
+    # if state == "train":
+    #     shuffle = False
         
-    else:
-        shuffle = False
+    # else:
+    #     shuffle = False
 
 
 

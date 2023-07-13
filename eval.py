@@ -26,36 +26,57 @@ import h5py
 from src.models import *
 from src.utli import *
 from src.data_loader import getData
+import logging
+import argparse
 
-def visualize(model,test1_loader,location =100,savedpath = 'test.png'):
+# Set up logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+def visualize(model,test1_loader,location =100,savedname = 'test.png'):
     with torch.no_grad():
-        for batch_idx,(data,target) in enumerate(tqdm(test1_loader)):
+        for batch_idx,(data,target) in enumerate(test1_loader):
             if batch_idx == 4:
-                data,target = data.float() , target.float()
+                data,target = data.float().to(device) , target.float().to(device)
                 output_quater1 = model(data,task_dt = args.task_dt/4,
-                                    n_snapshot = 1,ode_step = 1,
-                                    time_evol = True)[0,0,location,location]
-                output_quater2 = model(data,task_dt = args.task_dt/4,
-                                    n_snapshot = 1,ode_step = 2,
-                                    time_evol = True)[0,0,location,location]
-                output_quater3 = model(data,task_dt = args.task_dt/4,
-                                    n_snapshot = 1,ode_step = 3,
-                                    time_evol = True)[0,0,location,location]
-                output_quater4 = model(data,task_dt = args.task_dt/4,
-                                    n_snapshot = 1,ode_step = 4,
-                                    time_evol = True)[0,0,location,location]
-                target = target[0,1:,location,location]
-                plt.plot(np.array([output_quater1,output_quater2,output_quater3,output_quater4,target]))
-                plt.plot(target.numpy())
-                plt.savefig('test.png')
+                                    n_snapshot = 4*args.n_snapshot,ode_step = 2,
+                                    time_evol = True)[0,:,0,location,location]
+                target = target[0,1:,0,location,location]
+                plt.figure()
+                plt.plot(output_quater1.cpu().numpy(),marker = "o",label = "prediction")
+                plt.plot(target.cpu().numpy(),marker = "o",label = "truth")
+                plt.legend()
+                plt.savefig('figures/' + savedname)
                 break
-    return 0
+    return logging.info("visualization complete.")
+
+def test_RFNE(model,test1_loader):
+    eval_length = 4
+    list_half1 = []
+    list_half2 = []
+    with torch.no_grad():
+        for batch_idx,(data,target) in enumerate(test1_loader):
+            data,target = data.to(device).float() , target.to(device).float()
+            output_t = model(data,task_dt = args.task_dt//4,
+                                n_snapshot = eval_length,ode_step = 2,
+                                time_evol = True)
+            output_x = model(data,task_dt = args.task_dt//4,
+                                n_snapshot = 1,ode_step = args.ode_step,
+                                time_evol = False)
+            for i in range (target.shape[0]):
+                for j in range (output_t.shape[1]):
+                    RFNE_half1 = torch.norm(output_t[i,j,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
+                    list_half1.append(RFNE_half1)
+                RFNE_half2 = torch.norm(output_x[i,0,...]-target[i,0,...])/torch.norm(target[i,0,...])
+                list_half2.append(RFNE_half2)
+    avg_half1 = torch.mean(torch.stack(list_half1),dim=0).item()
+    avg_half2 = torch.mean(torch.stack(list_half2),dim=0).item()
+    logging.info("Test RFNE complete.")
+    return avg_half1,avg_half2
 
 def test_RFNE_half(model,test1_loader):
     list_half1 = []
     list_half2 = []
     with torch.no_grad():
-        for batch_idx,(data,target) in enumerate(tqdm(test1_loader)):
+        for batch_idx,(data,target) in enumerate(test1_loader):
             data,target = data.to(device).float() , target.to(device).float()
             output_half1 = model(data,task_dt = args.task_dt,
                                 n_snapshot = 1,ode_step = args.ode_step//2,
@@ -70,18 +91,19 @@ def test_RFNE_half(model,test1_loader):
                 list_half2.append(RFNE_half2)
     avg_half1 = torch.mean(torch.stack(list_half1),dim=0).item()
     avg_half2 = torch.mean(torch.stack(list_half2),dim=0).item()
+    logging.info("test RFNE complete.")
     return avg_half1,avg_half2
 
 def test_RFNE_quater(model,test1_loader):
     list_quater1 = []
-    list_quater2 = []
-    list_quater3 = []
-    list_quater4 = []
+    # list_quater2 = []
+    # list_quater3 = []
+    # list_quater4 = []
     with torch.no_grad():
-        for batch_idx,(data,target) in enumerate(tqdm(test1_loader)):
+        for batch_idx,(data,target) in enumerate(test1_loader):
             data,target = data.to(device).float() , target.to(device).float()
             output_quater1 = model(data,task_dt = args.task_dt/4,
-                                n_snapshot = 1,ode_step = 1,
+                                n_snapshot = 1,ode_step = 2,
                                 time_evol = True)
             output_quater2 = model(data,task_dt = args.task_dt/4,
                                 n_snapshot = 1,ode_step = 2,
@@ -111,6 +133,7 @@ def test_RFNE_quater(model,test1_loader):
     return avg_quater1,avg_quater2,avg_quater3,avg_quater4
 
 parser = argparse.ArgumentParser(description='training parameters')
+parser.add_argument('--model', type =str ,default= 'PASR')
 parser.add_argument('--data', type =str ,default= 'NSKT')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
@@ -125,7 +148,7 @@ parser.add_argument('--epochs', type = int, default= 1)
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 
-parser.add_argument('--eval_task_dt',type =float, default= 1)
+
 parser.add_argument('--n_snapshot',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
@@ -134,8 +157,7 @@ parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
 parser.add_argument('--data_path',type = str,default = "../dataset/nskt16000_1024")
 args = parser.parse_args()
-print(args)
-
+logging.info(args)
 if __name__ == "__main__":
     if args.dtype =="float32":
         data_type = torch.float32
@@ -147,13 +169,15 @@ if __name__ == "__main__":
     torch.set_default_dtype(data_type)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    _,val1_loader,_,test1_loader,_ = getData(upscale_factor = args.scale_factor, timescale_factor= 1,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = 4 )
+    _,val1_loader,_,test1_loader,test2_loader = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = args.n_snapshot)
     mean = [0.1429] 
     std = [8.3615]
-    model = PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type)
-    model = torch.nn.DataParallel(model).to(device)
+    model_list = {"PASR": PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
+            "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
+    }    
+    model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    savedpath = str("PASR_" + str(args.ode_step) + 
+    savedpath = str(str(args.model) +"_" + str(args.ode_step) + 
                 "_crop_size_" + str(args.crop_size) +
                 "_ode_step_" + str(args.ode_step) +
                 "ode_method_" + str(args.ode_method) +
@@ -199,16 +223,17 @@ if __name__ == "__main__":
 
 
 
-    err1_interpolate,err2_interpolate = test_RFNE_half(model,val1_loader)
-    # err1_extrapolate,err2_extrapolate = test_RFNE_half(model,val2_loader)
-
-    err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_quater(model,val1_loader)
-    err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test1_loader)
-
-    # print("RFNE_half_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0))
-    # #print("RFNE_half_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0))
+    err1_interpolate,err2_interpolate = test_RFNE(model,test1_loader)
+    err1_extrapolate,err2_extrapolate = test_RFNE(model,test2_loader)
+    visualize(model,test1_loader,savedname = "interpolate_"+savedpath+".png")
+    visualize(model,test2_loader,savedname = "extrapolate_"+savedpath+".png")
+    # err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_quater(model,val1_loader)
+    # err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test1_loader)
+    with open("results/RFNE.txt","a") as f:
+        print("RFNE_half_interpolate --- test t error: %.5f %%, test x error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0),file =f )
+        print("RFNE_half_extrapolate --- test t error: %.5f %%, test x error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0),file =f )
+    logging.info("Training complete.")
     # print("RFNE_quater_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate_q*100.0, err2_interpolate_q*100.0))
     # print("RFNE_quater_interpolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_interpolate_q*100.0, err4_interpolate_q*100.0))
     # print("RFNE_quater_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate_q*100.0, err2_extrapolate_q*100.0))
     # print("RFNE_quater_extrapolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_extrapolate_q*100.0, err4_extrapolate_q*100.0))
-    visualize(model,val1_loader,savepath = "results/"+savedpath+"_val1")

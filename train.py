@@ -26,6 +26,17 @@ import h5py
 from src.models import *
 from src.utli import *
 from src.data_loader import getData
+import logging
+import argparse
+
+# Set up logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# ...
+# ...
+
+# Replace the final print statement
+
 
 def calculate_loss(pred, target,criterion):
     pred_reshape = pred.view(pred.shape[0]*pred.shape[1], -1)
@@ -37,7 +48,6 @@ def validation(args,model, val1_loader,val2_loader,device):
         criterion_Data = nn.L1Loss().to(device)
     elif args.loss_type =='L2':
         criterion_Data = nn.MSELoss().to(device)
-
     target_loss1 = 0 
     input_loss1 = 0
     for batch in val1_loader: # better be the val loader, need to modify datasets, but we are good for now.
@@ -90,7 +100,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         avg_val = 0
         target_loss = 0
         input_loss = 0
-        for iteration, batch in enumerate(tqdm(trainloader)):
+        for iteration, batch in enumerate(trainloader):
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
             optimizer.zero_grad()
@@ -115,7 +125,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         train_list.append(avg_loss/len(trainloader))
         train_list_x.append(input_loss/len(trainloader))
         train_list_t.append(target_loss/len(trainloader))
-        print("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, val_x1, val_t1, val_x2, val_t2))
+        logging.info("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, val_x1, val_t1, val_x2, val_t2))
         if avg_val < best_loss_val:
             best_loss_val = avg_val
             best_model = model
@@ -138,6 +148,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
 
 
 parser = argparse.ArgumentParser(description='training parameters')
+parser.add_argument('--model', type =str ,default= 'PASR')
 parser.add_argument('--data', type =str ,default= 'NSKT')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
@@ -161,7 +172,7 @@ parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
 parser.add_argument('--data_path',type = str,default = "../dataset/nskt16000_1024")
 args = parser.parse_args()
-print(args)
+logging.info(args)
 
 data_dx = 2*np.pi/2048
 ########### loaddata ############
@@ -187,10 +198,12 @@ if __name__ == "__main__":
                                                       noise_ratio = args.noise_ratio)
     mean = [0.1429] 
     std = [8.3615]
-    model = PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type)
-    model = torch.nn.DataParallel(model).to(device)
+    model_list = {"PASR": PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
+            "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
+    }
+    model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    savedpath = str("PASR_" + str(args.ode_step) + 
+    savedpath = str(str(args.model) +"_" + str(args.ode_step) + 
                 "_crop_size_" + str(args.crop_size) +
                 "_ode_step_" + str(args.ode_step) +
                 "ode_method_" + str(args.ode_method) +
@@ -201,3 +214,4 @@ if __name__ == "__main__":
                 "_loss_type_" + str(args.loss_type)
                 ) 
     a = train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath)
+    logging.info("Training complete.")

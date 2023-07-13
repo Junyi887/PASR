@@ -642,7 +642,7 @@ class NODE(nn.Module):
             nn.Linear(in_dim*2, in_dim*2),
             nn.ReLU(),
             nn.Linear(in_dim*2, in_dim),
-            nn.tanh()
+            nn.Tanh()
         ) 
         self.in_dim = in_dim
         self.int_method = ode_method
@@ -663,7 +663,7 @@ class NODE(nn.Module):
         x = x.transpose(1, 2).view(B, C, H, W) 
         return x 
 
-class PASR(nn.Module):
+class PASR_MLP(nn.Module):
     """ PASR
 
 
@@ -700,7 +700,7 @@ class PASR(nn.Module):
                  ,mean = [0],std = [1],  
                  ode_method = "Euler",
                  **kwargs):
-        super(PASR, self).__init__()
+        super(PASR_MLP, self).__init__()
         
         num_in_ch = in_chans
         num_out_ch = in_chans
@@ -870,7 +870,7 @@ class PASR(nn.Module):
         # if we want to intermediate snapshot change task dt to 0.5, then n_snapshot should be 2
         predictions = []
         x = self.check_image_size(x)
-        x = self.shiftMean_func(x,"sub")
+        #x = self.shiftMean_func(x,"sub")
         x = self.conv_first(x)     #Shallow Feature Extraction
         z0 = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
         for i in range (n_snapshot):   
@@ -880,13 +880,13 @@ class PASR(nn.Module):
                     z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
                     y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
                     y1 = self.conv_last(self.upsample(y1))  
-                    y1 = self.shiftMean_func(y1,"add")    
+                    #y1 = self.shiftMean_func(y1,"add")    
                     predictions.append(y1)
                     z0 = z1
                 else:
                     y0 = self.conv_before_upsample(z0)                 #HQ Image Reconstruction
                     y0 = self.conv_last(self.upsample(y0))  
-                    y0 = self.shiftMean_func(y0,"add")
+                    #y0 = self.shiftMean_func(y0,"add")
                     predictions.append(y0)
         predictions = torch.stack(predictions, dim=1)
         return predictions

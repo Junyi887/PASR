@@ -10,3 +10,6 @@ pid.log
 output.log
 output.out
 output2.out
+/output/*
+/run_experiment/*
+/figures/*
