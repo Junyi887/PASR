@@ -116,7 +116,7 @@ class GetRBCDataset(Dataset):
         self.timescale_factor = timescale_factor
         if method == "bicubic":
             self.input_transform = transforms.Compose([transforms.CenterCrop(crop_size),
-                                                             transforms.Resize((int(self.crop_size/upscale_factor),int(self.crop_size/upscale_factor)),Image.BICUBIC) ]) # subsampling the image (half size)
+                                                             transforms.Resize((int(self.crop_size/upscale_factor),int(self.crop_size/upscale_factor)),Image.BICUBIC,antialias=True) ]) # subsampling the image (half size)
         elif method == "gaussian_blur":
             self.input_transform = transforms.Compose([transforms.CenterCrop(crop_size), # cropping the image
                                                        transforms.GaussianBlur(kernel_size=(3,3), sigma=(1,1))])
@@ -209,7 +209,7 @@ class GetFluidDataset(Dataset):
         self.timescale_factor = timescale_factor
         if method == "bicubic":
             self.input_transform = transforms.Compose([transforms.CenterCrop(crop_size),
-                                                             transforms.Resize((int(self.crop_size/upscale_factor),int(self.crop_size/upscale_factor)),Image.BICUBIC) ]) # subsampling the image (half size)
+                                                             transforms.Resize((int(self.crop_size/upscale_factor),int(self.crop_size/upscale_factor)),Image.BICUBIC,antialias=True) ]) # subsampling the image (half size)
         elif method == "gaussian_blur":
             self.input_transform = transforms.Compose([transforms.CenterCrop(crop_size), # cropping the image
                                                        transforms.GaussianBlur(kernel_size=(3,3), sigma=(1,1))])
