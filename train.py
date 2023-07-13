@@ -205,7 +205,7 @@ if __name__ == "__main__":
     model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +
-                "_data_" + str(args.data_name) + 
+                "_data_" + str(args.data) + 
                 "_crop_size_" + str(args.crop_size) +
                 "_ode_step_" + str(args.ode_step) +
                 "_ode_method_" + str(args.ode_method) +
