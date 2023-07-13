@@ -13,8 +13,8 @@ from torch import default_generator, randperm
 from torch._utils import _accumulate
 from torch.utils.data.dataset import Subset
 #"../superbench/datasets/nskt16000_1024"
-
-def getData(data_name = "nskt_16k", data_path =  "../dedalus/rbc_44/",
+#../datasets/rbc_diff_IC/rbc_IC1
+def getData(data_name = "rbc_diff_IC", data_path =  "../datasets/rbc_diff_IC",
              upscale_factor = 4,timescale_factor = 4, num_snapshots = 20,
              noise_ratio = 0.0, crop_size = 512, method = "bicubic", 
              batch_size = 1, std = [0.6703, 0.6344, 8.3615]):  
@@ -28,12 +28,15 @@ def getData(data_name = "nskt_16k", data_path =  "../dedalus/rbc_44/",
     ===
     std: the channel-wise standard deviation of each dataset, list: [#channels]
     '''
-    if data_name == "RBC":
-        train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-        val1_loader = get_data_loader(data_name, data_path, '', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
-        val2_loader = get_data_loader(data_name, data_path, '/valid_2', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
-        # test1_loader = get_data_loader(data_name, data_path, '/test_1', "test", upscale_factor,timescale_factor//4, num_snapshots*4,noise_ratio, crop_size, method, batch_size, std)
-        # test2_loader = get_data_loader(data_name, data_path, '/test_2', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
+    if data_name == "rbc_diff_IC":
+        #To do swap and change 
+        train_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
+        val1_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
+        val2_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
+    #    test3_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "test", upscale_factor,timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std)
+        test1_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
+        test2_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
+        return train_loader, val1_loader, val2_loader, test1_loader, test2_loader
     elif data_name == "nskt_16k":
         train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
         val1_loader = get_data_loader(data_name, data_path, '/train', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
@@ -41,7 +44,7 @@ def getData(data_name = "nskt_16k", data_path =  "../dedalus/rbc_44/",
         test1_loader = get_data_loader(data_name, data_path, '/train', "test", upscale_factor,timescale_factor//4, num_snapshots*4,noise_ratio, crop_size, method, batch_size, std)
         test2_loader = get_data_loader(data_name, data_path, '/valid_1', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
     # val1_loader, val2_loader, test1_loader, test2_loader  = 0,0,0,0
-    return train_loader, val1_loader, val2_loader, test1_loader, test2_loader 
+        return train_loader, val1_loader, val2_loader, test1_loader, test2_loader 
 
 def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std):
     
@@ -50,21 +53,36 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
     if data_name in ['nskt_16k']:
         dataset = GetFluidDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
 
-    if state == "train":
-        shuffle = True
-    else:
-        shuffle = False
+        if state == "train":
+            shuffle = True
+        else:
+            shuffle = False
 
-    dataloader = DataLoader(dataset,
-                            batch_size = int(batch_size),
-                            num_workers = 10, # TODO: make a param
-                            shuffle = shuffle, 
-                            sampler = None,
-                            drop_last = True,
-                            pin_memory = torch.cuda.is_available())
+        dataloader = DataLoader(dataset,
+                                batch_size = int(batch_size),
+                                num_workers = 10, # TODO: make a param
+                                shuffle = shuffle, 
+                                sampler = None,
+                                drop_last = True,
+                                pin_memory = torch.cuda.is_available())
 
-    return dataloader
+        return dataloader
+    
+    elif data_name in ['rbc_diff_IC']:
+        dataset = GetRBCDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
+        if state == "train":
+            shuffle = True
+        else:
+            shuffle = False
 
+        dataloader = DataLoader(dataset,
+                                batch_size = int(batch_size),
+                                num_workers = 10, # TODO: make a param
+                                shuffle = shuffle, 
+                                sampler = None,
+                                drop_last = True,
+                                pin_memory = torch.cuda.is_available())
+        return dataloader    
     # if data_name in ['nskt_16k']:
     #     dataset = GetFluidDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
     # elif data_name in ['RBC']:
@@ -89,6 +107,7 @@ class GetRBCDataset(Dataset):
         self.noise_ratio = noise_ratio
         self.std = torch.Tensor(std).view(len(std),1,1)
         self.transform = transform
+        self.n_samples_total = 0
         self._get_files_stats()
         self.crop_size = crop_size
         self.crop_transform = transforms.CenterCrop(crop_size)
@@ -117,10 +136,11 @@ class GetRBCDataset(Dataset):
             self.n_in_channels = 1
             self.img_shape_x = _f['tasks']["vorticity"].shape[1]
             self.img_shape_y = _f['tasks']["vorticity"].shape[2]
-
-        self.n_samples_total = self.n_files * self.n_samples_per_file
+        with h5py.File(self.files_paths[-1], 'r') as _f:
+            print("Getting file stats from {}".format(self.files_paths[-1]))
+            n_samples_last_file = _f['tasks']["vorticity"].shape[0]
+        self.n_samples_total = self.n_samples_per_file*(self.n_files - 1)+ n_samples_last_file
         self.files = [None for _ in range(self.n_files)]
-        print("Number of samples per file: {}".format(self.n_samples_per_file))
         print("Found data at path {}. Number of examples: {}. Image Shape: {} x {} x {}".format(
             self.location, self.n_samples_total, self.img_shape_x, self.img_shape_y, self.n_in_channels))
 
@@ -132,7 +152,6 @@ class GetRBCDataset(Dataset):
         return self.n_samples_total-self.timescale_factor*self.num_snapshots-1
 
     def __getitem__(self, global_idx):
-        # print("batch_idx: {}".format(batch_idx))
         y_list = []
         file_idx, local_idx = self.get_indices(global_idx)
         # print(file_idx)
@@ -209,7 +228,6 @@ class GetFluidDataset(Dataset):
             self.n_in_channels = _f['fields'].shape[1]
             self.img_shape_x = _f['fields'].shape[2]
             self.img_shape_y = _f['fields'].shape[3]
-
         self.n_samples_total = self.n_files * self.n_samples_per_file
         self.files = [None for _ in range(self.n_files)]
         print("Number of samples per file: {}".format(self.n_samples_per_file))
@@ -246,18 +264,6 @@ class GetFluidDataset(Dataset):
             y_list.append(y)
         y = torch.stack(y_list,dim = 0) 
         return X,y
-        # if self.state == "train":
-        #     return X,y
-        #     #return X,torch.stack([y[0,...],y[self.timescale_factor/2,...],y[-1]],dim= 0)
-        # if self.state == "val":
-        #     return X,y
-        #     #return X,torch.stack([y[0,...],y[-1]],dim= 0)
-        # if self.state == 'test':
-        #     return X,y
-        # return 0,0
-           # raise IndexError("Index out of bound or not valid due to timescale factor")
-
-
 
     def get_indices(self, global_idx):
         file_idx = int(global_idx/self.n_samples_per_file)  # which file we are on
@@ -337,7 +343,7 @@ def random_split(dataset, lengths,
 
 
 if __name__ == "__main__":
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(batch_size= 1)
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(batch_size= 32)
     for idx, (input,target) in enumerate (train_loader):
         input = input
         target = target
