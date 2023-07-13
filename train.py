@@ -206,12 +206,13 @@ if __name__ == "__main__":
     savedpath = str(str(args.model) +"_" + str(args.ode_step) + 
                 "_crop_size_" + str(args.crop_size) +
                 "_ode_step_" + str(args.ode_step) +
-                "ode_method_" + str(args.ode_method) +
+                "_ode_method_" + str(args.ode_method) +
                 "_task_dt_" +  str(args.task_dt) + 
                 "_num_snapshots_" + str(args.n_snapshot) +
                 "_upscale_factor_" + str(args.scale_factor) +
                 "_timescale_factor_" + str(args.timescale_factor) +
-                "_loss_type_" + str(args.loss_type)
+                "_loss_type_" + str(args.loss_type) +
+                "_lamb_" + str(args.lamb)
                 ) 
     a = train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath)
     logging.info("Training complete.")
