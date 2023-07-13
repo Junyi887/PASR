@@ -136,7 +136,7 @@ def test_RFNE_quater(model,test1_loader):
 
 parser = argparse.ArgumentParser(description='training parameters')
 parser.add_argument('--model', type =str ,default= 'PASR')
-parser.add_argument('--data', type =str ,default= 'NSKT')
+parser.add_argument('--data', type =str ,default= 'nskt_16k')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 4)
@@ -179,7 +179,8 @@ if __name__ == "__main__":
     }    
     model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    savedpath = str(str(args.model) +"_" + str(args.ode_step) + 
+    savedpath = str(str(args.model) +
+                "_data_" + str(args.data_name) + 
                 "_crop_size_" + str(args.crop_size) +
                 "_ode_step_" + str(args.ode_step) +
                 "_ode_method_" + str(args.ode_method) +
@@ -188,7 +189,7 @@ if __name__ == "__main__":
                 "_upscale_factor_" + str(args.scale_factor) +
                 "_timescale_factor_" + str(args.timescale_factor) +
                 "_loss_type_" + str(args.loss_type) +
-                 "_lamb_" + str(args.lamb)
+                "_lamb_" + str(args.lamb)
                 ) 
     checkpoint = torch.load("results/"+savedpath +".pt")
     model.load_state_dict(checkpoint["model_state_dict"])
