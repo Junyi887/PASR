@@ -64,7 +64,7 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
                                 shuffle = shuffle, 
                                 sampler = None,
                                 drop_last = True,
-                                pin_memory = torch.cuda.is_available())
+                                pin_memory = False)
 
         return dataloader
     
@@ -81,7 +81,7 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
                                 shuffle = shuffle, 
                                 sampler = None,
                                 drop_last = True,
-                                pin_memory = torch.cuda.is_available())
+                                pin_memory = False)
         return dataloader    
     # if data_name in ['nskt_16k']:
     #     dataset = GetFluidDataset(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
