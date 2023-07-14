@@ -27,8 +27,19 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../datasets/rbc_diff_IC",
         
     ===
     std: the channel-wise standard deviation of each dataset, list: [#channels]
+    
     '''
-    if data_name == "rbc_diff_IC":
+    if data_name == "rbc_diff_IC_8":
+        #To do swap and change 
+        train_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
+        val1_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
+        val2_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "val", upscale_factor,timescale_factor//4,num_snapshots*4,noise_ratio, crop_size, method, batch_size, std) 
+        test3_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "test", upscale_factor,timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std)
+        test1_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "test", upscale_factor,timescale_factor//2, num_snapshots*2, noise_ratio, crop_size, method, batch_size, std)
+        test2_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
+        return train_loader, val1_loader, val2_loader, test1_loader, test2_loader,test3_loader
+
+    elif data_name == "rbc_diff_IC":
         #To do swap and change 
         train_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
         val1_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)

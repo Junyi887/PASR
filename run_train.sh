@@ -27,7 +27,7 @@ python train_rbc.py --crop_size 128 \
                 --n_snapshot 10\
                 --loss_type "L1" \
                 --ode_method "RK4" \
-                --data_path "../rbc_diff_IC"\
+                --data_path "../datasets/rbc_diff_IC"\
                 --lamb 1 & 
 PID=$!
 echo "PID for train.py: $PID" >> pid.log

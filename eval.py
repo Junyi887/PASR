@@ -37,7 +37,7 @@ def visualize(model,test1_loader,location =100,savedname = 'test.png'):
             if batch_idx == 4:
                 data,target = data.float().to(device) , target.float().to(device)
                 output_quater1 = model(data,task_dt = args.task_dt/4,
-                                    n_snapshot = 4*args.n_snapshot,ode_step = 2,
+                                    n_snapshot = 4*args.n_snapshot,ode_step = args.ode_step//4,
                                     time_evol = True)[0,:,0,location,location]
                 target = target[0,1:,0,location,location]
                 plt.figure()
@@ -57,10 +57,10 @@ def test_RFNE(model,test1_loader):
     with torch.no_grad():
         for batch_idx,(data,target) in enumerate(test1_loader):
             data,target = data.to(device).float() , target.to(device).float()
-            output_t = model(data,task_dt = args.task_dt//4,
-                                n_snapshot = args.n_snapshot,ode_step = 2,
+            output_t = model(data,task_dt = args.task_dt/4,
+                                n_snapshot = args.n_snapshot,ode_step = args.ode_step//4,
                                 time_evol = True)
-            output_x = model(data,task_dt = args.task_dt//4,
+            output_x = model(data,task_dt = args.task_dt/4,
                                 n_snapshot = 1,ode_step = args.ode_step,
                                 time_evol = False)
             for i in range (target.shape[0]):
