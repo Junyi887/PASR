@@ -1,3 +1,4 @@
+nvidia-settings --display :0 -a GPUFanControlState=1 -a GPUTargetFanSpeed=70
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 # correspond to real dt 
 # python eval.py --crop_size 128 \
@@ -14,13 +15,13 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 # PID=$!
 # echo "PID for train.py: $PID" >> pid.log
 # wait $PID
-
 # real dt 
-python train.py --crop_size 256 \
+python train_rbc.py --crop_size 128 \
                 --data "rbc_diff_IC" \
                 --model "PASR_MLP" \
                 --batch_size 8 \
-                --task_dt 0.1 \
+                --task_dt 0.2 \
+                --timescale_factor 8 \
                 --ode_step 8 \
                 --epoch 150 \
                 --n_snapshot 10\
@@ -31,3 +32,6 @@ python train.py --crop_size 256 \
 PID=$!
 echo "PID for train.py: $PID" >> pid.log
 wait $PID
+
+
+nvidia-settings --display :0 -a GPUFanControlState=1 -a GPUTargetFanSpeed=1

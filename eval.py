@@ -58,7 +58,7 @@ def test_RFNE(model,test1_loader):
         for batch_idx,(data,target) in enumerate(test1_loader):
             data,target = data.to(device).float() , target.to(device).float()
             output_t = model(data,task_dt = args.task_dt//4,
-                                n_snapshot = eval_length,ode_step = 2,
+                                n_snapshot = args.n_snapshot,ode_step = 2,
                                 time_evol = True)
             output_x = model(data,task_dt = args.task_dt//4,
                                 n_snapshot = 1,ode_step = args.ode_step,
