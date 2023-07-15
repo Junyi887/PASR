@@ -13,3 +13,4 @@ output2.out
 /output/*
 /run_experiment/*
 /figures/*
+*.sh
