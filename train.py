@@ -28,12 +28,10 @@ from src.utli import *
 from src.data_loader import getData
 import logging
 import argparse
-
+import neptune
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# ...
-# ...
 
 # Replace the final print statement
 
@@ -78,7 +76,7 @@ def validation(args,model, val1_loader,val2_loader,device):
 
     return input_loss1/len(val1_loader), target_loss1/len(val1_loader)/2, input_loss2/len(val2_loader), target_loss2/len(val2_loader)/2
 
-def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath):
+def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath,run):
     lamb = args.lamb
     val_list = []
     val_list_x1 = []
@@ -100,7 +98,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         avg_val = 0
         target_loss = 0
         input_loss = 0
-        for iteration, batch in enumerate(trainloader):
+        for iteration, batch in enumerate(tqdm(trainloader)):
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
             optimizer.zero_grad()
@@ -125,6 +123,14 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         train_list.append(avg_loss/len(trainloader))
         train_list_x.append(input_loss/len(trainloader))
         train_list_t.append(target_loss/len(trainloader))
+        run['train/train_loss'].append(avg_loss / len(trainloader))
+        run['train/val_loss'].append(avg_val)
+        run['train/train_loss_x'].append(input_loss / len(trainloader))
+        run['train/train_loss_t'].append(target_loss / len(trainloader))
+        run['train/val_loss_x1'].append(val_x1)
+        run['train/val_loss_t1'].append(val_t1)
+        run['train/val_loss_x2'].append(val_x2)
+        run['train/val_loss_t2'].append(val_t2)
         logging.info("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, val_x1, val_t1, val_x2, val_t2))
         if avg_val < best_loss_val:
             best_loss_val = avg_val
@@ -142,7 +148,9 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             'train_x': np.array(train_list_x),
             'train_t': np.array(train_list_t),
             },"results/"+savedpath + ".pt" ) # remember to change name for each experiment
+        
         # validate 
+    run.stop()
     return 0
 
 
@@ -221,5 +229,10 @@ if __name__ == "__main__":
                 "_loss_type_" + str(args.loss_type) +
                 "_lamb_" + str(args.lamb)
                 ) 
-    a = train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath)
+    run = neptune.init_run(
+    project="junyi012/PASR",
+    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
+    )  # your credentials   
+    run["parameters"] = vars(args)     
+    a = train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath,run)
     logging.info("Training complete.")

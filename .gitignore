@@ -14,3 +14,4 @@ output2.out
 /run_experiment/*
 /figures/*
 *.sh
+.neptune/*
