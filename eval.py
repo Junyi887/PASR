@@ -51,88 +51,91 @@ def visualize(model,test1_loader,location =100,savedname = 'test.png'):
     return logging.info("visualization complete.")
 
 def test_RFNE(model,test1_loader):
-    eval_length = 4
-    list_half1 = []
-    list_half2 = []
+    list_t = []
+    list_x = []
     with torch.no_grad():
         for batch_idx,(data,target) in enumerate(test1_loader):
             data,target = data.to(device).float() , target.to(device).float()
             output_t = model(data,task_dt = args.task_dt/4,
-                                n_snapshot = args.n_snapshot,ode_step = args.ode_step//4,
+                                n_snapshot = 4,ode_step = args.ode_step//4,
                                 time_evol = True)
             output_x = model(data,task_dt = args.task_dt/4,
                                 n_snapshot = 1,ode_step = args.ode_step,
                                 time_evol = False)
             for i in range (target.shape[0]):
                 for j in range (output_t.shape[1]):
-                    RFNE_half1 = torch.norm(output_t[i,j,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
-                    list_half1.append(RFNE_half1)
-                RFNE_half2 = torch.norm(output_x[i,0,...]-target[i,0,...])/torch.norm(target[i,0,...])
-                list_half2.append(RFNE_half2)
-    avg_half1 = torch.mean(torch.stack(list_half1),dim=0).item()
-    avg_half2 = torch.mean(torch.stack(list_half2),dim=0).item()
+                    RFNE_t = torch.norm(output_t[i,j,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
+                    list_t.append(RFNE_t)
+                RFNE_x = torch.norm(output_x[i,0,...]-target[i,0,...])/torch.norm(target[i,0,...])
+                list_x.append(RFNE_x)
+    avg_t = torch.mean(torch.stack(list_t),dim=0).item()
+    avg_x = torch.mean(torch.stack(list_x),dim=0).item()
     logging.info("Test RFNE complete.")
-    return avg_half1,avg_half2
+    return avg_t,avg_x
 
-def test_RFNE_half(model,test1_loader):
-    list_half1 = []
-    list_half2 = []
+def test_RFNE_n_length(model,test1_loader):
+    list_t = []
+    list_n_snap = []
     with torch.no_grad():
         for batch_idx,(data,target) in enumerate(test1_loader):
             data,target = data.to(device).float() , target.to(device).float()
-            output_half1 = model(data,task_dt = args.task_dt,
-                                n_snapshot = 1,ode_step = args.ode_step//2,
-                                time_evol = True)
-            output_half2 = model(data,task_dt = args.task_dt//2,
-                                n_snapshot = 1,ode_step = args.ode_step,
-                                time_evol = True)
-            for i in range (target.shape[0]):
-                RFNE_half1 = torch.norm(output_half1[i,0,...]-target[i,2,...])/torch.norm(target[i,2,...])
-                RFNE_half2 = torch.norm(output_half2[i,0,...]-target[i,2,...])/torch.norm(target[i,2,...])
-                list_half1.append(RFNE_half1)
-                list_half2.append(RFNE_half2)
-    avg_half1 = torch.mean(torch.stack(list_half1),dim=0).item()
-    avg_half2 = torch.mean(torch.stack(list_half2),dim=0).item()
-    logging.info("test RFNE complete.")
-    return avg_half1,avg_half2
+            if batch_idx == 4:
+                for n_snapshot in range (1,args.n_snapshot*4):
+                    list_t = []
+                    output_t = model(data,task_dt = args.task_dt/4,
+                                    n_snapshot = n_snapshot,ode_step = args.ode_step//4,
+                                    time_evol = True)
+                    i = 1
+                    for j in range (output_t.shape[1]):
+                        RFNE_t = torch.norm(output_t[i,j,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
+                        list_t.append(RFNE_t)
+                    avg_t = torch.mean(torch.stack(list_t),dim=0).item()
+                    list_n_snap.append(avg_t)
+                logging.info("Test RFNE trajectory complete.") 
+                return list_n_snap     
+    return 0
 
-def test_RFNE_quater(model,test1_loader):
-    list_quater1 = []
-    # list_quater2 = []
-    # list_quater3 = []
-    # list_quater4 = []
+def test_RFNE_no_pred(model,test1_loader):
+    list_t = []
+    list_n_snap = []
     with torch.no_grad():
         for batch_idx,(data,target) in enumerate(test1_loader):
             data,target = data.to(device).float() , target.to(device).float()
-            output_quater1 = model(data,task_dt = args.task_dt/4,
-                                n_snapshot = 1,ode_step = 2,
-                                time_evol = True)
-            output_quater2 = model(data,task_dt = args.task_dt/4,
-                                n_snapshot = 1,ode_step = 2,
-                                time_evol = True)
-            output_quater3 = model(data,task_dt = args.task_dt/4,
-                                n_snapshot = 1,ode_step = 3,
-                                time_evol = True)
-            output_quater4 = model(data,task_dt = args.task_dt/4,
-                                n_snapshot = 1,ode_step = 4,
-                                time_evol = True)
-            for i in range (target.shape[0]):
-                RFNE_quater1 = torch.norm(output_quater1[i,0,...]-target[i,1,...])/torch.norm(target[i,1,...])
-                RFNE_quater2 = torch.norm(output_quater2[i,0,...]-target[i,2,...])/torch.norm(target[i,2,...])
-                RFNE_quater3 = torch.norm(output_quater3[i,0,...]-target[i,3,...])/torch.norm(target[i,3,...])
-                RFNE_quater4 = torch.norm(output_quater4[i,0,...]-target[i,4,...])/torch.norm(target[i,4,...])
-                
-                list_quater1.append(RFNE_quater1)
-                list_quater2.append(RFNE_quater2)
-                list_quater3.append(RFNE_quater3)
-                list_quater4.append(RFNE_quater4)
+            if batch_idx == 4:
+                for n_snapshot in range (1,args.n_snapshot*4):
+                    list_t = []
+                    output_t = model(data,task_dt = 0.0,
+                                    n_snapshot = n_snapshot,ode_step = args.ode_step//4,
+                                    time_evol = True)
+                    i = 1
+                    for j in range (output_t.shape[1]):
+                        RFNE_t = torch.norm(output_t[i,j,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
+                        list_t.append(RFNE_t)
+                    avg_t = torch.mean(torch.stack(list_t),dim=0).item()
+                    list_n_snap.append(avg_t)
+                logging.info("Test RFNE trajectory no pred complete.") 
+                return list_n_snap     
+    return 0
 
-    avg_quater1 = torch.mean(torch.stack(list_quater1),dim=0).item()
-    avg_quater2 = torch.mean(torch.stack(list_quater2),dim=0).item()
-    avg_quater3 = torch.mean(torch.stack(list_quater3),dim=0).item()
-    avg_quater4 = torch.mean(torch.stack(list_quater4),dim=0).item()
-
-    return avg_quater1,avg_quater2,avg_quater3,avg_quater4
+def test_RFNE_many(model,test1_loader):
+    list_t = []
+    list_tt = []
+    with torch.no_grad():
+        for num_snap in range (1,args.n_snapshot*4):
+            list_t = []
+            for batch_idx,(data,target) in enumerate(test1_loader):
+                data,target = data.to(device).float() , target.to(device).float()
+                output_t = model(data,task_dt = args.task_dt/4,
+                                    n_snapshot = num_snap ,ode_step = args.ode_step//4,
+                                    time_evol = True)
+                for i in range (target.shape[0]):
+                    for j in range (output_t.shape[1]):
+                        RFNE_t = torch.norm(output_t[i,j,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
+                        list_t.append(RFNE_t)
+            avg_t = torch.mean(torch.stack(list_t),dim=0).item()
+            list_tt.append(list_tt)
+    logging.info("Test RFNE many complete.")
+    return list_tt
 
 parser = argparse.ArgumentParser(description='training parameters')
 parser.add_argument('--model', type =str ,default= 'PASR')
@@ -233,6 +236,23 @@ if __name__ == "__main__":
 
     err1_interpolate,err2_interpolate = test_RFNE(model,test1_loader)
     err1_extrapolate,err2_extrapolate = test_RFNE(model,test2_loader)
+    list_t1 = test_RFNE_n_length(model,test1_loader)
+    list_t2 = test_RFNE_n_length(model,test2_loader)
+    list_t11 = test_RFNE_no_pred(model,test1_loader)
+    list_t22 = test_RFNE_no_pred(model,test2_loader)
+    fig,ax = plt.subplots(1,2,figsize = (12,6))
+    ax[0].plot(list_t1)
+    ax[0].plot(list_t11)
+    ax[0].set_title("test1")
+    ax[0].set_xlabel("n_snapshot")
+    ax[0].set_ylabel("RFNE")
+    ax[1].plot(list_t2)
+    ax[1].plot(list_t22)
+    ax[1].set_title("test2")
+    ax[1].set_xlabel("n_snapshot")
+    ax[1].set_ylabel("RFNE")
+    fig.savefig("results/" + "n_snap_" +savedpath + ".png",dpi = 600)
+
     visualize(model,test1_loader,savedname = "interpolate_"+savedpath+".png")
     visualize(model,test2_loader,savedname = "extrapolate_"+savedpath+".png")
     # err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_quater(model,val1_loader)
@@ -242,6 +262,7 @@ if __name__ == "__main__":
         print(savedpath,file = f)
         print("RFNE_interpolate --- test t error: %.5f %%, test x error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0),file =f )
         print("RFNE_extrapolate --- test t error: %.5f %%, test x error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0),file =f )
+        
         print("============================================================",file =f)
     logging.info("evaluation complete.")
     # print("RFNE_quater_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate_q*100.0, err2_interpolate_q*100.0))

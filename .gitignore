@@ -15,3 +15,5 @@ output2.out
 /figures/*
 *.sh
 .neptune/*
+*.log
+*.out

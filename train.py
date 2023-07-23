@@ -28,18 +28,20 @@ from src.utli import *
 from src.data_loader import getData
 import logging
 import argparse
-import neptune
+import neptune.new as neptune
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
+ 
 # Replace the final print statement
 
 
+
 def calculate_loss(pred, target,criterion):
-    pred_reshape = pred.reshape(pred.shape[0]*pred.shape[1], -1)
-    target_reshape = target[:, 1:,...].contiguous().reshape(target.shape[0]*pred.shape[1], -1)
-    return criterion(pred_reshape, target_reshape)
+    with torch.no_grad():
+        pred_reshape = pred.contiguous().reshape(pred.shape[0]*pred.shape[1], -1)
+        target_reshape = target[:, 1:,...].contiguous().reshape(target.shape[0]*pred.shape[1], -1)
+        return criterion(pred_reshape, target_reshape)
 
 def validation(args,model, val1_loader,val2_loader,device):
     if args.loss_type =='L1':
@@ -50,11 +52,11 @@ def validation(args,model, val1_loader,val2_loader,device):
     input_loss1 = 0
     for batch in val1_loader: # better be the val loader, need to modify datasets, but we are good for now.
         with torch.no_grad():
-            input, target = batch[0].float().to(device), batch[1].float().to(device)
+            inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_x = model(input,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
+            out_x = model(inputs,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
             input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
-            out_t = model(input,task_dt = args.task_dt//2,n_snapshot = args.n_snapshot*2,ode_step = args.ode_step//2,time_evol = True) 
+            out_t = model(inputs,task_dt = args.task_dt//2,n_snapshot = args.n_snapshot*2,ode_step = args.ode_step//2,time_evol = True) 
             loss_t = calculate_loss(out_t, target,criterion_Data) # Experiment change to criterion 1
             target_loss1 += loss_t.item() 
             input_loss1 += input_loss.item()
@@ -66,15 +68,15 @@ def validation(args,model, val1_loader,val2_loader,device):
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_x = model(input,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
-            input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
-            out_t = model(input,task_dt = args.task_dt//2,n_snapshot = args.n_snapshot*2,ode_step = args.ode_step//2,time_evol = True) 
-            loss_t = calculate_loss(out_t, target,criterion_Data) # Experiment change to criterion 1
+            out_x = model(inputs,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
+            input_loss = criterion_Data(out_x[:,0,...], target[:,0,...])
+            out_t = model(inputs,task_dt = args.task_dt//2,n_snapshot = args.n_snapshot*2,ode_step = args.ode_step//2,time_evol = True) 
+            loss_t = calculate_loss(out_t, target,criterion_Data)
             target_loss2 += loss_t.item() 
             input_loss2 += input_loss.item()
 
 
-    return input_loss1/len(val1_loader), target_loss1/len(val1_loader)/2, input_loss2/len(val2_loader), target_loss2/len(val2_loader)/2
+    return input_loss1/len(val1_loader), target_loss1/len(val1_loader), input_loss2/len(val2_loader), target_loss2/len(val2_loader)
 
 def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath,run):
     lamb = args.lamb
@@ -123,14 +125,14 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         train_list.append(avg_loss/len(trainloader))
         train_list_x.append(input_loss/len(trainloader))
         train_list_t.append(target_loss/len(trainloader))
-        run['train/train_loss'].append(avg_loss / len(trainloader))
-        run['train/val_loss'].append(avg_val)
-        run['train/train_loss_x'].append(input_loss / len(trainloader))
-        run['train/train_loss_t'].append(target_loss / len(trainloader))
-        run['train/val_loss_x1'].append(val_x1)
-        run['train/val_loss_t1'].append(val_t1)
-        run['train/val_loss_x2'].append(val_x2)
-        run['train/val_loss_t2'].append(val_t2)
+        run['train/train_loss'].log(avg_loss / len(trainloader))
+        run['train/val_loss'].log(avg_val)
+        run['train/train_loss_x'].log(input_loss / len(trainloader))
+        run['train/train_loss_t'].log(target_loss / len(trainloader))
+        run['train/val_loss_x1'].log(val_x1)
+        run['train/val_loss_t1'].log(val_t1)
+        run['train/val_loss_x2'].log(val_x2)
+        run['train/val_loss_t2'].log(val_t2)
         logging.info("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, val_x1, val_t1, val_x2, val_t2))
         if avg_val < best_loss_val:
             best_loss_val = avg_val
@@ -150,14 +152,13 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             },"results/"+savedpath + ".pt" ) # remember to change name for each experiment
         
         # validate 
-    run.stop()
     return 0
 
 
 
 parser = argparse.ArgumentParser(description='training parameters')
 parser.add_argument('--model', type =str ,default= 'PASR')
-parser.add_argument('--data', type =str ,default= 'nskt_16k')
+parser.add_argument('--data', type =str ,default= 'rbc_diff_IC')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 4)
@@ -166,8 +167,8 @@ parser.add_argument('--ode_step',type =int, default= 2)
 parser.add_argument('--ode_method',type =str, default= "Euler")
 
 parser.add_argument('--batch_size', type = int, default= 8)
-parser.add_argument('--crop_size', type = int, default= 128, help= 'should be same as image dimension')
-parser.add_argument('--epochs', type = int, default= 1)
+parser.add_argument('--crop_size', type = int, default= 32, help= 'should be same as image dimension')
+parser.add_argument('--epochs', type = int, default= 3)
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 
@@ -178,7 +179,7 @@ parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # neares
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
-parser.add_argument('--data_path',type = str,default = "../datasets/nskt16000_1024")
+parser.add_argument('--data_path',type = str,default = "../rbc_diff_IC")
 args = parser.parse_args()
 logging.info(args)
 
@@ -229,10 +230,12 @@ if __name__ == "__main__":
                 "_loss_type_" + str(args.loss_type) +
                 "_lamb_" + str(args.lamb)
                 ) 
-    run = neptune.init_run(
+    run = neptune.init(
     project="junyi012/PASR",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
-    )  # your credentials   
-    run["parameters"] = vars(args)     
-    a = train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath,run)
+    )  # your credentials  
+
+    run["config"] = vars(args)   
+    train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath,run)
+    run.stop()
     logging.info("Training complete.")
