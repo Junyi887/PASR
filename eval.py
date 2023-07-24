@@ -91,7 +91,7 @@ def test_RFNE_n_length(model,test1_loader):
                         list_t.append(RFNE_t)
                     avg_t = torch.mean(torch.stack(list_t),dim=0).item()
                     list_n_snap.append(avg_t)
-                logging.info("Test RFNE trajectory complete.") 
+                logging.info("Test RFNE prediction length complete.") 
                 return list_n_snap     
     return 0
 
@@ -109,11 +109,11 @@ def test_RFNE_no_pred(model,test1_loader):
                                     time_evol = True)
                     i = 1
                     for j in range (output_t.shape[1]):
-                        RFNE_t = torch.norm(output_t[i,j,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
+                        RFNE_t = torch.norm(target[i,0,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
                         list_t.append(RFNE_t)
                     avg_t = torch.mean(torch.stack(list_t),dim=0).item()
                     list_n_snap.append(avg_t)
-                logging.info("Test RFNE trajectory no pred complete.") 
+                logging.info("No Dynamics RFNE complete.") 
                 return list_n_snap     
     return 0
 
@@ -174,14 +174,17 @@ if __name__ == "__main__":
     torch.set_default_dtype(data_type)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    _,val1_loader,_,test1_loader,test2_loader = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = args.n_snapshot,data_name = args.data)
+    _,_,_,test1_loader,test2_loader = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = args.n_snapshot,data_name = args.data)
     mean = [0.1429] 
     std = [8.3615]
     model_list = {"PASR": PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type)
+            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
+            "PASR_MLP_G_aug":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
+            "PASR_MLP_G_aug_small":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
+
 
     }
     model = torch.nn.DataParallel(model_list[args.model]).to(device)
@@ -240,21 +243,24 @@ if __name__ == "__main__":
     list_t2 = test_RFNE_n_length(model,test2_loader)
     list_t11 = test_RFNE_no_pred(model,test1_loader)
     list_t22 = test_RFNE_no_pred(model,test2_loader)
+
     fig,ax = plt.subplots(1,2,figsize = (12,6))
-    ax[0].plot(list_t1)
-    ax[0].plot(list_t11)
+    ax[0].scatter(range(len(list_t1)),list_t1,label='dynamics',marker = "*")
+    ax[0].scatter(range(len(list_t11)),list_t11,label='no dynamics reference',marker = "+")
+    ax[0].legend()
     ax[0].set_title("test1")
     ax[0].set_xlabel("n_snapshot")
     ax[0].set_ylabel("RFNE")
-    ax[1].plot(list_t2)
-    ax[1].plot(list_t22)
+    ax[1].scatter(range(len(list_t2)),list_t2,label='dynamics',marker = "*")
+    ax[1].scatter(range(len(list_t22)),list_t22,label='no dynamics reference',marker = "+")
+    ax[1].legend()
     ax[1].set_title("test2")
     ax[1].set_xlabel("n_snapshot")
     ax[1].set_ylabel("RFNE")
     fig.savefig("results/" + "n_snap_" +savedpath + ".png",dpi = 600)
 
-    visualize(model,test1_loader,savedname = "interpolate_"+savedpath+".png")
-    visualize(model,test2_loader,savedname = "extrapolate_"+savedpath+".png")
+    # visualize(model,test1_loader,savedname = "interpolate_"+savedpath+".png")
+    # visualize(model,test2_loader,savedname = "extrapolate_"+savedpath+".png")
     # err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_quater(model,val1_loader)
     # err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test1_loader)
     with open("results/RFNE.txt","a") as f:

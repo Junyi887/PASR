@@ -629,10 +629,11 @@ class UpsampleOneStep(nn.Sequential):   #inside HQ Image reconstruction
         return flops
 
 class Gating(nn.Module):
-    def __init__(self,in_dim):
+    def __init__(self,in_dim,aug_dim):
         super(Gating, self).__init__()
         self.model = nn.Sequential(
-            nn.Linear(in_dim, in_dim*2),
+            # augemented with dt
+            nn.Linear(in_dim+aug_dim, in_dim*2),
             nn.ReLU(),
             nn.Linear(in_dim*2, in_dim*2),
             nn.ReLU(),
@@ -648,10 +649,10 @@ class Gating(nn.Module):
         x = self.model(x)
         return x 
     
-class Gated_NODE(nn.Module):
-    def __init__(self,in_dim,ode_method ="Euler"):
-        super(Gated_NODE, self).__init__()
-
+class Aug_Gated_NODE(nn.Module):
+    def __init__(self,in_dim,ode_method ="Euler",aug_dim = 5):
+        super(Aug_Gated_NODE, self).__init__()
+        self.aug_dim = aug_dim
         self.model = nn.Sequential(
             nn.Linear(in_dim, in_dim*2),
             nn.ReLU(),
@@ -664,27 +665,29 @@ class Gated_NODE(nn.Module):
             nn.Linear(in_dim*2, in_dim),
             nn.Tanh()
         ) 
-        self.gating = Gating(in_dim)
+        self.gating = Gating(in_dim,self.aug_dim)
         self.in_dim = in_dim
         self.int_method = ode_method
     def forward(self, x,ode_step = 1,task_dt = 1.0):
         B,C,H,W = x.shape
-        x = x.flatten(2).transpose(1, 2)  # B Ph*Pw C
+        x = x.flatten(2).transpose(1, 2)  # B h*w C
         h = task_dt / ode_step
+        t_cat = h*torch.ones((B,H*W,self.aug_dim),device = x.device)
+        x_aug = torch.cat((x,t_cat),dim = 2)
         if self.int_method == "Euler":
             for i in range(ode_step):
-                x = x + self.gating(x)*self.model(x) 
+                x = x + self.gating(x_aug)*self.model(x) 
         elif self.int_method == "RK4":
             for i in range(ode_step):
                 f1 = self.model(x)
                 f2 = self.model(x+h/2.0*f1)
                 f3 = self.model(x+h/2.0*f2)
                 f4 = self.model(x+h*f3)
-                x = x + h*self.gating(x)*(f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0) #512
+                x = x + self.gating(x_aug)*(f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0) #512
         x = x.transpose(1, 2).view(B, C, H, W) 
         return x 
 
-class PASR_MLP_G(nn.Module):
+class PASR_MLP_G_aug(nn.Module):
     """ PASR
 
 
@@ -721,7 +724,7 @@ class PASR_MLP_G(nn.Module):
                  ,mean = [0],std = [1],  
                  ode_method = "Euler",
                  **kwargs):
-        super(PASR_MLP_G, self).__init__()
+        super(PASR_MLP_G_aug, self).__init__()
         
         num_in_ch = in_chans
         num_out_ch = in_chans
@@ -811,7 +814,7 @@ class PASR_MLP_G(nn.Module):
                                                  nn.Conv2d(embed_dim // 4, embed_dim, 3, 1, 1))
         #####################################################################################################
         ################################### 3, Neural ODE time interpolation ################################
-        self.ode = Gated_NODE(in_dim=embed_dim,ode_method = ode_method)
+        self.ode = Aug_Gated_NODE(in_dim=embed_dim,ode_method = ode_method)
         #####################################################################################################
         ################################ 3, high quality image reconstruction ################################
         if self.upsampler == 'pixelshuffle':
@@ -893,7 +896,7 @@ class PASR_MLP_G(nn.Module):
         x = self.check_image_size(x)
         #x = self.shiftMean_func(x,"sub")
         x = self.conv_first(x)     #Shallow Feature Extraction
-        z0 = self.conv_after_body(self.forward_features(x)) + x       #Deep Feature Extraction + x
+        z0 = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
         for i in range (n_snapshot):   
             if self.upsampler == 'pixelshuffle':
             # load initial condition

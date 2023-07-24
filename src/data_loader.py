@@ -29,7 +29,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
     std: the channel-wise standard deviation of each dataset, list: [#channels]
     
     '''
-    if data_name == "rbc_diff_IC3_test":
+    if data_name == "rbc_diff_IC_3test":
         #To do swap and change 
         train_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
         val1_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
@@ -42,25 +42,23 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
     elif data_name == "rbc_diff_IC":
         #To do swap and change 
         train_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-        val1_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
-        val2_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
-    #    test3_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "test", upscale_factor,timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std)
+        val1_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "val", upscale_factor, timescale_factor//2,4,noise_ratio, crop_size, method, batch_size, std)
+        val2_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "val", upscale_factor,timescale_factor//2,4,noise_ratio, crop_size, method, batch_size, std) 
         test1_loader = get_data_loader(data_name, data_path, '/rbc_IC1', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
         test2_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
         return train_loader, val1_loader, val2_loader, test1_loader, test2_loader
-    elif data_name == "rbc_diff_IC_10":
+    elif data_name == "rbc_diff_10IC":
         #To do swap and change 
         train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-        val1_loader = get_data_loader(data_name, data_path, '/train', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
-        val2_loader = get_data_loader(data_name, data_path, '/train', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
-    #    test3_loader = get_data_loader(data_name, data_path, '/rbc_IC2', "test", upscale_factor,timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-        test1_loader = get_data_loader(data_name, data_path, '/train', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
-        test2_loader = get_data_loader(data_name, data_path, '/train', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
-        return train_loader, val1_loader, val2_loader, test1_loader, test2_loader
+        val1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor, timescale_factor//2,4,noise_ratio, crop_size, method, batch_size, std)
+        val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor//2,4,noise_ratio, crop_size, method, batch_size, std) 
+        test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor//4,num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
+        test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
+        return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     elif data_name == "nskt_16k":
         train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std)
-        val1_loader = get_data_loader(data_name, data_path, '/train', "val", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std)
-        val2_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std) 
+        val1_loader = get_data_loader(data_name, data_path, '/train', "val", upscale_factor, timescale_factor//2,4,noise_ratio, crop_size, method, batch_size, std)
+        val2_loader = get_data_loader(data_name, data_path, '/valid_1', "val", upscale_factor,timescale_factor//2,4,noise_ratio, crop_size, method, batch_size, std) 
         test1_loader = get_data_loader(data_name, data_path, '/train', "test", upscale_factor,timescale_factor//4, num_snapshots*4,noise_ratio, crop_size, method, batch_size, std)
         test2_loader = get_data_loader(data_name, data_path, '/valid_1', "test", upscale_factor,timescale_factor//4, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std)
     # val1_loader, val2_loader, test1_loader, test2_loader  = 0,0,0,0
@@ -104,16 +102,16 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
                                 pin_memory = False)
         return dataloader  
           
-    elif data_name in ['rbc_diff_IC_10']:
+    elif data_name in ['rbc_diff_10IC']:
         dataset = GetRBCDataset_diff_IC(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method) 
         if state == "train":
-            shuffle = True
+            shuffle = False
         else:
             shuffle = False
 
         dataloader = DataLoader(dataset,
                                 batch_size = int(batch_size),
-                                num_workers = 4, # TODO: make a param
+                                num_workers = 0, # TODO: make a param
                                 shuffle = shuffle, 
                                 sampler = None,
                                 drop_last = True,
@@ -330,13 +328,15 @@ class GetRBCDataset_diff_IC(Dataset):
         self.std = torch.Tensor(std).view(len(std),1,1)
         self.transform = transform
         self.n_samples_total = 0
-        self._get_files_stats()
+        self.n_samples_per_file = 0
+        self.n_in_channels = 1
+        self.img_shape_x = 0
+        self.img_shape_y = 0
         self.crop_size = crop_size
         self.crop_transform = transforms.CenterCrop(crop_size)
         self.method = method
         self.num_snapshots = num_snapshots
-        self.timescale_factor = 4
-        print(self.timescale_factor)
+        self.timescale_factor = timescale_factor
         if method == "bicubic":
             self.input_transform = transforms.Compose([transforms.CenterCrop(crop_size),
                                                              transforms.Resize((int(self.crop_size/upscale_factor),int(self.crop_size/upscale_factor)),Image.BICUBIC) ]) # TODO: compatibility issue for antialias='warn' check torch version
@@ -348,6 +348,7 @@ class GetRBCDataset_diff_IC(Dataset):
                                         ])
         self.target_transform = transforms.Compose([transforms.CenterCrop(crop_size) # since it's the target, we keep its original quality
                                         ])
+        self._get_files_stats()
     def _get_files_stats(self):
         # location in raocp rbc_10IC
         self.files_paths = glob.glob(self.location + "/rbc_*_256/rbc_*_256_s9.h5") #only take s9
@@ -360,14 +361,16 @@ class GetRBCDataset_diff_IC(Dataset):
             self.n_in_channels = 1
             self.img_shape_x = _f['tasks']["vorticity"].shape[1]
             self.img_shape_y = _f['tasks']["vorticity"].shape[2]
-        self.n_samples_per_file = self.n_samples_per_file-self.timescale_factor*self.num_snapshots
-        self.n_samples_total = self.n_files*self.n_samples_per_file
+        self.number_input = self.n_samples_per_file - self.timescale_factor*self.num_snapshots-1
+        print(self.number_input)
+        self.n_samples_total = self.n_files*self.number_input
         # change correspond to data structure
         self.files = [None for _ in range(self.n_files)]
         self.times = [None for _ in range(self.n_files)]
         # each file must have same number of files, otherwise it will be wrong
+        print(self.n_samples_total)
         print("Found data at path {}. Number of examples: {}. Image Shape: {} x {} x {}".format(
-            self.location, self.n_samples_total, self.img_shape_x, self.img_shape_y, self.n_in_channels))
+            self.location, self.n_samples_per_file, self.img_shape_x, self.img_shape_y, self.n_in_channels))
 
     def _open_file(self, file_idx):
         _file = h5py.File(self.files_paths[file_idx], 'r')
@@ -375,38 +378,36 @@ class GetRBCDataset_diff_IC(Dataset):
         self.times[file_idx] = _file['scales/sim_time']
 
     def __len__(self):
-        return self.n_samples_total
+        return self.n_samples_total-1
 
     def __getitem__(self, global_idx):
         y_list = []
         t_list = []
         file_idx, local_idx = self.get_indices(global_idx)
+        # lr 
         if self.files[file_idx] is None:
                 self._open_file(file_idx)
         y = self.transform(self.files[file_idx][local_idx]) # from numpy to torch
         y = self.target_transform(y).unsqueeze(0) # cropping the image
         X = self.get_X(y) # getting the input
-        t = self.transform(self.times[file_idx][local_idx])
+        t = self.transform(np.array(self.times[file_idx][local_idx]))
         t_list.append(t)
         y_list.append(y)
         # getting the future samples
         for i in range(1, self.num_snapshots+1):
-            file_idx, local_idx_future = self.get_indices(global_idx + i*self.timescale_factor)
-            #open image file for future sample
-            if self.files[file_idx] is None:
-                self._open_file(file_idx)
+            local_idx_future = local_idx+i
             y = self.transform(self.files[file_idx][local_idx_future])
-            t = self.transform(self.times[file_idx][local_idx_future])
+            t = self.transform(np.array(self.times[file_idx][local_idx_future]))
             y = self.target_transform(y).unsqueeze(0)
             y_list.append(y)
             t_list.append(t)
         y = torch.stack(y_list,dim = 0) 
         t = torch.stack(t_list,dim = 0) 
-        return X,y,t
+        return X,y
 
     def get_indices(self, global_idx):
-        file_idx = int(global_idx/self.n_samples_per_file)  # which file we are on
-        local_idx = int(global_idx % self.n_samples_per_file)  # which sample in that file we are on 
+        file_idx = int(global_idx/self.number_input)  # which file we are on
+        local_idx = int(global_idx % self.number_input)  # which sample in that file we are on 
 
         return file_idx, local_idx
 
@@ -480,8 +481,8 @@ def random_split(dataset, lengths,
 
 
 if __name__ == "__main__":
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'rbc_diff_IC_10',batch_size= 32)
-    for idx, (input,targe,t) in enumerate (train_loader):
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'rbc_diff_10IC',batch_size= 1,crop_size = 128)
+    for idx, (input,target) in enumerate (test2_loader):
         input = input
         target = target
     print(input.shape)

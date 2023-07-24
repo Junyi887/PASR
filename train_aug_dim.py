@@ -100,14 +100,15 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         avg_val = 0
         target_loss = 0
         input_loss = 0
-        for iteration, batch in enumerate(trainloader):
+        for iteration, batch in enumerate(tqdm(trainloader)):
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
             optimizer.zero_grad()
             out_x = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = args.ode_step,time_evol = False)
             loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True)
-            #out_t2 = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True)
+            out_t1 = model(inputs,task_dt = args.task_dt,n_snapshot = 10,ode_step = args.ode_step,time_evol = True)
+            out_t2 = model(inputs,task_dt = args.task_dt*2,n_snapshot = 5,ode_step = args.ode_step*2,time_evol = True)
+            out_t3 = model(inputs,task_dt = args.task_dt*3,n_snapshot = 3,ode_step = args.ode_step*3,time_evol = True)
             loss_t = calculate_loss(out_t, target,criterion_Data)
 
             target_loss += loss_t.item() 
@@ -214,11 +215,7 @@ if __name__ == "__main__":
             "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            "PASR_MLP_G_aug":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            "PASR_MLP_G_aug_small":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-  
-
+            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type)
 
     }
     model = torch.nn.DataParallel(model_list[args.model]).to(device)

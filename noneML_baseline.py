@@ -94,12 +94,15 @@ def first_x_then_t(file_path, crop, space_scale, time_scale):
     return torch.mean(RFNE)
 
 
+
+
+def data_RFNE()
 # Use the function
 file_path = '../superbench/datasets/nskt16000_1024/train/nskt_train.h5'
 crop = 256
 space_scale = 4
 time_scale = 4
-mean_RFNE, mean_RFNE2 = first_t_then_x(file_path, crop, space_scale, time_scale)
+# mean_RFNE, mean_RFNE2 = first_t_then_x(file_path, crop, space_scale, time_scale)
 # mean_RFNE2 = first_x_then_t(file_path, crop, space_scale, time_scale)
 print(mean_RFNE)
 print(mean_RFNE2)
