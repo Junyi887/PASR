@@ -169,7 +169,7 @@ parser.add_argument('--ode_method',type =str, default= "Euler")
 
 parser.add_argument('--batch_size', type = int, default= 8)
 parser.add_argument('--crop_size', type = int, default= 32, help= 'should be same as image dimension')
-parser.add_argument('--epochs', type = int, default= 3)
+parser.add_argument('--epochs', type = int, default= 1)
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 
@@ -208,8 +208,9 @@ if __name__ == "__main__":
                                                       num_snapshots = args.n_snapshot,
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data)
-    mean = [0.1429] 
-    std = [8.3615]
+    mean,std = getNorm(args)
+    mean = [mean]
+    std = [std]
     model_list = {"PASR": PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
