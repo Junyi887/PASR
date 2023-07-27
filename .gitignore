@@ -1,4 +1,5 @@
-/results
+./results/*.png 
+results/*.pt
 /src/__pycache__
 /src/.ipynb_checkpoints
 /src/models/__pycache__

@@ -54,11 +54,12 @@ def test_RFNE(model,test1_loader):
     list_t = []
     list_x = []
     with torch.no_grad():
+        model.eval()
         for batch_idx,(data,target) in enumerate(test1_loader):
             data,target = data.to(device).float() , target.to(device).float()
             output_t = model(data,task_dt = args.task_dt,
-                                n_snapshot = args.n_snapshot,ode_step = args.ode_step,
-                                time_evol = True)
+                                    n_snapshot =args.n_snapshot,ode_step = args.ode_step,
+                                    time_evol = True)
             output_x = model(data,task_dt = args.task_dt,
                                 n_snapshot = 1,ode_step = args.ode_step,
                                 time_evol = False)
@@ -175,8 +176,8 @@ if __name__ == "__main__":
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     _,_,_,test1_loader,test2_loader = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = args.n_snapshot*3,data_name = args.data)
-    mean = [0.1429] 
-    std = [8.3615]
+    mean = [0] 
+    std = [1]
     model_list = {"PASR": PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),

@@ -673,7 +673,10 @@ class Gated_NODE(nn.Module):
         h = task_dt / ode_step
         if self.int_method == "Euler":
             for i in range(ode_step):
-                x = x + self.gating(x)*self.model(x) 
+                xtemp = torch.empty_like(x).copy_(x)
+                xupdate = self.model(xtemp) 
+                g = self.gating(xupdate)
+                x = (1-g) * x +  h*g * xupdate
         elif self.int_method == "RK4":
             for i in range(ode_step):
                 f1 = self.model(x)
