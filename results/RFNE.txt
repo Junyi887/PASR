@@ -8,54 +8,22 @@ PASR_MLP_data_rbc_diff_IC_crop_size_256_ode_step_8_ode_method_RK4_task_dt_0.1_nu
 RFNE_interpolate --- test t error: 2.80957 %, test x error: 1.05207 %
 RFNE_extrapolate --- test t error: 9.71919 %, test x error: 1.14525 %
 ============================================================
-============================================================
-PASR_MLP_G_small_data_rbc_diff_IC_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 8.37045 %, test x error: 2.02673 %
-RFNE_extrapolate --- test t error: 12.77522 %, test x error: 2.26257 %
-============================================================
+
 ============================================================
 PASR_MLP_small_data_rbc_diff_IC_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
 RFNE_interpolate --- test t error: 8.07143 %, test x error: 1.99293 %
 RFNE_extrapolate --- test t error: 13.57077 %, test x error: 2.47009 %
 ============================================================
-============================================================
-PASR_MLP_G_data_rbc_diff_IC_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 2.73241 %, test x error: 1.04366 %
-RFNE_extrapolate --- test t error: 10.60328 %, test x error: 1.36386 %
-============================================================
-============================================================
-PASR_MLP_G_data_nskt_16k_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 3.00429 %, test x error: 1.26561 %
-RFNE_extrapolate --- test t error: 33.50807 %, test x error: 4.61993 %
-============================================================
-============================================================
-PASR_MLP_G_data_rbc_diff_IC_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 1.94792 %, test x error: 1.04366 %
-RFNE_extrapolate --- test t error: 5.12345 %, test x error: 1.36386 %
-============================================================
 
 
 
-============================================================
-PASR_MLP_G_data_nskt_16k_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 2.54456 %, test x error: 1.33653 %
-RFNE_extrapolate --- test t error: 18.44436 %, test x error: 4.78726 %
-============================================================
+
 ============================================================
 PASR_MLP_data_nskt_16k_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
 RFNE_interpolate --- test t error: 3.59224 %, test x error: 2.67081 %
 RFNE_extrapolate --- test t error: 17.71840 %, test x error: 5.64121 %
 ============================================================
-============================================================
-PASR_MLP_G_data_rbc_diff_IC_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 1.95021 %, test x error: 1.04458 %
-RFNE_extrapolate --- test t error: 5.15242 %, test x error: 1.36819 %
-============================================================
-============================================================
-PASR_MLP_G_small_data_rbc_diff_IC_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 20.17090 %, test x error: 17.67395 %
-RFNE_extrapolate --- test t error: 20.34147 %, test x error: 18.93687 %
-============================================================
+
 ============================================================
 PASR_MLP_small_data_rbc_diff_IC_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
 RFNE_interpolate --- test t error: 5.17546 %, test x error: 2.01458 %
@@ -97,11 +65,7 @@ PASR_MLP_G_data_nskt_16k_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num
 RFNE_interpolate --- test t error: 2.54609 %, test x error: 1.33720 %
 RFNE_extrapolate --- test t error: 18.41600 %, test x error: 4.75752 %
 ============================================================
-============================================================
-PASR_MLP_data_nskt_16k_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 3.59452 %, test x error: 2.67235 %
-RFNE_extrapolate --- test t error: 17.67962 %, test x error: 5.63588 %
-============================================================
+
 ============================================================
 PASR_MLP_G_data_rbc_diff_IC_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
 RFNE_interpolate --- test t error: 1.94176 %, test x error: 1.04405 %
@@ -132,11 +96,7 @@ PASR_MLP_data_rbc_diff_10IC_crop_size_128_ode_step_8_ode_method_RK4_task_dt_1.0_
 RFNE_interpolate --- test t error: 3.48055 %, test x error: 0.53497 %
 RFNE_extrapolate --- test t error: 3.48074 %, test x error: 0.53524 %
 ============================================================
-============================================================
-PASR_MLP_small_data_rbc_diff_10IC_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_10.0
-RFNE_interpolate --- test t error: 8.23912 %, test x error: 1.00333 %
-RFNE_extrapolate --- test t error: 8.22517 %, test x error: 1.00436 %
-============================================================
+
 ============================================================
 PASR_MLP_small_data_rbc_diff_IC_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_10.0
 RFNE_interpolate --- test t error: 6.69888 %, test x error: 0.83894 %
@@ -148,47 +108,50 @@ RFNE_interpolate --- test t error: 70.92296 %, test x error: 17.73076 %
 RFNE_extrapolate --- test t error: 61.41105 %, test x error: 19.73036 %
 ============================================================
 ============================================================
-PASR_MLP_small_data_rbc_diff_10IC_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_10.0
-RFNE_interpolate --- test t error: 8.01600 %, test x error: 0.96997 %
-RFNE_extrapolate --- test t error: 8.00271 %, test x error: 0.97087 %
-============================================================
-============================================================
-PASR_MLP_small_data_rbc_diff_IC_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_10.0
-RFNE_interpolate --- test t error: 6.69888 %, test x error: 0.83894 %
-RFNE_extrapolate --- test t error: 16.03751 %, test x error: 0.99798 %
-============================================================
-============================================================
-PASR_MLP_small_data_nskt_16k_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 70.92296 %, test x error: 17.73076 %
-RFNE_extrapolate --- test t error: 61.41105 %, test x error: 19.73036 %
-============================================================
-============================================================
-PASR_MLP_small_data_nskt_16k_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 27.71128 %, test x error: 8.49145 %
-RFNE_extrapolate --- test t error: 59.02467 %, test x error: 19.66848 %
-============================================================
-============================================================
-PASR_MLP_small_data_rbc_diff_10IC_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_10.0
-RFNE_interpolate --- test t error: 2.80924 %, test x error: 0.96997 %
-RFNE_extrapolate --- test t error: 8.00271 %, test x error: 0.97087 %
-============================================================
-============================================================
-PASR_MLP_small_data_nskt_16k_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_1.0
-RFNE_interpolate --- test t error: 27.71128 %, test x error: 8.49145 %
-RFNE_extrapolate --- test t error: 59.02467 %, test x error: 19.66848 %
-============================================================
-============================================================
-PASR_MLP_small_data_rbc_diff_IC_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_10.0
-RFNE_interpolate --- test t error: 6.36116 %, test x error: 0.77822 %
-RFNE_extrapolate --- test t error: 15.72980 %, test x error: 0.89986 %
-============================================================
+
+
+
+
+
+
 ============================================================
 PASR_MLP_data_rbc_diff_IC_crop_size_512_ode_step_5_ode_method_Euler_task_dt_1.2_num_snapshots_20_upscale_factor_16_timescale_factor_1_loss_type_L2_lamb_2.0
 RFNE_interpolate --- test t error: 1.19905 %, test x error: 0.50353 %
 RFNE_extrapolate --- test t error: 11.84782 %, test x error: 1.35587 %
 ============================================================
+
+Trajectory inference, Without Gating, up-scale factor = 8
 ============================================================
 PASR_MLP_data_rbc_diff_10IC_crop_size_256_ode_step_5_ode_method_Euler_task_dt_1.2_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L2_lamb_2.0
 RFNE_interpolate --- test t error: 7.20204 %, test x error: 1.04330 %
 RFNE_extrapolate --- test t error: 7.20204 %, test x error: 1.04330 %
+ ========================================================================================================================
+PASR_MLP_G_data_rbc_diff_10IC_crop_size_256_ode_step_5_ode_method_Euler_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L2_lamb_1.0
+RFNE_interpolate --- test t error: 19.52718 %, test x error: 11.64348 %
+RFNE_extrapolate --- test t error: 19.52718 %, test x error: 11.64348 %
+============================================================
+
+
+============================================================
+PASR_MLP_small_data_rbc_diff_10IC_crop_size_256_ode_step_5_ode_method_RK4_task_dt_1.0_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L1_lamb_10.0
+RFNE_interpolate --- test t error: 8.01600 %, test x error: 0.96997 %
+RFNE_extrapolate --- test t error: 8.00271 %, test x error: 0.97087 %
+============================================================
+
+
+NSKT interpolation 
+============================================================
+PASR_MLP_data_nskt_16k_crop_size_128_ode_step_8_ode_method_RK4_task_dt_0.2_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0
+RFNE_interpolate --- test t error: 3.59452 %, test x error: 2.67235 %
+RFNE_extrapolate --- test t error: 17.67962 %, test x error: 5.63588 
+
+============================================================
+PASR_MLP_G_data_rbc_diff_10IC_crop_size_256_ode_step_2_ode_method_Euler_task_dt_0.05_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L2_lamb_1.0
+RFNE_interpolate --- test t error: 12.63477 %, test x error: 8.17916 %
+RFNE_extrapolate --- test t error: 12.63477 %, test x error: 8.17916 %
+============================================================
+============================================================
+PASR_MLP_data_rbc_diff_10IC_crop_size_256_ode_step_5_ode_method_Euler_task_dt_1.2_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L2_lamb_2.0
+RFNE_interpolate --- test t error: 6.83234 %, test x error: 1.05280 %
+RFNE_extrapolate --- test t error: 6.83234 %, test x error: 1.05280 %
 ============================================================

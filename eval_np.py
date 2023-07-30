@@ -107,10 +107,10 @@ def test_RFNE_no_pred(model,test1_loader):
                     list_t = []
                     output_t = model(data,task_dt = 0.0,
                                     n_snapshot = n_snapshot,ode_step = args.ode_step,
-                                    time_evol = True)
+                                    time_evol = False)
                     i = 1
                     for j in range (output_t.shape[1]):
-                        RFNE_t = torch.norm(target[i,0,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
+                        RFNE_t = torch.norm(output_t[i,0,...]-target[i,j+1,...])/torch.norm(target[i,j+1,...])
                         list_t.append(RFNE_t)
                     avg_t = torch.mean(torch.stack(list_t),dim=0).item()
                     list_n_snap.append(avg_t)
