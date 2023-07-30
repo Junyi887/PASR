@@ -293,7 +293,7 @@ class SwinTransformerBlock(nn.Module):  #STL
         return x
 
     def extra_repr(self) -> str:
-        return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
+        return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, "\
                f"window_size={self.window_size}, shift_size={self.shift_size}, mlp_ratio={self.mlp_ratio}"
 
     def flops(self):
@@ -629,27 +629,30 @@ class UpsampleOneStep(nn.Sequential):   #inside HQ Image reconstruction
         return flops
 
 class Gating(nn.Module):
-    def __init__(self,in_dim):
+    def __init__(self, in_dim, num_layers=3):
         super(Gating, self).__init__()
-        self.model = nn.Sequential(
-            nn.Linear(in_dim, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim),
-            nn.Sigmoid()
-        ) 
+        
+        layers = []
+        layers.append(nn.Linear(in_dim, in_dim*2))
+        layers.append(nn.ReLU())
+
+        for _ in range(num_layers):
+            layers.append(nn.Linear(in_dim*2, in_dim*2))
+            layers.append(nn.ReLU())
+
+        layers.append(nn.Linear(in_dim*2, in_dim))
+        layers.append(nn.Sigmoid())
+        
+        self.model = nn.Sequential(*layers)
         self.in_dim = in_dim
+
     def forward(self, x):
         x = self.model(x)
-        return x 
+        return x
+
     
 class Gated_NODE(nn.Module):
-    def __init__(self,in_dim,ode_method ="Euler"):
+    def __init__(self,in_dim,ode_method ="Euler",num_layers=3,gating_method ='leaky'):
         super(Gated_NODE, self).__init__()
 
         self.model = nn.Sequential(
@@ -664,7 +667,8 @@ class Gated_NODE(nn.Module):
             nn.Linear(in_dim*2, in_dim),
             nn.Tanh()
         ) 
-        self.gating = Gating(in_dim)
+        self.gating = Gating(in_dim, num_layers=num_layers)
+        self.gating_method = gating_method
         self.in_dim = in_dim
         self.int_method = ode_method
     def forward(self, x,ode_step = 1,task_dt = 1.0):
@@ -676,7 +680,10 @@ class Gated_NODE(nn.Module):
                 xtemp = torch.empty_like(x).copy_(x)
                 xupdate = self.model(xtemp) 
                 g = self.gating(xupdate)
-                x = (1-g) * x +  h*g * xupdate
+                if self.gating_method == 'leaky':
+                    x = (1-g) * x +  h*g * xupdate
+                else:
+                    x = x + h*g* xupdate
         elif self.int_method == "RK4":
             for i in range(ode_step):
                 f1 = self.model(x)
@@ -722,7 +729,7 @@ class PASR_MLP_G(nn.Module):
                  norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
                  use_checkpoint=False, upscale=2, upsampler='', resi_connection='1conv'
                  ,mean = [0],std = [1],  
-                 ode_method = "Euler",
+                 ode_method = "Euler",gating_layers = 3,gating_method='leaky',
                  **kwargs):
         super(PASR_MLP_G, self).__init__()
         
@@ -741,7 +748,7 @@ class PASR_MLP_G(nn.Module):
         self.upscale = upscale
         self.upsampler = upsampler
         self.window_size = window_size
-
+        self.gating_layers = gating_layers
         #####################################################################################################
         ################################### 1, shallow feature extraction ###################################
         self.conv_first = nn.Conv2d(num_in_ch, embed_dim, 3, 1, 1)
