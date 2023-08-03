@@ -36,28 +36,28 @@ def visualize(model,test1_loader,location =100,savedname = 'test.png'):
         for batch_idx,(data,target) in enumerate(test1_loader):
             if batch_idx == 13:
                 data,target = data.float().to(device) , target.float().to(device)
-                output_quater1 = model(data,task_dt = args.task_dt/4,
-                                    n_snapshot = 40,ode_step = args.ode_step//4,
+                output_quater1 = model(data,task_dt = 1.2,
+                                    n_snapshot = 80,ode_step = 5,
                                     time_evol = True)[3,:,0,...].cpu().numpy()
 
                 print(output_quater1.shape)
                 target = target[3,1:,0,:,:].cpu().numpy()
                 print(target.shape)
-                data = data[3,0,::4,::4].cpu().numpy()
+                data = data[3,0,:,:].cpu().numpy()
                 plt.figure()
                 plt.imshow(data)
                 plt.axis('off')
-                plt.savefig('figures/input' +".pdf",bbox_inches='tight',transparent = False)
+                plt.savefig('figures/input' +".png",bbox_inches='tight',transparent = False)
                 for i in range(output_quater1.shape[0]):
-                    if i %5 ==0:
+                    if i % 10 ==0:
                         plt.figure()
                         plt.imshow(target[i])
                         plt.axis('off')
-                        plt.savefig('figures/target_' + str(i//5) +".pdf",bbox_inches='tight',transparent = False)
+                        plt.savefig('figures/target_' + str(i) +".png",bbox_inches='tight',transparent = False)
                         plt.figure()
                         plt.imshow(output_quater1[i])
                         plt.axis('off')
-                        plt.savefig('figures/prediction_' + str(i//5) +".pdf",bbox_inches='tight',transparent = False)
+                        plt.savefig('figures/prediction_' + str(i) +".png",bbox_inches='tight',transparent = False)
                 break
     return logging.info("visualization complete.")
 
@@ -146,11 +146,11 @@ def test_RFNE_quater(model,test1_loader):
     return avg_quater1,avg_quater2,avg_quater3,avg_quater4
 
 parser = argparse.ArgumentParser(description='training parameters')
-parser.add_argument('--model', type =str ,default= 'PASR_MLP')
-parser.add_argument('--data', type =str ,default= 'rbc_diff_IC')
-parser.add_argument('--loss_type', type =str ,default= 'L1')
-parser.add_argument('--scale_factor', type = int, default= 4)
-parser.add_argument('--timescale_factor', type = int, default= 4)
+parser.add_argument('--model', type =str ,default= 'PASR_MLP_small')
+parser.add_argument('--data', type =str ,default= 'rbc_diff_10IC')
+parser.add_argument('--loss_type', type =str ,default= 'L2')
+parser.add_argument('--scale_factor', type = int, default= 8)
+parser.add_argument('--timescale_factor', type = int, default= 1)
 parser.add_argument('--task_dt',type =float, default= 0.1)
 parser.add_argument('--ode_step',type =int, default= 8)
 parser.add_argument('--ode_method',type =str, default= "RK4")
@@ -162,13 +162,13 @@ parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 
 
-parser.add_argument('--n_snapshot',type =int, default= 10)
+parser.add_argument('--n_snapshot',type =int, default= 80)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
-parser.add_argument('--data_path',type = str,default = "../rbc_diff_IC")
+parser.add_argument('--data_path',type = str,default = "../rbc_diff_IC/rbc_10IC")
 args = parser.parse_args()
 logging.info(args)
 if __name__ == "__main__":
@@ -183,8 +183,8 @@ if __name__ == "__main__":
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     _,val1_loader,_,test1_loader,test2_loader = getData(upscale_factor = args.scale_factor, timescale_factor= args.timescale_factor,batch_size = args.batch_size, crop_size = args.crop_size,data_path = args.data_path,num_snapshots = args.n_snapshot,data_name = args.data)
-    mean = [0.1429] 
-    std = [8.3615]
+    mean = [0] 
+    std = [1]
     model_list = {"PASR": PASR(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
@@ -206,7 +206,7 @@ if __name__ == "__main__":
                 "_loss_type_" + str(args.loss_type) +
                 "_lamb_" + str(args.lamb)
                 ) 
-    checkpoint = torch.load("results/"+ "PASR_MLP_data_rbc_diff_IC_crop_size_256_ode_step_8_ode_method_RK4_task_dt_0.1_num_snapshots_10_upscale_factor_4_timescale_factor_4_loss_type_L1_lamb_1.0" + ".pt")
+    checkpoint = torch.load("results/"+ "PASR_MLP_small_data_rbc_diff_10IC_crop_size_256_ode_step_5_ode_method_Euler_task_dt_1.2_num_snapshots_20_upscale_factor_8_timescale_factor_1_loss_type_L2_lamb_2.0.pt")
     model.load_state_dict(checkpoint["model_state_dict"])
     visualize(model,test1_loader)
 

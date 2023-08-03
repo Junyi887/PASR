@@ -37,16 +37,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def psnr(true, pred):
     mse = torch.mean((true - pred) ** 2)
     if mse == 0:
-        return float('inf')
+        return float(99999)
     max_value = torch.max(true)
     return 20 * torch.log10(max_value / torch.sqrt(mse))
 
-
-def calculate_loss(pred, target,criterion):
-    with torch.no_grad():
-        pred_reshape = pred.contiguous().reshape(pred.shape[0]*pred.shape[1], -1)
-        target_reshape = target[:, 1:,...].contiguous().reshape(target.shape[0]*pred.shape[1], -1)
-        return criterion(pred_reshape, target_reshape)
 
 def validation(args,model, val1_loader,val2_loader,device):
     if args.loss_type =='L1':
@@ -55,7 +49,7 @@ def validation(args,model, val1_loader,val2_loader,device):
         criterion_Data = nn.MSELoss().to(device)
     target_loss1 = 0 
     input_loss1 = 0
-    RFNE_loss = 0
+    RFNE1_loss = 0
     psnr1_loss = 0
     for batch in val1_loader: # better be the val loader, need to modify datasets, but we are good for now.
         with torch.no_grad():
@@ -65,31 +59,34 @@ def validation(args,model, val1_loader,val2_loader,device):
             input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
             out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True) 
             loss_t = criterion_Data(out_t, target[:,1:,...])
-            RFNE_t = torch.norm(out_t-target[:,1:,...],p=2,dim = (1,2))/torch.norm(target[:,1:,...],p=2,dim = (1,2))
-            psnr1 = psnr(out_t,target[:,1:,...])
+            RFNE_t = torch.norm(out_t-target[:,1:,...],p=2,dim = (3,4))/torch.norm(target[:,1:,...],p=2,dim = (3,4))
             target_loss1 += loss_t.item() 
             input_loss1 += input_loss.item()
-            RFNE_loss += RFNE_t.mean().item()
-            psnr1_loss += psnr1.item()
+            RFNE1_loss += RFNE_t.mean().item()
+    result_loader1 = [input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE1_loss /len(val1_loader)]
+    target_loss2 = 0 
+    input_loss2 = 0
+    RFNE2_loss = 0
+    psnr2_loss = 0
+    for batch in val2_loader: # better be the val loader, need to modify datasets, but we are good for now.
+        with torch.no_grad():
+            inputs, target = batch[0].float().to(device), batch[1].float().to(device)
+            model.eval()
+            out_x = model(inputs,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
+            input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
+            out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True) 
+            loss_t = criterion_Data(out_t, target[:,1:,...])
+            RFNE_t = torch.norm(out_t-target[:,1:,...],p=2,dim = (3,4))/torch.norm(target[:,1:,...],p=2,dim = (3,4))
+            target_loss2 += loss_t.item() 
+            input_loss2 += input_loss.item()
+            RFNE2_loss += RFNE_t.mean().item()
+    result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader)]
 
-    # target_loss2 = 0 
-    # input_loss2 = 0
-    
-    # for batch in val2_loader: # better be the val loader, need to modify datasets, but we are good for now.
-    #     with torch.no_grad():
-    #         inputs, target = batch[0].float().to(device), batch[1].float().to(device)
-    #         model.eval()
-    #         out_x = model(inputs,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
-    #         input_loss = criterion_Data(out_x[:,0,...], target[:,0,...])
-    #         out_t = model(inputs,task_dt = args.task_dt//2,n_snapshot = 1,ode_step = args.ode_step//2,time_evol = True) 
-    #         loss_t = criterion_Data(out_t[:,0,...], target[:,1,...])
-    #         target_loss2 += loss_t.item() 
-    #         input_loss2 += input_loss.item()
-
-    return input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE_loss /len(val1_loader), psnr1_loss/len(val1_loader)
+    return result_loader1,result_loader2
 
 def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath,run):
     lamb = args.lamb
+    best_epoch = 0
     val_list = []
     val_list_x1 = []
     val_list_t1 = []
@@ -98,7 +95,10 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
     train_list = []
     train_list_x = []
     train_list_t = []
-
+    if args.scheduler == 'StepLR':
+        scheduler = StepLR(optimizer, args.lr_step, gamma=args.gamma)
+    elif args.scheduler == "Exp":
+        scheduler = ExponentialLR(optimizer, gamma=args.gamma)
     best_loss_val = 1e9
     if args.loss_type =='L1':
         criterion_Data = nn.L1Loss().to(device)
@@ -110,6 +110,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         avg_val = 0
         target_loss = 0
         input_loss = 0
+        run['train/lr'].log(scheduler.get_lr())
         for iteration, batch in enumerate(trainloader):
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
@@ -117,7 +118,6 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             out_x = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = args.ode_step,time_evol = False)
             loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
             out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True)
-            #out_t2 = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True)
             loss_t = criterion_Data(out_t,target[:,1:,:,:,:])
             target_loss += loss_t.item() 
             input_loss += loss_x.item()
@@ -125,50 +125,56 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             loss.backward()
             optimizer.step()
             avg_loss += loss.item()
-        val_x1,val_t1,val_x2,val_t2 = validation(args,model, val1_loader,val2_loader,device)
-        avg_val = val_t1
-        val_list.append(avg_val)
-        val_list_x1.append(val_x1)
-        val_list_t1.append(val_t1)
-        val_list_x2.append(val_x2)
-        val_list_t2.append(val_t2)
-        train_list.append(avg_loss/len(trainloader))
-        train_list_x.append(input_loss/len(trainloader))
-        train_list_t.append(target_loss/len(trainloader))
+        scheduler.step()
+        result_val1,result_val2 = validation(args,model, val1_loader,val2_loader,device)
+        avg_val = result_val1[1] + lamb*result_val2[0]
+        # val_list.append(avg_val)
+        # val_list_x1.append(result_val1[0])
+        # val_list_t1.append(result_val1[1])
+        val_list_x2.append(result_val2[2])
+        # train_list.append(avg_loss/len(trainloader))
+        # train_list_x.append(input_loss/len(trainloader))
+        # train_list_t.append(target_loss/len(trainloader))
         run['train/train_loss'].log(avg_loss / len(trainloader))
-        run['train/val_loss'].log(avg_val)
+        run['val/val_loss'].log(avg_val)
         run['train/train_loss_x'].log(input_loss / len(trainloader))
         run['train/train_loss_t'].log(target_loss / len(trainloader))
-        run['train/val_loss_x1'].log(val_x1)
-        run['train/val_loss_t1'].log(val_t1)
-        run['train/RFNE'].log(val_x2)
-        run['train/PSNR'].log(val_t2)
-        logging.info("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, val_x1, val_t1, val_x2, val_t2))
+        run['val/val_loss_x1'].log(result_val1[0])
+        run['val/val_loss_t1'].log(result_val1[1])
+        run['test/test_loss_x1'].log(result_val1[0])
+        run['test/test_loss_t1'].log(result_val1[1])
+        run['val/RFNE'].log(result_val1[2])
+        #run['val/PSNR'].log(result_val1[3])
+        run['test/RFNE'].log(result_val2[2])
+        #run['test/PSNR'].log(result_val2[3])
+        # print(result_val1[3],result_val2[3])
+        logging.info("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, result_val1[0], result_val1[1], result_val2[0],result_val2[1]))
         if avg_val < best_loss_val:
             best_loss_val = avg_val
             best_model = model
+            best_epoch = epoch
             torch.save({
             'epoch': epoch,
             'model_state_dict': best_model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
-            'val_sum': np.array(val_list),
-            'train_sum': np.array(train_list),
-            'val_x1': np.array(val_list_x1),
-            'val_t1': np.array(val_list_t1),
-            'val_x2': np.array(val_list_x2),
-            'val_t2': np.array(val_list_t2),
-            'train_x': np.array(train_list_x),
-            'train_t': np.array(train_list_t),
+            "scheduler_state_dict": scheduler.state_dict(),
+            # 'val_sum': np.array(val_list),
+            # 'train_sum': np.array(train_list),
+            # 'val_x1': np.array(val_list_x1),
+            # 'val_t1': np.array(val_list_t1),
+            # 'val_x2': np.array(val_list_x2),
+            # 'val_t2': np.array(val_list_t2),
+            # 'train_x': np.array(train_list_x),
+            # 'train_t': np.array(train_list_t),
             },"results/"+savedpath + ".pt" ) # remember to change name for each experiment
-        
         # validate 
-    return 0
+    return min(val_list_x2),best_epoch
 
 
 
 parser = argparse.ArgumentParser(description='training parameters')
 parser.add_argument('--model', type =str ,default= 'PASR')
-parser.add_argument('--data', type =str ,default= 'rbc_diff_IC')
+parser.add_argument('--data', type =str ,default= 'rbc_diff_10IC')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 4)
@@ -186,6 +192,9 @@ parser.add_argument('--gating_layers',type =int, default= 3)
 parser.add_argument('--gating_method',type =str, default= 'leaky')
 parser.add_argument('--normalization',type =str, default= 'True')
 
+parser.add_argument('--gamma',type =float, default= 0.95)
+parser.add_argument('--lr_step',type =int, default= 80)
+parser.add_argument('--scheduler',type =str, default= 'StepLR')
 parser.add_argument('--n_snapshot',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
@@ -248,14 +257,19 @@ if __name__ == "__main__":
                 "_upscale_factor_" + str(args.scale_factor) +
                 "_timescale_factor_" + str(args.timescale_factor) +
                 "_loss_type_" + str(args.loss_type) +
-                "_lamb_" + str(args.lamb)
+                "_lamb_" + str(args.lamb) +
+                "_lr_" + str(args.lr) +
+                "_gamma_" + str(args.gamma) +
+                "_normalizaiton_" + str(args.normalization)
                 ) 
     run = neptune.init(
-    project="junyi012/PASR",
+    project="junyiICSI/PASR",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
-    )  # your credentials  
+    )  # your credentials
 
     run["config"] = vars(args)   
-    train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath,run)
+    min_RFNE,best_epoch = train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath,run)
+    run["metric/min_RFNE"].log(min_RFNE)
+    run['metric/best_epoch'].log(best_epoch)
     run.stop()
     logging.info("Training complete.")
