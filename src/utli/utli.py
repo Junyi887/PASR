@@ -6,7 +6,8 @@ import argparse
 # data path in raocp 
 DATA_DIR = {"rbc_diff_IC": ["../rbc_diff_IC/rbc_IC1/*.h5","../rbc_diff_IC/rbc_IC2/*.h5"],
             "nskt_16k": ["../superbench/datasets/nskt16000_1024/train/*.h5", "../superbench/datasets/nskt16000_1024/valid_1/*.h5"],
-            "rbc_diff_10IC": ["../rbc_diff_IC/rbc_10IC/train/rbc_*_256/rbc_*_256_s9.h5","../rbc_diff_IC/rbc_10IC/test/rbc_*_256/rbc_*_256_s9.h5"]}
+            "rbc_diff_10IC": ["../rbc_diff_IC/rbc_10IC/train/rbc_*_256/rbc_*_256_s9.h5","../rbc_diff_IC/rbc_10IC/test/rbc_*_256/rbc_*_256_s9.h5"],
+            "climate":["../superbench/train/*.h5","../superbench/val/*.h5","../superbench/test/*.h5"]}
 
 def CenterCrop(data, crop_size):
     h, w = data.shape[-2], data.shape[-1]
