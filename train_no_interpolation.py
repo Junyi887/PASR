@@ -37,9 +37,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def psnr(true, pred):
     mse = torch.mean((true - pred) ** 2)
     if mse == 0:
-        return float(99999)
+        return float(9999)
     max_value = torch.max(true)
-    return 20 * torch.log10(max_value / torch.sqrt(mse))
+    psnr = 20 * torch.log10(max_value / torch.sqrt(mse))
+    if psnr.isNan() or psnr.isInf():
+        return float(0)
+    return psnr
+    
+
 
 
 def validation(args,model, val1_loader,val2_loader,device):
@@ -63,6 +68,7 @@ def validation(args,model, val1_loader,val2_loader,device):
             target_loss1 += loss_t.item() 
             input_loss1 += input_loss.item()
             RFNE1_loss += RFNE_t.mean().item()
+            psnr1_loss += psnr(out_t, target[:,1:,...]).item()
     result_loader1 = [input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE1_loss /len(val1_loader)]
     target_loss2 = 0 
     input_loss2 = 0
@@ -80,6 +86,7 @@ def validation(args,model, val1_loader,val2_loader,device):
             target_loss2 += loss_t.item() 
             input_loss2 += input_loss.item()
             RFNE2_loss += RFNE_t.mean().item()
+            psnr2_loss += psnr(out_t, target[:,1:,...]).item()
     result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader)]
 
     return result_loader1,result_loader2

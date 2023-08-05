@@ -6,8 +6,10 @@ import argparse
 # data path in raocp 
 DATA_DIR = {"rbc_diff_IC": ["../rbc_diff_IC/rbc_IC1/*.h5","../rbc_diff_IC/rbc_IC2/*.h5"],
             "nskt_16k": ["../superbench/datasets/nskt16000_1024/train/*.h5", "../superbench/datasets/nskt16000_1024/valid_1/*.h5"],
-            "rbc_diff_10IC": ["../rbc_diff_IC/rbc_10IC/train/rbc_*_256/rbc_*_256_s9.h5","../rbc_diff_IC/rbc_10IC/test/rbc_*_256/rbc_*_256_s9.h5"],
-            "climate":["../superbench/train/*.h5","../superbench/val/*.h5","../superbench/test/*.h5"]}
+            "rbc_diff_10IC": ["../rbc_diff_IC/rbc_10IC/train/rbc_*_256/rbc_*_256_s9.h5","../rbc_diff_IC/rbc_10IC/test/rbc_*_256/rbc_*_256_s9.h5","../rbc_diff_IC/rbc_10IC/val/rbc_*_256/rbc_*_256_s9.h5"],
+            "climate":["../superbench/train/*.h5","../superbench/val/*.h5","../superbench/test/*.h5"],
+            "rbc_25664": ["../rbc_diff_IC/rbc_256_64/train/rbc_*_25664/rbc_*_25664_s2.h5","../rbc_diff_IC/rbc_256_64/val/rbc_*_25664/rbc_*_25664_s2.h5","../rbc_diff_IC/rbc_256_64/test/rbc_*_25664/rbc_*_25664_s2.h5"],
+            }
 
 def CenterCrop(data, crop_size):
     h, w = data.shape[-2], data.shape[-1]
@@ -32,6 +34,7 @@ def getNorm(args):
                     HR_data = _f['fields'][()][:,2,:,:]
                     data.append(CenterCrop(HR_data, window_size))
                 else:
+                    # TODO need to change to more channel, now only support 1 channel
                     HR_data = _f['tasks']['vorticity'][()]
                     data.append(CenterCrop(HR_data, window_size)) 
         data =np.concatenate(data, axis=0)
