@@ -29,9 +29,36 @@ from src.data_loader import getData
 import logging
 import argparse
 
+# working on Negotiation 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-def visualize(model,test1_loader,location =100,savedname = 'test.png'):
+
+def plot_train_history(epoch,train_his,val_his,val_x_interpolate,val_t_interpolate,val_x_extrapolate,val_t_extrapolate):
+    fig,ax = plt.subplots(3,2,figsize = (12,12))
+    fig.suptitle("train history, best at " + str(epoch))
+    x = np.arange(0,len(train_his))
+    ax[0,0].plot(x,train_his)
+    ax[0,0].set_yscale("log")
+    ax[0,0].set_title("train")
+    ax[0,1].plot(x,val_his)
+    ax[0,1].set_yscale("log")
+    ax[0,1].set_title("val")
+    ax[1,0].plot(x,val_x_interpolate)
+    ax[1,0].set_yscale("log")
+    ax[1,0].set_title("val_x_interpolate (dynamics = False)")
+    ax[1,1].plot(x,val_t_interpolate)
+    ax[1,1].set_yscale("log")
+    ax[1,1].set_title("val_t_interpolate (dynamics = True)")    
+    ax[2,0].plot(x,val_x_extrapolate)
+    ax[2,0].set_yscale("log")
+    ax[2,0].set_title("val_x_extrapolate (dynamics = False)")
+    ax[2,1].plot(x,val_t_extrapolate)
+    ax[2,1].set_yscale("log")
+    ax[2,1].set_title("val_t_extrapolate (dynamics = True)")  
+    fig.savefig("results/" + savedpath + ".png",dpi = 600)
+    return True
+
+def plot_pixel_wise_visualize(model,test1_loader,location =100,savedname = 'test.png'):
     with torch.no_grad():
         for batch_idx,(data,target) in enumerate(test1_loader):
             if batch_idx == 4:
@@ -48,9 +75,10 @@ def visualize(model,test1_loader,location =100,savedname = 'test.png'):
                 plt.legend()
                 plt.savefig('figures/' + savedname)
                 break
-    return logging.info("visualization complete.")
+            #logging.info("visualization complete.")
+    return True
 
-def test_RFNE(model,test1_loader):
+def _test_RFNE(model,test1_loader):
     list_t = []
     list_x = []
     with torch.no_grad():
@@ -74,7 +102,7 @@ def test_RFNE(model,test1_loader):
     logging.info("Test RFNE complete.")
     return avg_t,avg_x
 
-def test_RFNE_n_length(model,test1_loader):
+def _test_RFNE_n_length(model,test1_loader):
     list_t = []
     list_n_snap = []
     with torch.no_grad():
@@ -94,9 +122,9 @@ def test_RFNE_n_length(model,test1_loader):
                     list_n_snap.append(avg_t)
                 logging.info("Test RFNE prediction length complete.") 
                 return list_n_snap     
-    return 0
+    return None
 
-def test_RFNE_no_pred(model,test1_loader):
+def _test_RFNE_no_pred(model,test1_loader):
     list_t = []
     list_n_snap = []
     with torch.no_grad():
@@ -116,9 +144,9 @@ def test_RFNE_no_pred(model,test1_loader):
                     list_n_snap.append(avg_t)
                 logging.info("No Dynamics RFNE complete.") 
                 return list_n_snap     
-    return 0
+    return None
 
-def test_RFNE_many(model,test1_loader):
+def _test_RFNE_many(model,test1_loader):
     list_t = []
     list_tt = []
     with torch.no_grad():
@@ -162,6 +190,7 @@ parser.add_argument('--noise_ratio', type = float, default= 0.0)
 parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
 parser.add_argument('--data_path',type = str,default = "../dataset/nskt16000_1024")
+parser.add_argument('--data_path',default = None)
 args = parser.parse_args()
 logging.info(args)
 if __name__ == "__main__":
@@ -201,77 +230,106 @@ if __name__ == "__main__":
                 "_loss_type_" + str(args.loss_type) +
                 "_lamb_" + str(args.lamb)
                 ) 
-    checkpoint = torch.load("results/"+savedpath +".pt")
+    if args.model_path ==None:
+        checkpoint = torch.load("results/"+savedpath +".pt")
+    else:
+        checkpoint = torch.load(args.model_path)
+
     model.load_state_dict(checkpoint["model_state_dict"])
-    epoch = checkpoint["epoch"]
+    # epoch = checkpoint["epoch"]
 
-    val_his = checkpoint["val_sum"]
-    train_his = checkpoint["train_sum"]
-    val_x_interpolate = checkpoint["val_x1"] 
-    val_t_interpolate = checkpoint["val_t1"]
-    val_x_extrapolate = checkpoint["val_x2"]
-    val_t_extrapolate = checkpoint["val_t2"]
-
-    fig,ax = plt.subplots(3,2,figsize = (12,12))
-    fig.suptitle("train history, best at " + str(epoch))
-    x = np.arange(0,len(train_his))
-    ax[0,0].plot(x,train_his)
-    ax[0,0].set_yscale("log")
-    ax[0,0].set_title("train")
-    ax[0,1].plot(x,val_his)
-    ax[0,1].set_yscale("log")
-    ax[0,1].set_title("val")
-    ax[1,0].plot(x,val_x_interpolate)
-    ax[1,0].set_yscale("log")
-    ax[1,0].set_title("val_x_interpolate (dynamics = False)")
-    ax[1,1].plot(x,val_t_interpolate)
-    ax[1,1].set_yscale("log")
-    ax[1,1].set_title("val_t_interpolate (dynamics = True)")    
-    ax[2,0].plot(x,val_x_extrapolate)
-    ax[2,0].set_yscale("log")
-    ax[2,0].set_title("val_x_extrapolate (dynamics = False)")
-    ax[2,1].plot(x,val_t_extrapolate)
-    ax[2,1].set_yscale("log")
-    ax[2,1].set_title("val_t_extrapolate (dynamics = True)")  
-    fig.savefig("results/" + savedpath + ".png",dpi = 600)
+    # val_his = checkpoint["val_sum"]
+    # train_his = checkpoint["train_sum"]
+    # val_x_interpolate = checkpoint["val_x1"] 
+    # val_t_interpolate = checkpoint["val_t1"]
+    # val_x_extrapolate = checkpoint["val_x2"]
+    # val_t_extrapolate = checkpoint["val_t2"]
 
 
 
-    err1_interpolate,err2_interpolate = test_RFNE(model,test1_loader)
-    err1_extrapolate,err2_extrapolate = test_RFNE(model,test2_loader)
-    list_t1 = test_RFNE_n_length(model,test1_loader)
-    list_t2 = test_RFNE_n_length(model,test2_loader)
-    list_t11 = test_RFNE_no_pred(model,test1_loader)
-    list_t22 = test_RFNE_no_pred(model,test2_loader)
 
-    fig,ax = plt.subplots(1,2,figsize = (12,6))
-    ax[0].scatter(range(len(list_t1)),list_t1,label='dynamics',marker = "*")
-    ax[0].scatter(range(len(list_t11)),list_t11,label='no dynamics reference',marker = "+")
-    ax[0].legend()
-    ax[0].set_title("test1")
-    ax[0].set_xlabel("n_snapshot")
-    ax[0].set_ylabel("RFNE")
-    ax[1].scatter(range(len(list_t2)),list_t2,label='dynamics',marker = "*")
-    ax[1].scatter(range(len(list_t22)),list_t22,label='no dynamics reference',marker = "+")
-    ax[1].legend()
-    ax[1].set_title("test2")
-    ax[1].set_xlabel("n_snapshot")
-    ax[1].set_ylabel("RFNE")
-    fig.savefig("results/" + "n_snap_" +savedpath + ".png",dpi = 600)
 
-    visualize(model,test1_loader,savedname = "interpolate_"+savedpath+".png")
-    visualize(model,test2_loader,savedname = "extrapolate_"+savedpath+".png")
+
+    def plot_pixel_evolution_compare(model,test1_loader,test2_loader):
+        list_t1 = _test_RFNE_n_length(model,test1_loader)
+        list_t2 = _test_RFNE_n_length(model,test2_loader)
+        list_t11 = _test_RFNE_no_pred(model,test1_loader)
+        list_t22 = _test_RFNE_no_pred(model,test2_loader)
+        fig,ax = plt.subplots(1,2,figsize = (12,6))
+        ax[0].scatter(range(len(list_t1)),list_t1,label='dynamics',marker = "*")
+        ax[0].scatter(range(len(list_t11)),list_t11,label='no dynamics reference',marker = "+")
+        ax[0].legend()
+        ax[0].set_title("test1")
+        ax[0].set_xlabel("n_snapshot")
+        ax[0].set_ylabel("RFNE")
+        ax[1].scatter(range(len(list_t2)),list_t2,label='dynamics',marker = "*")
+        ax[1].scatter(range(len(list_t22)),list_t22,label='no dynamics reference',marker = "+")
+        ax[1].legend()
+        ax[1].set_title("test2")
+        ax[1].set_xlabel("n_snapshot")
+        ax[1].set_ylabel("RFNE")
+        fig.savefig("results/" + "n_snap_" +savedpath + ".png",dpi = 600)
+        return True
+    
+
     # err1_interpolate_q,err2_interpolate_q,err3_interpolate_q,err4_interpolate_q = test_RFNE_quater(model,val1_loader)
     # err1_extrapolate_q,err2_extrapolate_q,err3_extrapolate_q,err4_extrapolate_q = test_RFNE_quater(model,test1_loader)
-    with open("results/RFNE.txt","a") as f:
-        print("============================================================",file =f)
-        print(savedpath,file = f)
-        print("RFNE_interpolate --- test t error: %.5f %%, test x error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0),file =f )
-        print("RFNE_extrapolate --- test t error: %.5f %%, test x error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0),file =f )
-        
-        print("============================================================",file =f)
-    logging.info("evaluation complete.")
-    # print("RFNE_quater_interpolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_interpolate_q*100.0, err2_interpolate_q*100.0))
-    # print("RFNE_quater_interpolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_interpolate_q*100.0, err4_interpolate_q*100.0))
-    # print("RFNE_quater_extrapolate --- test1 error: %.5f %%, test2 error: %.5f %%" % (err1_extrapolate_q*100.0, err2_extrapolate_q*100.0))
-    # print("RFNE_quater_extrapolate --- test3 error: %.5f %%, test4 error: %.5f %%" % (err3_extrapolate_q*100.0, err4_extrapolate_q*100.0))
+
+
+    def getRFNE(model,test1_loader,test2_loader):
+        err1_interpolate,err2_interpolate = _test_RFNE(model,test1_loader)
+        err1_extrapolate,err2_extrapolate = _test_RFNE(model,test2_loader)
+        with open("results/RFNE.txt","a") as f:
+            print("============================================================",file =f)
+            print(savedpath,file = f)
+            print("RFNE_interpolate --- test t error: %.5f %%, test x error: %.5f %%" % (err1_interpolate*100.0, err2_interpolate*100.0),file =f )
+            print("RFNE_extrapolate --- test t error: %.5f %%, test x error: %.5f %%" % (err1_extrapolate*100.0, err2_extrapolate*100.0),file =f )
+            
+            print("============================================================",file =f)
+        return True 
+
+
+if getRFNE(model,test1_loader,test2_loader): logging.info("RFNE evaluation complete.")
+
+
+    # plot_pixel_wise_visualize(model,test1_loader,savedname = "interpolate_"+savedpath+".png")
+    # plot_pixel_wise_visualize(model,test2_loader,savedname = "extrapolate_"+savedpath+".png")
+
+class Visualize():
+    def __init__(self,args,model,test_loader,tasks):
+        self.model = model
+        self.test_loader = test_loader
+        self.tasks = tasks
+    def _get_single_batch_predictions(self,loader,idx):
+        for batch_idx,(data,target) in enumerate(loader):
+            if batch_idx == idx:
+                data,target = data.float().to(device) , target.float().to(device)
+                pred = model(data,task_dt = args.task_dt,
+                                    n_snapshot = 4*args.n_snapshot,ode_step = args.ode_step,
+                                    time_evol = True)
+                target = target
+                break
+        return pred,target
+    
+    def _get_single_snapshot_predictions(self,loader,idx):
+        for batch_idx,(data,target) in enumerate(loader):
+            if batch_idx == idx:
+                data,target = data.float().to(device) , target.float().to(device)
+                pred = model(data,task_dt = args.task_dt,
+                                    n_snapshot = 4*args.n_snapshot,ode_step = args.ode_step,
+                                    time_evol = True)
+                target = target
+                break
+        return pred,target
+    
+        # if "single_pixel" in self.tasks:
+        #     new_pred_dic = {"single_pixel":(pred[0,:,0,loc_x,loc_y])}
+        #     new_target_dic = {"single_pixel":(target[0,:,0,loc_x,loc_y])}
+        #     pred_dic.update(new_pred_dic)
+        #     target_dic.update(new_target_dic)
+        # if "multi_pixel" in self.tasks:
+        #     new_pred_dic = {"multi_pixel":(pred[0,:,0,:,:])}
+        #     new_target_dic = {"multi_pixel":(target[0,:,0,:,:])}
+        #     pred_dic.update(new_pred_dic)
+        #     target_dic.update(new_target_dic)
+        return 

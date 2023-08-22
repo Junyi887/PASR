@@ -31,7 +31,7 @@ import argparse
 import neptune.new as neptune
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
+ID = torch.randint(1000,(1,1))
  
 # Replace the final print statement
 def psnr(true, pred):
@@ -40,7 +40,7 @@ def psnr(true, pred):
         return float(9999)
     max_value = torch.max(true)
     psnr = 20 * torch.log10(max_value / torch.sqrt(mse))
-    if psnr.isNan() or psnr.isInf():
+    if psnr.isnan() or psnr.isinf():
         return float(0)
     return psnr
     
@@ -106,6 +106,8 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         scheduler = StepLR(optimizer, args.lr_step, gamma=args.gamma)
     elif args.scheduler == "Exp":
         scheduler = ExponentialLR(optimizer, gamma=args.gamma)
+    elif args.scheduler == "plateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=args.gamma, patience=args.patience, min_lr=5e-6,threshold=0.005)
     best_loss_val = 1e9
     if args.loss_type =='L1':
         criterion_Data = nn.L1Loss().to(device)
@@ -117,7 +119,11 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         avg_val = 0
         target_loss = 0
         input_loss = 0
-        run['train/lr'].log(scheduler.get_lr())
+        if args.scheduler == 'plateau':
+            lr = optimizer.param_groups[0]["lr"]
+            run['train/lr'].log(lr)
+        else:
+            run['train/lr'].log(scheduler.get_lr())
         for iteration, batch in enumerate(trainloader):
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
@@ -132,8 +138,12 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             loss.backward()
             optimizer.step()
             avg_loss += loss.item()
-        scheduler.step()
         result_val1,result_val2 = validation(args,model, val1_loader,val2_loader,device)
+        if args.scheduler == "plateau":
+            scheduler.step(result_val1[1])
+        else: 
+            scheduler.step()
+
         avg_val = result_val1[1] + lamb*result_val2[0]
         # val_list.append(avg_val)
         # val_list_x1.append(result_val1[0])
@@ -197,10 +207,12 @@ parser.add_argument('--seed',type =int, default= 3407)
 
 parser.add_argument('--gating_layers',type =int, default= 3)
 parser.add_argument('--gating_method',type =str, default= 'leaky')
+
 parser.add_argument('--normalization',type =str, default= 'True')
 
 parser.add_argument('--gamma',type =float, default= 0.95)
 parser.add_argument('--lr_step',type =int, default= 80)
+parser.add_argument('--patience',type =int, default= 15)
 parser.add_argument('--scheduler',type =str, default= 'StepLR')
 parser.add_argument('--n_snapshot',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
@@ -267,11 +279,13 @@ if __name__ == "__main__":
                 "_lamb_" + str(args.lamb) +
                 "_lr_" + str(args.lr) +
                 "_gamma_" + str(args.gamma) +
-                "_normalizaiton_" + str(args.normalization)
+                "_normalizaiton_" + str(args.normalization) + str(ID)
                 ) 
+
     run = neptune.init(
     project="junyiICSI/PASR",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
+    tags = ID,
     )  # your credentials
 
     run["config"] = vars(args)   
