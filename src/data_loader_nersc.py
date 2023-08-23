@@ -79,7 +79,7 @@ class GetDataset_diffIC_NOCrop(Dataset):
         self.timescale_factor = timescale_factor
         self._get_files_stats()
         if method == "bicubic":
-            self.input_transform = transforms.Resize((int(self.img_shape_x/upscale_factor),int(self.img_shape_y/upscale_factor)),Image.BICUBIC) # TODO: compatibility issue for antialias='warn' check torch version
+            self.input_transform = transforms.Resize((int(self.img_shape_x/upscale_factor),int(self.img_shape_y/upscale_factor)),Image.BICUBIC,antialias=False) # TODO: compatibility issue for antialias='warn' check torch version
         elif method == "gaussian_blur":
             self.input_transform = transforms.GaussianBlur(kernel_size=(3,3), sigma=(1,1))
         
