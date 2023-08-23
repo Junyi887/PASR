@@ -28,7 +28,7 @@ from src.utli import *
 from src.data_loader_nersc import getData
 import logging
 import argparse
-import neptune.new as neptune
+import neptune
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 ID = torch.randint(10000,(1,1))
