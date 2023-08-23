@@ -673,7 +673,8 @@ class Gated_NODE(nn.Module):
         self.int_method = ode_method
     def forward(self, x,ode_step = 1,task_dt = 1.0):
         B,C,H,W = x.shape
-        x = x.flatten(2).transpose(1, 2)  # B Ph*Pw C
+        # x = x.flatten(2).transpose(1, 2)  # B Ph*Pw C
+        x = x.permute(0, 2, 3, 1)
         h = task_dt / ode_step
         if self.int_method == "Euler":
             for i in range(ode_step):
@@ -691,7 +692,8 @@ class Gated_NODE(nn.Module):
                 f3 = self.model(x+h/2.0*f2)
                 f4 = self.model(x+h*f3)
                 x = x + h*self.gating(x)*(f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0) #512
-        x = x.transpose(1, 2).view(B, C, H, W) 
+        # x = x.transpose(1, 2).view(B, C, H, W) 
+        x = x.permute(0, 3, 1, 2)
         return x 
 
 class PASR_MLP_G(nn.Module):
