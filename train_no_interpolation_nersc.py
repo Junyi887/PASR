@@ -28,11 +28,16 @@ from src.utli import *
 from src.data_loader_nersc import getData
 import logging
 import argparse
-import neptune
+ 
+import neptune 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 ID = torch.randint(10000,(1,1))
- 
+run = neptune.init(
+    project="junyiICSI/PASR",
+    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
+    tags = f"ID {ID}",
+    )  # your credentials
 # Replace the final print statement
 def psnr(true, pred):
     mse = torch.mean((true - pred) ** 2)
@@ -91,7 +96,7 @@ def validation(args,model, val1_loader,val2_loader,device):
 
     return result_loader1,result_loader2
 
-def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath,run):
+def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath):
     lamb = args.lamb
     best_epoch = 0
     val_list = []
@@ -283,14 +288,8 @@ if __name__ == "__main__":
                 "_normalizaiton_" + str(args.normalization) + str(ID)
                 ) 
 
-    run = neptune.init(
-    project="junyiICSI/PASR",
-    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
-    tags = f"ID {ID}",
-    )  # your credentials
-
     run["config"] = vars(args)   
-    min_RFNE,best_epoch = train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath,run)
+    min_RFNE,best_epoch = train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath)
     run["metric/min_RFNE"].log(min_RFNE)
     run['metric/best_epoch'].log(best_epoch)
     run.stop()
