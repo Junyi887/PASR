@@ -190,7 +190,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
 
 
 parser = argparse.ArgumentParser(description='training parameters')
-parser.add_argument('--model', type =str ,default= 'PASR')
+parser.add_argument('--model', type =str ,default= 'PASR_MLP_small')
 parser.add_argument('--data', type =str ,default= 'Decay_turb')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
@@ -286,7 +286,7 @@ if __name__ == "__main__":
     run = neptune.init(
     project="junyiICSI/PASR",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
-    tags = ID,
+    tags = f"ID {ID}",
     )  # your credentials
 
     run["config"] = vars(args)   

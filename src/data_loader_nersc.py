@@ -112,7 +112,7 @@ class GetDataset_diffIC_NOCrop(Dataset):
     def _open_file(self, file_idx):
         _file = h5py.File(self.files_paths[file_idx], 'r')
         self.files[file_idx] = _file['tasks']
-        self.times[file_idx] = _file['scales/sim_time']
+        # self.times[file_idx] = _file['scales/sim_time']
 
     def __len__(self):
         return self.n_samples_total-1
@@ -234,7 +234,7 @@ def random_split(dataset, lengths,
 
 if __name__ == "__main__":
 
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'Burgers2D',batch_size= 30,data_path="../rbc_diff_IC/rbc_256_64")
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'Decay_turb',batch_size= 30,data_path="../Decay_Turbulence")
     for idx, (input,target) in enumerate (val1_loader):
         input = input
         target = target
