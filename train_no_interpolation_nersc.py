@@ -36,7 +36,7 @@ ID = torch.randint(10000,(1,1))
 run = neptune.init_run(
     project="junyiICSI/PASR",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
-    tags = f"ID {ID}",
+    tags = [str(ID.item())],
     )  # your credentials
 # Replace the final print statement
 def psnr(true, pred):
@@ -74,7 +74,7 @@ def validation(args,model, val1_loader,val2_loader,device):
             input_loss1 += input_loss.item()
             RFNE1_loss += RFNE_t.mean().item()
             psnr1_loss += psnr(out_t, target[:,1:,...]).item()
-    result_loader1 = [input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE1_loss /len(val1_loader)]
+    result_loader1 = [input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE1_loss /len(val1_loader),psnr1_loss/len(val1_loader)]
     target_loss2 = 0 
     input_loss2 = 0
     RFNE2_loss = 0
@@ -92,7 +92,7 @@ def validation(args,model, val1_loader,val2_loader,device):
             input_loss2 += input_loss.item()
             RFNE2_loss += RFNE_t.mean().item()
             psnr2_loss += psnr(out_t, target[:,1:,...]).item()
-    result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader)]
+    result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader),psnr2_loss/len(val2_loader)]
 
     return result_loader1,result_loader2
 
@@ -128,7 +128,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             lr = optimizer.param_groups[0]["lr"]
             run['train/lr'].log(lr)
         else:
-            run['train/lr'].log(scheduler.get_lr())
+            run['train/lr'].log(scheduler.get_last_lr())
         for iteration, batch in enumerate(trainloader):
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
