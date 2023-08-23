@@ -875,7 +875,7 @@ class PASR_MLP(nn.Module):
         x = self.conv_first(x)     #Shallow Feature Extraction
         z0 = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
         for i in range (n_snapshot):   
-            if self.upsampler == 'pixelshuffle':
+            if self.upsampler == 'pixelshuffle' or self.upsampler =='pixelshuffledirect':
             # load initial condition
                 if time_evol == True:
                     z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
