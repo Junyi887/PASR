@@ -234,7 +234,7 @@ def random_split(dataset, lengths,
 
 if __name__ == "__main__":
 
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'rbc_25664',batch_size= 30,data_path="../rbc_diff_IC/rbc_256_64")
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'Burgers2D',batch_size= 30,data_path="../rbc_diff_IC/rbc_256_64")
     for idx, (input,target) in enumerate (val1_loader):
         input = input
         target = target

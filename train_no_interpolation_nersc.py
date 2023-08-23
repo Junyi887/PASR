@@ -25,13 +25,13 @@ from tqdm import tqdm
 import h5py
 from src.models import *
 from src.utli import *
-from src.data_loader import getData
+from src.data_loader_nersc import getData
 import logging
 import argparse
 import neptune.new as neptune
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-ID = torch.randint(1000,(1,1))
+ID = torch.randint(10000,(1,1))
  
 # Replace the final print statement
 def psnr(true, pred):
@@ -191,16 +191,16 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
 
 parser = argparse.ArgumentParser(description='training parameters')
 parser.add_argument('--model', type =str ,default= 'PASR')
-parser.add_argument('--data', type =str ,default= 'rbc_diff_10IC')
+parser.add_argument('--data', type =str ,default= 'Decay_turb')
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 parser.add_argument('--scale_factor', type = int, default= 4)
-parser.add_argument('--timescale_factor', type = int, default= 4)
+parser.add_argument('--timescale_factor', type = int, default= 1)
 parser.add_argument('--task_dt',type =float, default= 4)
 parser.add_argument('--ode_step',type =int, default= 2)
 parser.add_argument('--ode_method',type =str, default= "Euler")
 parser.add_argument('--in_channels',type = int, default= 1)
 parser.add_argument('--batch_size', type = int, default= 8)
-parser.add_argument('--crop_size', type = int, default= 32, help= 'should be same as image dimension')
+parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
 parser.add_argument('--epochs', type = int, default= 3)
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
@@ -220,7 +220,7 @@ parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # neares
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
-parser.add_argument('--data_path',type = str,default = "../rbc_diff_IC")
+parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
 args = parser.parse_args()
 logging.info(args)
 
