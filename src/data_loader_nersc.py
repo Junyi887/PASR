@@ -106,20 +106,19 @@ class GetDataset_diffIC_NOCrop(Dataset):
         print("Found {} files".format(self.n_files))
         with h5py.File(self.files_paths[0], 'r') as _f:
             print("Getting file stats from {}".format(self.files_paths[0]))
-            self.n_samples_per_file = _f['tasks']["vorticity"].shape[0]
-            self.img_shape_x = _f['tasks']["vorticity"].shape[1]
-            self.img_shape_y = _f['tasks']["vorticity"].shape[2]
+            self.n_samples_per_file = _f['tasks']["u"].shape[0]
+            self.img_shape_x = _f['tasks']["u"].shape[1]
+            self.img_shape_y = _f['tasks']["u"].shape[2]
         self.number_input = (self.n_samples_per_file-1)//self.timescale_factor - self.num_snapshots-1
-        print(self.number_input)
         self.n_samples_total = self.n_files*self.number_input
         # change correspond to data structure
         self.files = [None for _ in range(self.n_files)]
         self.times = [None for _ in range(self.n_files)]
         
         # each file must have same number of files, otherwise it will be wrong
-        print(self.n_samples_total)
-        print("Found data at path {}. Number of examples: {}. Image Shape: {} x {} x {}".format(
-            self.location, self.n_samples_per_file, self.img_shape_x, self.img_shape_y, self.n_in_channels))
+        print(f"number of sample in total: {self.n_samples_total}")
+        print("Found data at path {}. Number of examples total: {}. To-use data per trajectory: {}  Image Shape: {} x {} x {}".format(
+            self.location, self.n_samples_per_file, self.number_input,self.img_shape_x, self.img_shape_y, self.n_in_channels))
 
     def _open_file(self, file_idx):
         _file = h5py.File(self.files_paths[file_idx], 'r')
@@ -246,7 +245,7 @@ def random_split(dataset, lengths,
 
 if __name__ == "__main__":
 
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'Burger2D',batch_size= 30,data_path="../Burger2D_diff_IC")
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'Burger2D_small',batch_size= 30,data_path="../Fluid_PlayGround/Burgers_2D_small",in_channels=2,timescale_factor= 4)
     for idx, (input,target) in enumerate (train_loader):
         input = input
         target = target
