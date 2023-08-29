@@ -17,7 +17,7 @@ from torch.utils.data.dataset import Subset
 #../datasets/rbc_diff_IC/rbc_IC1
 def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
              upscale_factor= 4,timescale_factor = 1, num_snapshots = 20,
-             noise_ratio = 0.0, crop_size = 512, method = "bicubic", 
+             noise_ratio = 0.0, crop_size = 128, method = "bicubic", 
              batch_size = 1, std = [0.6703, 0.6344, 8.3615],in_channels = 1):  
     
     # data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std
@@ -43,7 +43,7 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
     
     transform = torch.from_numpy
           
-    if data_name in ['rbc','Decay_turb','Burgers2D']:
+    if data_name in ['rbc','Decay_turb','Burger2D']:
         dataset = GetDataset_diffIC_NOCrop(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels) 
         if state == "train":
             shuffle = True
@@ -234,8 +234,8 @@ def random_split(dataset, lengths,
 
 if __name__ == "__main__":
 
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'Decay_turb',batch_size= 30,data_path="../Decay_Turbulence")
-    for idx, (input,target) in enumerate (val1_loader):
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'Burger2D',batch_size= 30,data_path="../Burger2D_diff_IC")
+    for idx, (input,target) in enumerate (train_loader):
         input = input
         target = target
     print(input.shape)
