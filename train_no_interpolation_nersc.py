@@ -149,7 +149,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         else: 
             scheduler.step()
 
-        avg_val = result_val1[1] + lamb*result_val2[0]
+        avg_val = result_val1[1] + lamb*result_val1[0]
         # val_list.append(avg_val)
         # val_list_x1.append(result_val1[0])
         # val_list_t1.append(result_val1[1])
@@ -163,8 +163,8 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         run['train/train_loss_t'].log(target_loss / len(trainloader))
         run['val/val_loss_x1'].log(result_val1[0])
         run['val/val_loss_t1'].log(result_val1[1])
-        run['test/test_loss_x1'].log(result_val1[0])
-        run['test/test_loss_t1'].log(result_val1[1])
+        run['test/test_loss_x1'].log(result_val2[0])
+        run['test/test_loss_t1'].log(result_val2[1])
         run['val/RFNE'].log(result_val1[2])
         run['val/PSNR'].log(result_val1[3])
         run['test/RFNE'].log(result_val2[2])

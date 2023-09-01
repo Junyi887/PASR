@@ -55,7 +55,6 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
 def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels=1):
     
     transform = torch.from_numpy
-        
     dataset = GetDataset_diffIC_NOCrop(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels) 
     if state == "train":
         shuffle = True
@@ -109,16 +108,20 @@ class GetDataset_diffIC_NOCrop(Dataset):
             self.n_samples_per_file = _f['tasks']["u"].shape[0]
             self.img_shape_x = _f['tasks']["u"].shape[1]
             self.img_shape_y = _f['tasks']["u"].shape[2]
-        self.number_input = (self.n_samples_per_file-1)//self.timescale_factor - self.num_snapshots-1
-        self.n_samples_total = self.n_files*self.number_input
+
+        final_index = (self.n_samples_per_file-1)//self.timescale_factor
+        self.idx_matrix = self.generate_toeplitz(cols = self.num_snapshots+1, final_index=final_index)*self.timescale_factor
+        self.input_per_file = self.idx_matrix.shape[0]
+        if self.num_snapshots != self.idx_matrix.shape[1] -1:
+            raise ValueError(f"Invalid number of snapshots: {self.num_snapshots} vs {self.idx_matrix.shape[1]}")
+        self.n_samples_total = self.n_files*self.input_per_file
         # change correspond to data structure
         self.files = [None for _ in range(self.n_files)]
         self.times = [None for _ in range(self.n_files)]
         
         # each file must have same number of files, otherwise it will be wrong
-        print(f"number of sample in total: {self.n_samples_total}")
         print("Found data at path {}. Number of examples total: {}. To-use data per trajectory: {}  Image Shape: {} x {} x {}".format(
-            self.location, self.n_samples_per_file, self.number_input,self.img_shape_x, self.img_shape_y, self.n_in_channels))
+            self.location, self.n_samples_per_file, self.input_per_file,self.img_shape_x, self.img_shape_y, self.n_in_channels))
 
     def _open_file(self, file_idx):
         _file = h5py.File(self.files_paths[file_idx], 'r')
@@ -126,13 +129,15 @@ class GetDataset_diffIC_NOCrop(Dataset):
         # self.times[file_idx] = _file['scales/sim_time']
 
     def __len__(self):
-        return self.n_samples_total-1
+        return self.n_samples_total
 
     def __getitem__(self, global_idx):
         y_list = []
         t_list = []
         file_idx, local_idx = self.get_indices(global_idx)
         # lr 
+        if local_idx !=self.idx_matrix[global_idx%self.input_per_file][0]:
+                raise ValueError(f"Invalid Input index: {local_idx} vs index matrix {self.idx_matrix[global_idx%self.input_per_file][0]}")
         if self.files[file_idx] is None:
                 self._open_file(file_idx)
         if self.n_in_channels ==3:
@@ -151,7 +156,10 @@ class GetDataset_diffIC_NOCrop(Dataset):
         y_list.append(y)
         # getting the future samples
         for i in range(1, self.num_snapshots+1):
-            local_idx_future = local_idx+i
+            local_idx_future = local_idx+i*self.timescale_factor
+            if local_idx_future !=self.idx_matrix[global_idx%self.input_per_file][i]:
+                raise ValueError(f"Invalid target index: {local_idx_future} vs index matrix {self.idx_matrix[global_idx%self.input_per_file][0]}")
+            
             if self.n_in_channels ==3:
                 w,u,v = self.files[file_idx]["vorticity"][local_idx_future],self.files[file_idx]["u"][local_idx_future],self.files[file_idx]["v"][local_idx_future]
                 w,u,v = self.transform(w),self.transform(u),self.transform(v)
@@ -171,8 +179,8 @@ class GetDataset_diffIC_NOCrop(Dataset):
         return X,y
 
     def get_indices(self, global_idx):
-        file_idx = int(global_idx/self.number_input)  # which file we are on
-        local_idx = int(global_idx % self.number_input)  # which sample in that file we are on 
+        file_idx = int(global_idx/self.input_per_file)  # which file we are on
+        local_idx = int(global_idx % self.input_per_file) * self.timescale_factor  # which sample in that file we are on 
 
         return file_idx, local_idx
 
@@ -188,7 +196,34 @@ class GetDataset_diffIC_NOCrop(Dataset):
             raise ValueError(f"Invalid method: {self.method}")
         #TODO: add gaussian blur
         return X
+    
+    @staticmethod
+    def generate_toeplitz(cols:int, final_index:int):
+    # Calculate the number of rows based on the final index and number of columns
+        rows = final_index - cols + 2
+        
+        # Initialize a matrix filled with zeros
+        matrix = np.zeros((rows, cols))
+        
+        # Fill the matrix such that it becomes a Toeplitz matrix
+        for i in range(rows):
+            for j in range(cols):
+                value = i + j
+                matrix[i, j] = min(value, final_index)
+                    
+        return matrix
 
+# n_snapshot = 10
+# time_scale_factor = 4
+# # Example usage
+# total_number = 2000 # Total number of time steps
+# cols = n_snapshot 
+#  # Number of columns
+# final_index = (total_number-1)//time_scale_factor  # Final index number
+# toeplitz_matrix = generate_toeplitz(cols, final_index)
+# print("Generated Toeplitz Matrix:")
+# print(toeplitz_matrix*time_scale_factor)
+# print(toeplitz_matrix.shape)
 
 def random_split(dataset, lengths,
                  generator=default_generator):
@@ -245,7 +280,7 @@ def random_split(dataset, lengths,
 
 if __name__ == "__main__":
 
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'Burger2D_small',batch_size= 30,data_path="../Fluid_PlayGround/Burgers_2D_small",in_channels=2,timescale_factor= 4)
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'rbc_small',batch_size= 30,data_path="../Fluid_PlayGround/RBC_small",in_channels=1,timescale_factor= 4)
     for idx, (input,target) in enumerate (train_loader):
         input = input
         target = target
