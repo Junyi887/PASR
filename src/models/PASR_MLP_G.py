@@ -731,14 +731,14 @@ class PASR_MLP_G(nn.Module):
                  norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
                  use_checkpoint=False, upscale=2, upsampler='', resi_connection='1conv'
                  ,mean = [0],std = [1],  
-                 ode_method = "Euler",gating_layers = 3,gating_method='leaky',
+                 ode_method = "Euler",gating_layers = 3,gating_method='leaky',normalization = False,
                  **kwargs):
         super(PASR_MLP_G, self).__init__()
         
         num_in_ch = in_chans
         num_out_ch = in_chans
         num_feat = 64
-        if in_chans == 3:
+        if in_chans == 3 and normalization == True:
             self.mean = torch.Tensor(mean).view(1, 3, 1, 1)
             self.std = torch.Tensor(std).view(1, 3, 1, 1)
         else:
