@@ -306,7 +306,7 @@ def random_split(dataset, lengths,
 
 if __name__ == "__main__":
 
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'rbc_small',batch_size= 30,data_path="../Fluid_PlayGround/RBC_small",in_channels=1,timescale_factor= 10)
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'rbc_small',batch_size= 30,data_path="../RBC_small",in_channels=1,timescale_factor= 10)
     for idx, (input,target) in enumerate (test1_loader):
         input = input
         target = target
