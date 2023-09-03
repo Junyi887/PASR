@@ -48,7 +48,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
             train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
             val1_loader = get_data_loader(data_name, data_path, '/val', "val", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
             val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
+            test1_loader = get_data_loader(data_name, data_path, '/test', "test_one", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
             test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)        
         return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     
@@ -110,7 +110,11 @@ class GetDataset_diffIC_NOCrop(Dataset):
             self.img_shape_y = _f['tasks']["u"].shape[2]
 
         final_index = (self.n_samples_per_file-1)//self.timescale_factor
-        self.idx_matrix = self.generate_toeplitz(cols = self.num_snapshots+1, final_index=final_index)*self.timescale_factor
+        if self.state == "test_one":
+            self.idx_matrix = self.generate_test_matrix(cols = self.num_snapshots+1, final_index=final_index)*self.timescale_factor
+            print(self.idx_matrix)
+        else:
+            self.idx_matrix = self.generate_toeplitz(cols = self.num_snapshots+1, final_index=final_index)*self.timescale_factor
         self.input_per_file = self.idx_matrix.shape[0]
         if self.num_snapshots != self.idx_matrix.shape[1] -1:
             raise ValueError(f"Invalid number of snapshots: {self.num_snapshots} vs {self.idx_matrix.shape[1]}")
@@ -212,6 +216,28 @@ class GetDataset_diffIC_NOCrop(Dataset):
                 matrix[i, j] = min(value, final_index)
                     
         return matrix
+    @staticmethod
+    def generate_test_matrix(cols:int, final_index:int):
+        # Calculate the number of rows based on the final index and number of columns
+        rows = (final_index + 1) // (cols - 1)
+        
+        # Check if an additional row is needed to reach the final index
+        if (final_index + 1) % (cols - 1) != 0:
+            rows += 1
+        
+        # Initialize a matrix filled with zeros
+        matrix = np.zeros((rows, cols))
+        
+        # Fill the matrix according to the specified pattern
+        current_value = 0
+        for i in range(rows):
+            for j in range(cols):
+                if current_value <= final_index:
+                    matrix[i, j] = current_value
+                    current_value += 1
+            current_value -= 1  # Repeat the last element in the next row
+                    
+        return matrix[:-1,:]
 
 # n_snapshot = 10
 # time_scale_factor = 4
@@ -280,8 +306,8 @@ def random_split(dataset, lengths,
 
 if __name__ == "__main__":
 
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'rbc_small',batch_size= 30,data_path="../Fluid_PlayGround/RBC_small",in_channels=1,timescale_factor= 4)
-    for idx, (input,target) in enumerate (train_loader):
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'rbc_small',batch_size= 30,data_path="../Fluid_PlayGround/RBC_small",in_channels=1,timescale_factor= 10)
+    for idx, (input,target) in enumerate (test1_loader):
         input = input
         target = target
     print(input.shape)
