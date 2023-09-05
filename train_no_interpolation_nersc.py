@@ -107,6 +107,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
     train_list = []
     train_list_x = []
     train_list_t = []
+    fd_solver = ConvFD(kernel_size=5).to(device)
     if args.scheduler == 'StepLR':
         scheduler = StepLR(optimizer, args.lr_step, gamma=args.gamma)
     elif args.scheduler == "Exp":
@@ -118,7 +119,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         criterion_Data = nn.L1Loss().to(device)
     elif args.loss_type =='L2':
         criterion_Data = nn.MSELoss().to(device)
-
+    criterion2 = nn.MSELoss().to(device)
     for epoch in range(args.epochs):
         avg_loss = 0
         avg_val = 0
@@ -137,6 +138,10 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
             out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True)
             loss_t = criterion_Data(out_t,target[:,1:,:,:,:])
+            div = fd_solver.get_div_loss(out_t)
+            phy_loss = criterion2(div,torch.zeros_like(div).to(device)) # DO NOT CHANGE THIS ONE. Phy loss has to be L2 norm 
+            if args.physics == "True":
+                loss_t += phy_loss
             target_loss += loss_t.item() 
             input_loss += loss_x.item()
             loss = loss_t + lamb*loss_x
@@ -169,6 +174,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         run['val/PSNR'].log(result_val1[3])
         run['test/RFNE'].log(result_val2[2])
         run['test/PSNR'].log(result_val2[3])
+        run['train/div'].log(phy_loss.item())
         # print(result_val1[3],result_val2[3])
         logging.info("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, result_val1[0], result_val1[1], result_val2[0],result_val2[1]))
         if avg_val < best_loss_val:
@@ -214,6 +220,7 @@ parser.add_argument('--gating_layers',type =int, default= 3)
 parser.add_argument('--gating_method',type =str, default= 'leaky')
 
 parser.add_argument('--normalization',type =str, default= 'False')
+parser.add_argument('--physics',type =str, default= 'False')
 
 parser.add_argument('--gamma',type =float, default= 0.95)
 parser.add_argument('--lr_step',type =int, default= 80)
