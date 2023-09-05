@@ -41,14 +41,16 @@ def plot_for_comparision(data_name,pred,truth,lr_input,time_span,vmin,vmax,chann
     figwidth = 2 if data_name != "rbc" else 1
     fig,axs = plt.subplots(4,truth.shape[0],figsize=(figwidth*truth.shape[0],figheight))
     for i in range(truth.shape[0]):
-        axs[0,i].set_title(f"input t={(i*DATA_INFO[data_name][1]*time_span*5):.2f}") # 5 is the timescale factor
+        img = axs[0,i].set_title(f"input t={(i*DATA_INFO[data_name][1]*time_span*5):.2f}") # 5 is the timescale factor
         axs[0,i].imshow(lr_trajectory[i],cmap=CMAP,vmin=vmin,vmax=vmax)
         axs[1,i].imshow(pred[i],cmap=CMAP,vmin=vmin,vmax=vmax)
         axs[1,i].set_title(f"pred t={(i*DATA_INFO[data_name][1]*time_span*5):.2f}") # 5 is the timescale factor
         axs[2,i].imshow(truth[i],cmap=CMAP,vmin=vmin,vmax=vmax)
         axs[2,i].set_title(f"truth t={(i*DATA_INFO[data_name][1]*time_span*5):.2f}")
-        axs[3,i].imshow(error[i],cmap=CMAP,vmin=0,vmax=vmax)
+        err = axs[3,i].imshow(error[i],cmap=CMAP,vmin=0,vmax=vmax)
         axs[3,i].set_title(f"error t={(i*DATA_INFO[data_name][1]*time_span*5):2f}")
+    plt.colorbar(err,ax=axs[3,-1],shrink = 0.5,extend = 'both')
+    plt.colorbar(img,ax = [axs[0,-1],axs[1,-1],axs[2,-1]],shrink = 0.5,extend = 'both')
     for ax in axs:
         for a in ax:
             a.axis('off') 
@@ -64,6 +66,8 @@ def plot_for_comparision(data_name,pred,truth,lr_input,time_span,vmin,vmax,chann
         axs[2,i].set_title(f"truth t={(i*DATA_INFO[data_name][1]*time_span*5*5):.2f}")
         axs[3,i].imshow(error[i*5],cmap=CMAP,vmin=0,vmax=vmax)
         axs[3,i].set_title(f"error t={(i*DATA_INFO[data_name][1]*time_span*5*5):.2f}")
+    plt.colorbar(err,ax=axs[3,-1],shrink = 0.5,extend = 'both')
+    plt.colorbar(img,ax = [axs[0,-1],axs[1,-1],axs[2,-1]],shrink = 0.5,extend = 'both')
     for ax in axs:
         for a in ax:
             a.axis('off') 
@@ -156,45 +160,45 @@ def plot_PDF(data_name,pred,truth,lr_input):
     import numpy as np
     from scipy.interpolate import UnivariateSpline
     from matplotlib import pyplot as plt
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    # Flatten the prediction and truth arrays
-    s_pred = pred.flatten()
-    s_truth = truth.flatten()
-    # Plot the KDE for rediction and truth
-    seaborn.kdeplot(s_pred, ax=ax,label="Prediction",log_scale=True)
-    seaborn.kdeplot(s_truth, label="Truth",ax=ax,log_scale=True)
-    # Labeling and legend
-    ax.set_xlabel("Normalized Vorticity")
-    ax.legend()
-    # Save the figure
-    fig.savefig("figures/PDF_" + data_name + ".png")
-    # s_pred3 = lr_input[:,:,0].flatten()
-    # n3 = s_pred3.shape[0]
+    # fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    # # Flatten the prediction and truth arrays
     # s_pred = pred.flatten()
     # s_truth = truth.flatten()
-    # n = 100
-    # std = np.std(s_pred)
-    # std2 = np.std(s_truth)
-    # p, x = np.histogram(s_pred/std, bins=n) # bin it into n = N//10 bins
-    # p2,x2 = np.histogram(s_truth/std2, bins=n)
-    # p3,x3 = np.histogram(s_pred3, bins=n)
-    # x3 = x3[:-1] + (x3[1] - x3[0])/2   # convert bin edges to centers
-    # x2 = x2[:-1] + (x2[1] - x2[0])/2   # convert bin edges to centers
-    # x = x[:-1] + (x[1] - x[0])/2   # convert bin edges to centers
+    # # Plot the KDE for rediction and truth
+    # seaborn.kdeplot(s_pred, ax=ax,label="Prediction",log_scale=True)
+    # seaborn.kdeplot(s_truth, label="Truth",ax=ax,log_scale=True)
+    # # Labeling and legend
+    # ax.set_xlabel("Normalized Vorticity")
+    # ax.legend()
+    # # Save the figure
+    fig.savefig("figures/PDF_" + data_name + ".png")
+    s_pred3 = lr_input[:,:,0].flatten()
+    n3 = s_pred3.shape[0]
+    s_pred = pred.flatten()
+    s_truth = truth.flatten()
+    n = 100
+    std = np.std(s_pred)
+    std2 = np.std(s_truth)
+    p, x = np.histogram(s_pred/std, bins=n,density = True) # bin it into n = N//10 bins
+    p2,x2 = np.histogram(s_truth/std2, bins=n,density = True)
+    p3,x3 = np.histogram(s_pred3, bins=n,density = True)
+    x3 = x3[:-1] + (x3[1] - x3[0])/2   # convert bin edges to centers
+    x2 = x2[:-1] + (x2[1] - x2[0])/2   # convert bin edges to centers
+    x = x[:-1] + (x[1] - x[0])/2   # convert bin edges to centers
 
-    # f = UnivariateSpline(x, p, s=n)
-    # f2 = UnivariateSpline(x2, p2, s=n)
-    # f3 = UnivariateSpline(x3, p3, s=n)
-    # fig,ax = plt.subplots(1,1,figsize = (10,10))
-    # ax.plot(x,f(x),'k',label = "Prediction")
-    # ax.plot(x2,f2(x2),'r',label = "Ground Truth")
-    # # plt.plot(x3,f3(x3))
-    # ax.set_yscale('log')
-    # ax.set_xlabel('Normalized vorticity')
-    # ax.set_ylabel('PDF')
-    # ax.legend(['Prediction','Ground Truth'])
-    # ax.set_title(data_name)
-    # fig.savefig("figures/PDF_"+data_name+".png")
+    f = UnivariateSpline(x, p, s=n)
+    f2 = UnivariateSpline(x2, p2, s=n)
+    f3 = UnivariateSpline(x3, p3, s=n)
+    fig,ax = plt.subplots(1,1,figsize = (10,10))
+    ax.plot(x,f(x),'k',label = "Prediction")
+    ax.plot(x2,f2(x2),'r',label = "Ground Truth")
+    # plt.plot(x3,f3(x3))
+    ax.set_yscale('log')
+    ax.set_xlabel('Normalized vorticity')
+    ax.set_ylabel('PDF')
+    ax.legend(['Prediction','Ground Truth'])
+    ax.set_title(data_name)
+    fig.savefig("figures/PDF_"+data_name+".png")
     return print("PDF plot done")
 
 def get_data_scale(data_name):

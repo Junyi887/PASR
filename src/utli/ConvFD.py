@@ -80,7 +80,7 @@ class ConvFD(nn.Module):
         bu,t,xu,yu = u.shape
         u = u.reshape(bu*t,1,xu,yu)
         v = output[:,:,2,:,:]
-        bv,xv,yv = v.shape
+        bv,t,xv,yv = v.shape
         v = v.reshape(bv*t,1,xv,yv)
         #w = output[:,0,:,:]
         u_x = self.dx(u)  
@@ -91,10 +91,10 @@ class ConvFD(nn.Module):
         return div
     def get_vorticity(self,u,v):
         '''compute vorticity'''
-        bu,xu,yu = u.shape
-        bv,xv,yv = v.shape
-        u = u.reshape(bu,1,xu,yu)
-        v = v.reshape(bv,1,xv,yv)
+        bu,t,xu,yu = u.shape
+        bv,t,xv,yv = v.shape
+        u = u.reshape(bu,t,xu,yu)
+        v = v.reshape(bv,t,xv,yv)
         #w = output[:,0,:,:]
         u_y = self.dy(u)  
         v_x = self.dx(v)  
