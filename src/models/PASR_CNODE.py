@@ -628,42 +628,6 @@ class UpsampleOneStep(nn.Sequential):   #inside HQ Image reconstruction
         flops = H * W * self.num_feat * 3 * 9
         return flops
 
-######################
-class CDEFunc(nn.Module):
-    def __init__(self, input_channels, num_hidden_layers =3):
-        super(CDEFunc, self).__init__()
-        self.input_channels = input_channels
-        self.hidden_channels = input_channels*2
-        self.num_hidden_layers = num_hidden_layers
-
-        self.linear_in = torch.nn.Linear(input_channels, input_channels*2)
-        self.linears = torch.nn.ModuleList(torch.nn.Linear(input_channels*2, input_channels*2)
-                                           for _ in range(num_hidden_layers - 1))
-        self.linear_out = torch.nn.Linear(input_channels*2, input_channels)
-
-    def forward(self, z):
-        z = self.linear_in(z)
-        z = z.relu()
-        for linear in self.linears:
-            z = linear(z)
-            z = z.relu()
-        # Ignoring the batch dimensions, the shape of the output tensor must be a matrix,
-        # because we need it to represent a linear map from R^input_channels to R^hidden_channels.
-        z = self.linear_out(z).view(*z.shape[:-1], self.hidden_channels, self.input_channels)
-        z = z.tanh()
-        return z
-
-class NeuralCDE(torch.nn.Module):
-    def __init__(self, input_channels):
-        super(NeuralCDE, self).__init__()
-        self.func = CDEFunc(input_channels)
-
-    def forward(self,z0,coeffs):
-        X= torchcde.CubicSpline(coeffs)
-        X0 = X.evaluate(X.interval[0])
-        zt = torchcde.cdeint(X=X, z0=z0, func=self.func, t=X.interval)
-        return zt
-
 class PASR(nn.Module):
     """ PASR
 
