@@ -292,7 +292,7 @@ if __name__ == "__main__":
                 "_lamb_" + str(args.lamb) +
                 "_lr_" + str(args.lr) +
                 "_gamma_" + str(args.gamma) +
-                "_normalizaiton_" + str(args.normalization) + str(ID)
+                "_normalizaiton_" + str(args.normalization) + str(ID.item())
                 ) 
 
     run["config"] = vars(args)   
