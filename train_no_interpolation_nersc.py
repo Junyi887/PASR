@@ -141,7 +141,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             div = fd_solver.get_div_loss(out_t)
             phy_loss = criterion2(div,torch.zeros_like(div).to(device)) # DO NOT CHANGE THIS ONE. Phy loss has to be L2 norm 
             if args.physics == "True":
-                loss_t += phy_loss
+                loss_t += args.lamb_p*phy_loss
             target_loss += loss_t.item() 
             input_loss += loss_x.item()
             loss = loss_t + lamb*loss_x
@@ -232,6 +232,7 @@ parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # neares
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
+parser.add_argument('--lamb_p', type = float, default= 1)
 parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
 args = parser.parse_args()
 logging.info(args)
