@@ -21,10 +21,9 @@ DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x
                  "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
                  "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01]}
 
-MODEL_INFO = {"decay_turb":'results/PASR_MLP_small_data_Decay_turb_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_1.0_lr_0.0002_gamma_0.95_normalizaiton_Falsetensor([[1286]]).pt',
-            "burger2d": "results/PASR_MLP_small_data_Burger2D_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_0.3_lr_0.0005_gamma_0.95_normalizaiton_Falsetensor([[3624]]).pt",
-            "rbc": "results/PASR_MLP_small_data_rbc_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_0.3_lr_0.0003_gamma_0.95_normalizaiton_Falsetensor([[736]]).pt"}
-
+# MODEL_INFO = {"decay_turb":'results/PASR_MLP_small_data_Decay_turb_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_1.0_lr_0.0002_gamma_0.95_normalizaiton_Falsetensor([[1286]]).pt',
+#             "burger2d": "results/PASR_MLP_small_data_Burger2D_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_0.3_lr_0.0005_gamma_0.95_normalizaiton_Falsetensor([[3624]]).pt",
+#             "rbc": "results/PASR_MLP_small_data_rbc_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_0.3_lr_0.0003_gamma_0.95_normalizaiton_Falsetensor([[736]]).pt"}
 
 def plot_for_comparision(data_name,pred,truth,lr_input,time_span,vmin,vmax,channel=0):
     lr_target = lr_input[time_span+1,channel]
