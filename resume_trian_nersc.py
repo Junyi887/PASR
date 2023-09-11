@@ -36,7 +36,7 @@ ID = torch.randint(10000,(1,1))
 run = neptune.init_run(
     project="junyiICSI/PASR",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
-    tags = [str(ID.item())],
+    tags = [str(ID.item()),"pre-trained"],
     )  # your credentials
 # Replace the final print statement
 def psnr(true, pred):
@@ -96,7 +96,7 @@ def validation(args,model, val1_loader,val2_loader,device):
 
     return result_loader1,result_loader2
 
-def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath):
+def train(args,model, trainloader, val1_loader,val2_loader, optimizer,lr_state,device,savedpath):
     lamb = args.lamb
     best_epoch = 0
     val_list = []
@@ -120,6 +120,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
     elif args.loss_type =='L2':
         criterion_Data = nn.MSELoss().to(device)
     criterion2 = nn.MSELoss().to(device)
+    scheduler.load_state_dict(lr_state)
     for epoch in range(args.epochs):
         avg_loss = 0
         avg_val = 0
@@ -234,6 +235,7 @@ parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
 parser.add_argument('--lamb_p', type = float, default= 1)
 parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
+parser.add_argument('--model_path' type = str)
 args = parser.parse_args()
 logging.info(args)
 
@@ -278,8 +280,15 @@ if __name__ == "__main__":
             # "PASR_MLP_G_aug_small":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
 
     }
-    model = torch.nn.DataParallel(model_list[args.model]).to(device)
+    checkpoint = torch.load(args.model_path)
+    model_state = checkpoint['model_state_dict']
+    opt_state = checkpoint['optimizer_state_dict']
+    lr_state = checkpoint['scheduler_state_dict']
+    model = model_list[args.model]
+    model.load_state_dict(model_state)
+    model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer.load_state_dict(opt_state)
     savedpath = str(str(args.model) +
                 "_data_" + str(args.data) + 
                 "_crop_size_" + str(args.crop_size) +
@@ -297,7 +306,7 @@ if __name__ == "__main__":
                 ) 
 
     run["config"] = vars(args)   
-    min_RFNE,best_epoch = train(args,model, trainloader, val1_loader,val2_loader, optimizer, device, savedpath)
+    min_RFNE,best_epoch = train(args,model, trainloader, val1_loader,val2_loader, optimizer,lr_state, device, savedpath)
     run["metric/min_RFNE"].log(min_RFNE)
     run['metric/best_epoch'].log(best_epoch)
     run.stop()
