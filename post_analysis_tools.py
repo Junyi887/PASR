@@ -23,9 +23,10 @@ DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x
 
 MODEL_INFO = {"decay_turb":'results/PASR_MLP_small_data_Decay_turb_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_1.0_lr_0.0002_gamma_0.95_normalizaiton_Falsetensor([[1286]]).pt',
             "burger2d": "results/PASR_MLP_small_data_Burger2D_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_0.3_lr_0.0005_gamma_0.95_normalizaiton_Falsetensor([[3624]]).pt",
-            "rbc": "results/PASR_MLP_small_data_rbc_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_0.3_lr_0.0003_gamma_0.95_normalizaiton_Falsetensor([[736]]).pt"}
-
-
+            "rbc": "results/PASR_MLP_small_data_rbc_small_crop_size_256_ode_step_8_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_0.3_lr_0.0003_gamma_0.95_normalizaiton_Falsetensor([[736]]).pt",
+            "rbc_p":"results/PASR_MLP_small_data_rbc_small_crop_size_256_ode_step_10_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_0.3_lr_0.0003_gamma_0.95_normalizaiton_False_8268.pt",
+            "decay_turb_p":"results/PASR_MLP_small_data_Decay_turb_small_crop_size_256_ode_step_10_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L1_lamb_0.3_lr_0.0002_gamma_0.95_normalizaiton_False_190.pt",
+}
 def plot_for_comparision(data_name,pred,truth,lr_input,time_span,vmin,vmax,channel=0):
     lr_target = lr_input[time_span+1,channel]
     lr_input = lr_input[time_span,channel]
@@ -49,8 +50,8 @@ def plot_for_comparision(data_name,pred,truth,lr_input,time_span,vmin,vmax,chann
         axs[2,i].set_title(f"truth t={(i*DATA_INFO[data_name][1]*time_span*5):.2f}")
         err = axs[3,i].imshow(error[i],cmap=CMAP,vmin=0,vmax=vmax)
         axs[3,i].set_title(f"error t={(i*DATA_INFO[data_name][1]*time_span*5):2f}")
-    plt.colorbar(err,ax=axs[3,-1],shrink = 0.5,extend = 'both')
-    plt.colorbar(img,ax = [axs[0,-1],axs[1,-1],axs[2,-1]],shrink = 0.5,extend = 'both')
+    # plt.colorbar(err,ax=axs[3,-1],shrink = 0.5,extend = 'both')
+    # plt.colorbar(img,ax = [axs[0,-1],axs[1,-1],axs[2,-1]],shrink = 0.5,extend = 'both')
     for ax in axs:
         for a in ax:
             a.axis('off') 
@@ -66,8 +67,8 @@ def plot_for_comparision(data_name,pred,truth,lr_input,time_span,vmin,vmax,chann
         axs[2,i].set_title(f"truth t={(i*DATA_INFO[data_name][1]*time_span*5*5):.2f}")
         axs[3,i].imshow(error[i*5],cmap=CMAP,vmin=0,vmax=vmax)
         axs[3,i].set_title(f"error t={(i*DATA_INFO[data_name][1]*time_span*5*5):.2f}")
-    plt.colorbar(err,ax=axs[3,-1],shrink = 0.5,extend = 'both')
-    plt.colorbar(img,ax = [axs[0,-1],axs[1,-1],axs[2,-1]],shrink = 0.5,extend = 'both')
+    # plt.colorbar(err,ax=axs[3,-1],shrink = 0.5,extend = 'both')
+    # plt.colorbar(img,ax = [axs[0,-1],axs[1,-1],axs[2,-1]],shrink = 0.5,extend = 'both')
     for ax in axs:
         for a in ax:
             a.axis('off') 
@@ -82,7 +83,8 @@ def plot_vorticity_correlation(data_name,pred,reference_data):
         corr, _ = pearsonr(ref_flat, gen_flat)
         correlations[t] = corr
     fig,axs = plt.subplots(1,1,figsize=(20,10))
-    axs.plot(np.arange(0,w_truth.shape[0]),correlations)
+    axs.set_xticks(np.arange(0,w_truth.shape[0],20))
+    axs.plot(np.arange(0,w_truth.shape[0]),correlations,'-.')
     axs.set_ylabel("vorticity correlation")
     axs.set_xlabel("time")
     axs.set_title(f"vorticity correlation -- {data_name}")
@@ -171,29 +173,29 @@ def plot_PDF(data_name,pred,truth,lr_input):
     # ax.set_xlabel("Normalized Vorticity")
     # ax.legend()
     # # Save the figure
-    fig.savefig("figures/PDF_" + data_name + ".png")
-    s_pred3 = lr_input[:,:,0].flatten()
-    n3 = s_pred3.shape[0]
+    # fig.savefig("figures/PDF_" + data_name + ".png")
+    # s_pred3 = lr_input[:,:,0].flatten()
+    # n3 = s_pred3.shape[0]
     s_pred = pred.flatten()
     s_truth = truth.flatten()
-    n = 100
+    n = 3000
     std = np.std(s_pred)
     std2 = np.std(s_truth)
-    p, x = np.histogram(s_pred/std, bins=n,density = True) # bin it into n = N//10 bins
-    p2,x2 = np.histogram(s_truth/std2, bins=n,density = True)
-    p3,x3 = np.histogram(s_pred3, bins=n,density = True)
-    x3 = x3[:-1] + (x3[1] - x3[0])/2   # convert bin edges to centers
+    p, x = np.histogram(s_pred/std, bins=n) # bin it into n = N//10 bins
+    p2,x2 = np.histogram(s_truth/std2, bins=n)
+    # p3,x3 = np.histogram(s_pred3, bins=n,density = True)
+#    x3 = x3[:-1] + (x3[1] - x3[0])/2   # convert bin edges to centers
     x2 = x2[:-1] + (x2[1] - x2[0])/2   # convert bin edges to centers
     x = x[:-1] + (x[1] - x[0])/2   # convert bin edges to centers
 
     f = UnivariateSpline(x, p, s=n)
     f2 = UnivariateSpline(x2, p2, s=n)
-    f3 = UnivariateSpline(x3, p3, s=n)
     fig,ax = plt.subplots(1,1,figsize = (10,10))
     ax.plot(x,f(x),'k',label = "Prediction")
     ax.plot(x2,f2(x2),'r',label = "Ground Truth")
     # plt.plot(x3,f3(x3))
     ax.set_yscale('log')
+    ax.set_xlim(-30,30)
     ax.set_xlabel('Normalized vorticity')
     ax.set_ylabel('PDF')
     ax.legend(['Prediction','Ground Truth'])
@@ -407,6 +409,7 @@ def plot_energy_specturm(u_truth,v_truth,u_pred,v_pred,data_name):
     print(realsize_truth)
     plt.loglog(np.arange(0,realsize_truth),((EK_avsphr_truth[0:realsize_truth] )),'k',label = "truth")
     plt.loglog(np.arange(0,realsize_pred),((EK_avsphr_pred[0:realsize_pred] )),'r',label = "pred")
+    plt.ylim(1e-7,1)
     plt.legend()
     fig.savefig(f"figures/{data_name}_energy_specturm.png",dpi=300,bbox_inches='tight')
 
@@ -426,7 +429,7 @@ u_truth = hr_target[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.sha
 v_truth = hr_target[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
 u_pred = pred[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
 v_pred = pred[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
-plot_energy_specturm(u_truth,v_truth,u_pred,v_pred,"rbc")
+plot_energy_specturm(u_truth[200:],v_truth[200:],u_pred[200:],v_pred[200:],"rbc")
 rnfe1,rfne2 = get_metric_RFNE(torch.from_numpy(pred).float().cuda(),hr_target_tensor)
 print(f"averaged RFNE {rnfe1}, cumulative RFNE {rfne2} for data rbc")
 w_truth = hr_target[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
@@ -441,7 +444,7 @@ u_truth = hr_target[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.sha
 v_truth = hr_target[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
 u_pred = pred[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
 v_pred = pred[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
-plot_energy_specturm(u_truth,v_truth,u_pred,v_pred,'decay_turb')
+plot_energy_specturm(u_truth[200:],v_truth[200:],u_pred[200:],v_pred[200:],'decay_turb')
 rnfe1,rfne2 = get_metric_RFNE(torch.from_numpy(pred).float().cuda(),hr_target_tensor)
 print(f"averaged RFNE {rnfe1}, cumulative RFNE {rfne2} for data decay_turb")
 w_truth = hr_target[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
@@ -456,9 +459,42 @@ u_truth = hr_target[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.sha
 v_truth = hr_target[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
 u_pred = pred[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
 v_pred = pred[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
-plot_energy_specturm(u_truth[:],v_truth[:],u_pred[:],v_pred[:],'burger2d')
+plot_energy_specturm(u_truth[200:],v_truth[200:],u_pred[200:],v_pred[200:],'burger2d')
 rnfe1,rfne2 = get_metric_RFNE(torch.from_numpy(pred).float().cuda(),hr_target_tensor)
 print(f"averaged RFNE {rnfe1}, cumulative RFNE {rfne2} for data burger2d")
 plot_for_comparision("burger2d",pred,hr_target,lr_input,time_span=5,vmin=-1.2,vmax=2.8)
 plot_PDF("burger2d",pred,hr_target,lr_input)
 print(lr_input.shape)
+
+# model_dic = MODEL_INFO["rbc_p"]
+# lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data("rbc",timescale_factor = 5,num_snapshot = 20,in_channel=3,upscale_factor=4)
+# pred = get_prediction(model_dic,lr_input_tensor,hr_target_tensor,scale_factor=4,in_channels=3,task_dt=4,n_snapshot=20,ode_step=8)
+# u_truth = hr_target[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# v_truth = hr_target[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# u_pred = pred[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# v_pred = pred[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# plot_energy_specturm(u_truth,v_truth,u_pred,v_pred,"rbc")
+# rnfe1,rfne2 = get_metric_RFNE(torch.from_numpy(pred).float().cuda(),hr_target_tensor)
+# print(f"averaged RFNE {rnfe1}, cumulative RFNE {rfne2} for data rbc")
+# w_truth = hr_target[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# w_pred = pred[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# plot_vorticity_correlation("rbc",w_pred,w_truth)
+# plot_for_comparision("rbc",pred,hr_target,lr_input,time_span=10,vmin=-10,vmax=10)
+# plot_PDF("rbc",pred,hr_target,lr_input)
+
+
+# model_dic = MODEL_INFO["decay_turb_p"]
+# lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data("decay_turb",timescale_factor = 5,num_snapshot = 20,in_channel=3,upscale_factor=4)
+# pred = get_prediction(model_dic,lr_input_tensor,hr_target_tensor,scale_factor=4,in_channels=3,task_dt=4,n_snapshot=20,ode_step=8)
+# u_truth = hr_target[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# v_truth = hr_target[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# u_pred = pred[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# v_pred = pred[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# plot_energy_specturm(u_truth,v_truth,u_pred,v_pred,'decay_turb')
+# rnfe1,rfne2 = get_metric_RFNE(torch.from_numpy(pred).float().cuda(),hr_target_tensor)
+# print(f"averaged RFNE {rnfe1}, cumulative RFNE {rfne2} for data decay_turb")
+# w_truth = hr_target[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# w_pred = pred[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+# plot_vorticity_correlation("decay_turb",w_pred,w_truth)
+# plot_for_comparision("decay_turb",pred,hr_target,lr_input,time_span=10,vmin=-5.7,vmax=7.82)
+# plot_PDF("decay_turb",pred,hr_target,lr_input)
