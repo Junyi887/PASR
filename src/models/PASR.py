@@ -962,7 +962,7 @@ class PASR(nn.Module):
             x = self.conv_after_body(self.forward_features(x)) + x
             if time_evol == True:
                 for i in range(n_snapshot):
-                    z0 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
+                    z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
                     y1 = self.upsample(z0)
                     y1 = self.shiftMean_func(y1,"add")
                     predictions.append(y1)
