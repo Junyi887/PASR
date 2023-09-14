@@ -75,13 +75,23 @@ class ConvFD(nn.Module):
 
 
     def get_div_loss(self, output):
-        '''compute divergence loss'''
-        u = output[:,:,1,:,:]
-        bu,t,xu,yu = u.shape
-        u = u.reshape(bu*t,1,xu,yu)
-        v = output[:,:,2,:,:]
-        bv,t,xv,yv = v.shape
-        v = v.reshape(bv*t,1,xv,yv)
+        if output.shape[2] == 3:
+            '''compute divergence loss'''
+            u = output[:,:,1,:,:]
+            bu,t,xu,yu = u.shape
+            u = u.reshape(bu*t,1,xu,yu)
+            v = output[:,:,2,:,:]
+            bv,t,xv,yv = v.shape
+            v = v.reshape(bv*t,1,xv,yv)
+        elif output.shape[2] == 2:
+            u = output[:,:,0,:,:]
+            bu,t,xu,yu = u.shape
+            u = u.reshape(bu*t,1,xu,yu)
+            v = output[:,:,1,:,:]
+            bv,t,xv,yv = v.shape
+            v = v.reshape(bv*t,1,xv,yv)
+        else:
+            raise ValueError('output shape is not correct')
         #w = output[:,0,:,:]
         u_x = self.dx(u)  
         v_y = self.dy(v)  
@@ -89,6 +99,7 @@ class ConvFD(nn.Module):
         div = u_x + v_y
 
         return div
+    
     def get_vorticity(self,u,v):
         '''compute vorticity'''
         bu,t,xu,yu = u.shape
