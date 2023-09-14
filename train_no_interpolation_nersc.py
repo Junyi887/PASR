@@ -155,13 +155,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             scheduler.step()
 
         avg_val = result_val1[1] + lamb*result_val1[0]
-        # val_list.append(avg_val)
-        # val_list_x1.append(result_val1[0])
-        # val_list_t1.append(result_val1[1])
         val_list_x2.append(result_val2[2])
-        # train_list.append(avg_loss/len(trainloader))
-        # train_list_x.append(input_loss/len(trainloader))
-        # train_list_t.append(target_loss/len(trainloader))
         run['train/train_loss'].log(avg_loss / len(trainloader))
         run['val/val_loss'].log(avg_val)
         run['train/train_loss_x'].log(input_loss / len(trainloader))
@@ -175,7 +169,6 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         run['test/RFNE'].log(result_val2[2])
         run['test/PSNR'].log(result_val2[3])
         run['train/div'].log(phy_loss.item())
-        # print(result_val1[3],result_val2[3])
         logging.info("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, result_val1[0], result_val1[1], result_val2[0],result_val2[1]))
         if avg_val < best_loss_val:
             best_loss_val = avg_val
@@ -186,14 +179,6 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             'model_state_dict': best_model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
-            # 'val_sum': np.array(val_list),
-            # 'train_sum': np.array(train_list),
-            # 'val_x1': np.array(val_list_x1),
-            # 'val_t1': np.array(val_list_t1),
-            # 'val_x2': np.array(val_list_x2),
-            # 'val_t2': np.array(val_list_t2),
-            # 'train_x': np.array(train_list_x),
-            # 'train_t': np.array(train_list_t),
             },"results/"+savedpath + ".pt" ) # remember to change name for each experiment
         # validate 
     return min(val_list_x2),best_epoch
@@ -209,6 +194,9 @@ parser.add_argument('--timescale_factor', type = int, default= 1)
 parser.add_argument('--task_dt',type =float, default= 4)
 parser.add_argument('--ode_step',type =int, default= 2)
 parser.add_argument('--ode_method',type =str, default= "Euler")
+parser.add_argument('--ode_kernel',int, default= 3)
+parser.add_argument('--ode_layer',int, default= 4)
+parser.add_argument('--time_update',type =str, default= 'NODE')
 parser.add_argument('--in_channels',type = int, default= 1)
 parser.add_argument('--batch_size', type = int, default= 8)
 parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
@@ -269,11 +257,19 @@ if __name__ == "__main__":
     else:
         mean = [0]
         std = [1]
+    if args.name =="Decay_turb_small": 
+        image = [128,128]
+    elif args.name =="rbc_small":
+        image = [256,64]
+    elif args.name =="Burger2D_small":
+        image = [128,128]
     model_list = {
-            "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method).to(device,dtype=data_type),
-            "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method).to(device,dtype=data_type),
+            "PASR_small":PASR(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
+             "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
+            "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
+            "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
+            "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
+            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
             # "PASR_MLP_G_aug":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
             # "PASR_MLP_G_aug_small":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
 

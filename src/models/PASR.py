@@ -630,27 +630,99 @@ class UpsampleOneStep(nn.Sequential):   #inside HQ Image reconstruction
 
 
 class NODE(nn.Module):
-    def __init__(self,in_dim,ode_method ="Euler"):
+    def __init__(self, in_dim, out_dim=None, num_layers=4, kernel_size=3, padding=1, activation_fn=nn.Tanh, ode_method="Euler"):
         super(NODE, self).__init__()
-        self.model = nn.Sequential(
-            nn.Conv2d(in_dim, in_dim, 1, 1, 0),
-            nn.Tanh()
-        ) 
+        
+        # If out_dim is not specified, it will be same as in_dim
+        if out_dim is None:
+            out_dim = in_dim*2
+        
+        layers = []
+        for i in range(num_layers):
+            layers.append(nn.Conv2d(in_dim if i == 0 else out_dim, out_dim, kernel_size, stride=1, padding=padding))
+            layers.append(nn.ReLU())
+            if i == num_layers - 1: # last layers 
+                layers.append(nn.conv2d(out_dim, in_dim, kernel_size, stride=1, padding=padding)) 
+                layers.append(activation_fn())
+        
+        self.model = nn.Sequential(*layers)
         self.int_method = ode_method
-    def forward(self, x,ode_step = 1,task_dt = 1.0):
+
+    def forward(self, x, ode_step=1, task_dt=1.0):
         h = task_dt / ode_step
         if self.int_method == "Euler":
             for i in range(ode_step):
-                x = x + self.model(x) 
+                x = x + h*self.model(x) 
         elif self.int_method == "RK4":
             for i in range(ode_step):
                 f1 = self.model(x)
-                f2 = self.model(x+h/2.0*f1)
-                f3 = self.model(x+h/2.0*f2)
-                f4 = self.model(x+h*f3)
-                x = x + h* (f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0) #512
-        return x 
+                f2 = self.model(x + h/2.0*f1)
+                f3 = self.model(x + h/2.0*f2)
+                f4 = self.model(x + h*f3)
+                x = x + h * (f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0)
+        return x
+
+# 18-layer ResNet
+
+class Resblock(nn.Module):
+    def __init__(self, input_channels, hidden_dim, kernel_size):
+        super().__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(input_channels, hidden_dim, kernel_size = kernel_size, padding = (kernel_size-1)//2),
+            nn.BatchNorm2d(hidden_dim),
+            nn.LeakyReLU()
+        ) 
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size = kernel_size, padding = (kernel_size-1)//2),
+            nn.BatchNorm2d(hidden_dim),
+            nn.LeakyReLU()
+        ) 
+        
+        if input_channels != hidden_dim:
+            self.upscale = nn.Sequential(
+                nn.Conv2d(input_channels, hidden_dim, kernel_size = kernel_size, padding = (kernel_size-1)//2),
+                nn.LeakyReLU()
+                )        
+        self.input_channels = input_channels
+        self.hidden_dim = hidden_dim
+        
+        
+    def forward(self, xx):
+        out = self.layer1(xx)  
+        if self.input_channels != self.hidden_dim:
+            out = self.layer2(out) + self.upscale(xx)
+        else:
+            out = self.layer2(out) + xx
+        return out
     
+
+class ResNet(nn.Module):
+    def __init__(self, input_channels, output_channels, kernel_size):
+        super().__init__()
+        layers = [Resblock(input_channels, 64, kernel_size), Resblock(64, 64, kernel_size), Resblock(64, 64, kernel_size)]
+        layers += [Resblock(64, 128, kernel_size), Resblock(128, 128, kernel_size), Resblock(128, 128, kernel_size), Resblock(128, 128, kernel_size)]
+        layers += [Resblock(128, 256, kernel_size), Resblock(256, 256, kernel_size), Resblock(256, 256, kernel_size), Resblock(256, 256, kernel_size)]
+        layers += [Resblock(256, 512, kernel_size), Resblock(512, 512, kernel_size), Resblock(512, 512, kernel_size)]
+        layers += [nn.Conv2d(512, output_channels, kernel_size = kernel_size, padding = (kernel_size-1)//2)]
+        self.model = nn.Sequential(*layers)
+             
+    def forward(self, xx):
+        out = self.model(xx)
+        return out
+
+class ResNet_small(nn.Module):
+    def __init__(self, input_channels, output_channels, kernel_size):
+        super(ResNet_small, self).__init__()
+        layers = [Resblock(input_channels, 64, kernel_size), Resblock(64, 64, kernel_size), Resblock(64, 64, kernel_size)]
+        layers += [Resblock(64, 128, kernel_size), Resblock(128, 128, kernel_size), Resblock(128, 128, kernel_size)]
+        layers += [Resblock(128, 256, kernel_size), Resblock(256, 256, kernel_size), Resblock(256, 256, kernel_size)]
+        layers += [nn.Conv2d(256, output_channels, kernel_size = kernel_size, padding = (kernel_size-1)//2)]
+        self.model = nn.Sequential(*layers)
+             
+    def forward(self, xx,ode_step=1,task_dt=1.0):
+        out = self.model(xx)
+        return out
+        
 class PASR(nn.Module):
     """ PASR
 
@@ -686,10 +758,10 @@ class PASR(nn.Module):
                  norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
                  use_checkpoint=False, upscale=2, upsampler='', resi_connection='1conv'
                  ,mean = [0],std = [1],  
-                 ode_method = "Euler",
-                 **kwargs):
+                 ode_method = "Euler",num_ode_layers = 4,time_update = "NODE",ode_kernel_size = 3,ode_padding = 1, **kwargs):
         super(PASR, self).__init__()
         
+        self.time_update = time_update
         num_in_ch = in_chans
         num_out_ch = in_chans
         num_feat = 64
@@ -778,7 +850,10 @@ class PASR(nn.Module):
                                                  nn.Conv2d(embed_dim // 4, embed_dim, 3, 1, 1))
         #####################################################################################################
         ################################### 3, Neural ODE time interpolation ################################
-        self.ode = NODE(in_dim=embed_dim,ode_method = ode_method)
+        if self.time_update == "NODE":
+            self.ode = NODE(in_dim=embed_dim,ode_method = ode_method,num_layers = num_ode_layers,kernel_size= ode_kernel_size,padding=ode_padding)
+        else: 
+            self.ode = ResNet_small(input_channels = embed_dim, output_channels = embed_dim, kernel_size = ode_kernel_size)
         #####################################################################################################
         ################################ 3, high quality image reconstruction ################################
         if self.upsampler == 'pixelshuffle':
@@ -857,44 +932,56 @@ class PASR(nn.Module):
         # during train task_dt is 1, then n_snapshot should be 1
         # if we want to intermediate snapshot change task dt to 0.5, then n_snapshot should be 2
         predictions = []
-        latent = []
         H, W = x.shape[2:]
         x = self.check_image_size(x)
         x = self.shiftMean_func(x,"sub")
         x = self.conv_first(x)     #Shallow Feature Extraction
         z0 = self.conv_after_body(self.forward_features(x)) + x              #Deep Feature Extraction + x
-        for i in range (n_snapshot):   
-            if self.upsampler == 'pixelshuffle':
+
+        if self.upsampler == 'pixelshuffle':
             # load initial condition
-                if time_evol == True:
+            if time_evol == True:
+                for i in range (n_snapshot):   
                     z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
                     y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
                     y1 = self.conv_last(self.upsample(y1))  
                     y1 = self.shiftMean_func(y1,"add")    
                     predictions.append(y1)
                     z0 = z1
-                else:
-                    y0 = self.conv_before_upsample(z0)                 #HQ Image Reconstruction
-                    y0 = self.conv_last(self.upsample(y0))  
-                    y0 = self.shiftMean_func(y0,"add")
-                    predictions.append(y0)
-        predictions = torch.stack(predictions, dim=1)
-        return predictions
-
-
-        # elif self.upsampler == 'nearest+conv':
+            else:
+                y0 = self.conv_before_upsample(z0)                 #HQ Image Reconstruction
+                y0 = self.conv_last(self.upsample(y0))  
+                y0 = self.shiftMean_func(y0,"add")
+                predictions.append(y0)
+            predictions = torch.stack(predictions, dim=1)
+            return predictions
+        elif self.upsampler == 'pixelshuffledirect':
+            # for lightweight SR
+            x = self.conv_after_body(self.forward_features(x)) + x
+            if time_evol == True:
+                for i in range(n_snapshot):
+                    z0 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
+                    y1 = self.upsample(z0)
+                    y1 = self.shiftMean_func(y1,"add")
+                    predictions.append(y1)
+                    z0 = z1
+            else:
+                y1 = self.upsample(z0)
+                y1 = self.shiftMean_func(y1,"add")
+                predictions.append(y1)
+            predictions = torch.stack(predictions, dim=1)
+            return predictions
+        
+        elif self.upsampler == 'nearest+conv':
+            # for real-world SR
+            x = self.conv_first(x)
+            x = self.conv_after_body(self.forward_features(x)) + x
+            x = self.conv_before_upsample(x)
+            x = self.lrelu(self.conv_up1(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
+            if self.upscale == 4:
+                x = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
+            x = self.conv_last(self.lrelu(self.conv_hr(x)))
             
-        #     # for real-world SR
-        #     x = self.conv_first(x)
-        #     x = self.conv_after_body(self.forward_features(x)) + x
-        #     x = self.conv_before_upsample(x)
-        #     x = self.lrelu(self.conv_up1(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-        #     if self.upscale == 4:
-        #         x = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-        #     if self.upscale == 8:
-        #         x = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-        #         x = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-        #     x = self.conv_last(self.lrelu(self.conv_hr(x)))
         # elif self.upsampler == 'shallowdecoder':
         #     # for real-world SR
         #     x = self.conv_first(x)
