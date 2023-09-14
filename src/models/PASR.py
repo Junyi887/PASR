@@ -642,7 +642,7 @@ class NODE(nn.Module):
             layers.append(nn.Conv2d(in_dim if i == 0 else out_dim, out_dim, kernel_size, stride=1, padding=padding))
             layers.append(nn.ReLU())
             if i == num_layers - 1: # last layers 
-                layers.append(nn.conv2d(out_dim, in_dim, kernel_size, stride=1, padding=padding)) 
+                layers.append(nn.Conv2d(out_dim, in_dim, kernel_size, stride=1, padding=padding)) 
                 layers.append(activation_fn())
         
         self.model = nn.Sequential(*layers)
@@ -765,13 +765,15 @@ class PASR(nn.Module):
         num_in_ch = in_chans
         num_out_ch = in_chans
         num_feat = 64
-        if in_chans == 3:
-            self.mean = torch.Tensor(mean).view(1, 3, 1, 1)
-            self.std = torch.Tensor(std).view(1, 3, 1, 1)
-        else:
-            self.mean = torch.Tensor(mean).view(1, 1, 1, 1)
-            self.std = torch.Tensor(std).view(1, 1, 1, 1)
+        # if in_chans == 3:
+        #     self.mean = torch.Tensor(mean).view(1, 3, 1, 1)
+        #     self.std = torch.Tensor(std).view(1, 3, 1, 1)
+        # else:
+        #     self.mean = torch.Tensor(mean).view(1, 1, 1, 1)
+        #     self.std = torch.Tensor(std).view(1, 1, 1, 1)
         # shiftmean
+        self.mean = mean
+        self.std = std
         self.shiftMean_func = ShiftMean(self.mean, self.std)
 
         self.upscale = upscale
@@ -1021,8 +1023,9 @@ class ShiftMean(nn.Module):
     # data: [t,c,h,w]
     def __init__(self, mean, std):
         super(ShiftMean, self).__init__()
-        self.mean = torch.Tensor(mean).view(1, 1, 1, 1)
-        self.std = torch.Tensor(std).view(1, 1, 1, 1)
+        c = len(mean)
+        self.mean = torch.Tensor(mean).view(1,c,1,1)
+        self.std = torch.Tensor(std).view(1,c,1,1)
 
     def forward(self, x, mode):
         if mode == 'sub':

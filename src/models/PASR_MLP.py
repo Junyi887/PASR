@@ -706,13 +706,15 @@ class PASR_MLP(nn.Module):
         num_in_ch = in_chans
         num_out_ch = in_chans
         num_feat = 64
-        if in_chans == 3 and normalization == True:
-            self.mean = torch.Tensor(mean).view(1, 3, 1, 1)
-            self.std = torch.Tensor(std).view(1, 3, 1, 1)
-        else:
-            self.mean = torch.Tensor(mean).view(1, 1, 1, 1)
-            self.std = torch.Tensor(std).view(1, 1, 1, 1)
+        # if normalization == True:
+        #     self.mean = std
+        #     self.std = mean
+        # else:
+        #     self.mean = torch.Tensor(mean).view(1, in_chans, 1, 1)
+        #     self.std = torch.Tensor(std).view(1, in_chans, 1, 1)
         # shiftmean
+        self.mean = mean
+        self.std = std
         self.shiftMean_func = ShiftMean(self.mean, self.std)
 
         self.upscale = upscale
@@ -924,8 +926,9 @@ class ShiftMean(nn.Module):
     # data: [t,c,h,w]
     def __init__(self, mean, std):
         super(ShiftMean, self).__init__()
-        self.mean = torch.Tensor(mean).view(1, 1, 1, 1)
-        self.std = torch.Tensor(std).view(1, 1, 1, 1)
+        c = len(mean)
+        self.mean = torch.Tensor(mean).view(1, c, 1, 1)
+        self.std = torch.Tensor(std).view(1, c, 1, 1)
 
     def forward(self, x, mode):
         if mode == 'sub':
