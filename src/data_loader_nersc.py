@@ -49,13 +49,17 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
             val1_loader = get_data_loader(data_name, data_path, '/val', "val", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
             val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
             test1_loader = get_data_loader(data_name, data_path, '/test', "test_one", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)        
+            test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)    
         return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     
 def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels=1):
     
     transform = torch.from_numpy
-    dataset = GetDataset_diffIC_NOCrop(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels) 
+    if "FNO" in data_name:
+        dataset = Special_Loader(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels) 
+    else:
+        dataset = GetDataset_diffIC_NOCrop(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels) 
+
     if state == "train":
         shuffle = True
     else:
@@ -72,7 +76,9 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
 
 
 class GetDataset_diffIC_NOCrop(Dataset):
-    '''Dataloader class for NSKT and cosmo datasets'''
+    '''Dataloader from different initial conditions
+    It loads low-resolution image as a first input and gives high-resolution image as targets
+    '''
     def __init__(self, location, state, transform, upscale_factor,timescale_factor,num_snapshots, noise_ratio, std,crop_size, method,in_channels):
         self.location = location
         self.n_in_channels = in_channels
@@ -252,7 +258,9 @@ class GetDataset_diffIC_NOCrop(Dataset):
 # print(toeplitz_matrix.shape)
 
 class Special_Loader(Dataset):
-    '''Dataloader class for NSKT and cosmo datasets'''
+    '''Dataloader for different initial conditions.
+    It loads two low-resolution image as inputs and gives all HR snapshots as targets
+    '''
     def __init__(self, location, state, transform, upscale_factor,timescale_factor,num_snapshots, noise_ratio, std,crop_size, method,in_channels):
         self.location = location
         self.n_in_channels = in_channels
