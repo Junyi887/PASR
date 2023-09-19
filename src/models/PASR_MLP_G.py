@@ -892,17 +892,17 @@ class PASR_MLP_G(nn.Module):
 
         return x
 
-    def forward(self, x,n_snapshot = 1,task_dt = 0.01,ode_step = 1,time_evol = True):
+    def forward(self, x,n_snapshots = 1,task_dt = 0.01,ode_step = 1,time_evol = True):
         # ode steps can be arbitary just enough to make it converge. 
-        # n_snapshot should relates to task_dt.
-        # during train task_dt is 1, then n_snapshot should be 1
-        # if we want to intermediate snapshot change task dt to 0.5, then n_snapshot should be 2
+        # n_snapshots should relates to task_dt.
+        # during train task_dt is 1, then n_snapshots should be 1
+        # if we want to intermediate snapshot change task dt to 0.5, then n_snapshots should be 2
         predictions = []
         x = self.check_image_size(x)
         x = self.shiftMean_func(x,"sub")
         x = self.conv_first(x)     #Shallow Feature Extraction
         z0 = self.conv_after_body(self.forward_features(x)) + x       #Deep Feature Extraction + x
-        for i in range (n_snapshot):   
+        for i in range (n_snapshots):   
             if self.upsampler == 'pixelshuffle':
             # load initial condition
                 if time_evol == True:

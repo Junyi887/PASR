@@ -866,11 +866,11 @@ class PASR_MLP(nn.Module):
 
         return x
 
-    def forward(self, x,n_snapshot = 1,task_dt = 0.01,ode_step = 1,time_evol = True):
+    def forward(self, x,n_snapshots = 1,task_dt = 0.01,ode_step = 1,time_evol = True):
         # ode steps can be arbitary just enough to make it converge. 
-        # n_snapshot should relates to task_dt.
-        # during train task_dt is 1, then n_snapshot should be 1
-        # if we want to intermediate snapshot change task dt to 0.5, then n_snapshot should be 2
+        # n_snapshots should relates to task_dt.
+        # during train task_dt is 1, then n_snapshots should be 1
+        # if we want to intermediate snapshot change task dt to 0.5, then n_snapshots should be 2
         predictions = []
         x = self.check_image_size(x)
         x = self.shiftMean_func(x,"sub")
@@ -879,7 +879,7 @@ class PASR_MLP(nn.Module):
         if self.upsampler == 'pixelshuffle':
             # load initial condition
             if time_evol == True:
-                for i in range (n_snapshot):   
+                for i in range (n_snapshots):   
                     z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
                     y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
                     y1 = self.conv_last(self.upsample(y1))  
@@ -894,7 +894,7 @@ class PASR_MLP(nn.Module):
         elif self.upsampler == 'pixelshuffledirect':
             # load initial condition
             if time_evol == True:
-                for i in range (n_snapshot): 
+                for i in range (n_snapshots): 
                     z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
                     y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
                     y1 = self.conv_last(self.upsample(y1))  

@@ -61,19 +61,18 @@ def validation(args,model, val1_loader,val2_loader,device):
     input_loss1 = 0
     RFNE1_loss = 0
     psnr1_loss = 0
-    for batch in val1_loader: # better be the val loader, need to modify datasets, but we are good for now.
+    for batch in val1_loader: 
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_x = model(inputs,task_dt = args.task_dt,n_snapshots = 1,ode_step = args.ode_step,time_evol = False) 
-            input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True) 
-            loss_t = criterion_Data(out_t, target[:,1:,...])
-            RFNE_t = torch.norm(out_t-target[:,1:,...],p=2,dim = (3,4))/torch.norm(target[:,1:,...],p=2,dim = (3,4))
+            out_t = model(inputs) 
+            loss_t = criterion_Data(out_t, target)
+            #B,C,T,H,W
+            RFNE_t = torch.norm(out_t-target,p=2,dim = (2,3,4))/torch.norm(target[:,1:,...],p=2,dim = (2,3,4))
             target_loss1 += loss_t.item() 
-            input_loss1 += input_loss.item()
+            input_loss1 += 0
             RFNE1_loss += RFNE_t.mean().item()
-            psnr1_loss += psnr(out_t, target[:,1:,...]).item()
+            psnr1_loss += psnr(out_t, target).item()
     result_loader1 = [input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE1_loss /len(val1_loader),psnr1_loss/len(val1_loader)]
     target_loss2 = 0 
     input_loss2 = 0
@@ -83,30 +82,21 @@ def validation(args,model, val1_loader,val2_loader,device):
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_x = model(inputs,task_dt = args.task_dt,n_snapshots = 1,ode_step = args.ode_step,time_evol = False) 
-            input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True) 
-            loss_t = criterion_Data(out_t, target[:,1:,...])
-            RFNE_t = torch.norm(out_t-target[:,1:,...],p=2,dim = (3,4))/torch.norm(target[:,1:,...],p=2,dim = (3,4))
+            out_t = model(inputs) 
+            loss_t = criterion_Data(out_t, target)
+            #B,C,T,H,W
+            RFNE_t = torch.norm(out_t-target,p=2,dim = (2,3,4))/torch.norm(target[:,1:,...],p=2,dim = (2,3,4))
             target_loss2 += loss_t.item() 
-            input_loss2 += input_loss.item()
+            input_loss2 += 0
             RFNE2_loss += RFNE_t.mean().item()
-            psnr2_loss += psnr(out_t, target[:,1:,...]).item()
+            psnr2_loss += psnr(out_t, target).item()
     result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader),psnr2_loss/len(val2_loader)]
-
     return result_loader1,result_loader2
 
 def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath):
     lamb = args.lamb
     best_epoch = 0
-    val_list = []
-    val_list_x1 = []
-    val_list_t1 = []
     val_list_x2 = []
-    val_list_t2 = []
-    train_list = []
-    train_list_x = []
-    train_list_t = []
     fd_solver = ConvFD(kernel_size=5).to(device)
     if args.scheduler == 'StepLR':
         scheduler = StepLR(optimizer, args.lr_step, gamma=args.gamma)
@@ -134,17 +124,8 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
             optimizer.zero_grad()
-            out_x = model(inputs,task_dt = 1,n_snapshots = 1,ode_step = args.ode_step,time_evol = False)
-            loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True)
-            loss_t = criterion_Data(out_t,target[:,1:,:,:,:])
-            div = fd_solver.get_div_loss(out_t)
-            phy_loss = criterion2(div,torch.zeros_like(div).to(device)) # DO NOT CHANGE THIS ONE. Phy loss has to be L2 norm 
-            if args.physics == "True":
-                loss_t += args.lamb_p*phy_loss
-            target_loss += loss_t.item() 
-            input_loss += loss_x.item()
-            loss = loss_t + lamb*loss_x
+            out = model(inputs)
+            loss = criterion_Data(out,target)
             loss.backward()
             optimizer.step()
             avg_loss += loss.item()
@@ -168,7 +149,6 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         run['val/PSNR'].log(result_val1[3])
         run['test/RFNE'].log(result_val2[2])
         run['test/PSNR'].log(result_val2[3])
-        run['train/div'].log(phy_loss.item())
         logging.info("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, result_val1[0], result_val1[1], result_val2[0],result_val2[1]))
         if avg_val < best_loss_val:
             best_loss_val = avg_val
@@ -186,36 +166,27 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
 
 
 parser = argparse.ArgumentParser(description='training parameters')
-
 parser.add_argument('--data', type =str ,default= 'Decay_turb')
 parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
-parser.add_argument('--loss_type', type =str ,default= 'L1')
 ## data processing arugments
+parser.add_argument('--scale_factor', type = int, default= 4)
+parser.add_argument('--timescale_factor', type = int, default= 5)
 parser.add_argument('--in_channels',type = int, default= 1)
 parser.add_argument('--batch_size', type = int, default= 8)
 parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
-parser.add_argument('--scale_factor', type = int, default= 4)
-parser.add_argument('--timescale_factor', type = int, default= 1)
 parser.add_argument('--n_snapshots',type =int, default= 20)
-parser.add_argument('--down_method', type = str, default= "bicubic")
+parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 ## model parameters 
-parser.add_argument('--model', type =str ,default= 'PASR_MLP_small')
-parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
-parser.add_argument('--time_update',type =str, default= 'NODE')
-parser.add_argument('--ode_step',type =int, default= 2)
-parser.add_argument('--ode_method',type =str, default= "Euler")
-parser.add_argument('--ode_kernel',type=int, default= 3)
-parser.add_argument('--ode_padding',type=int, default= 1)
-parser.add_argument('--ode_layer',type=int, default= 4)
 parser.add_argument('--gating_layers',type =int, default= 3)
 parser.add_argument('--gating_method',type =str, default= 'leaky')
-parser.add_argument('--task_dt',type =float, default= 4)
+parser.add_argument('--modes', type = int, default= 12)
+parser.add_argument('--width', type = int, default= 16)
+parser.add_argument('--hidden_dim', type = int, default= 128 ) # euler
+parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
 ## training (optimization) parameters
 parser.add_argument('--epochs', type = int, default= 3)
-parser.add_argument('--lr', type = float, default= 1e-4)
-parser.add_argument('--lamb', type = float, default= 0.3)
-parser.add_argument('--lamb_p', type = float, default= 1)
+parser.add_argument('--loss_type', type =str ,default= 'L2')
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 parser.add_argument('--normalization',type =str, default= 'False')
@@ -224,11 +195,17 @@ parser.add_argument('--gamma',type =float, default= 0.95)
 parser.add_argument('--lr_step',type =int, default= 80)
 parser.add_argument('--patience',type =int, default= 15)
 parser.add_argument('--scheduler',type =str, default= 'StepLR')
+parser.add_argument('--lr', type = float, default= 1e-4)
+parser.add_argument('--lamb', type = float, default= 0.3)
+parser.add_argument('--lamb_p', type = float, default= 1)
+
+
 args = parser.parse_args()
 logging.info(args)
 
 data_dx = 1/128
-########### loaddata ############
+
+
 
 if __name__ == "__main__":
     if args.dtype =="float32":
@@ -258,22 +235,15 @@ else:
 
     if args.data =="Decay_turb_small": 
         image = [128,128]
+        target_shape = tuple(args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
     elif args.data =="rbc_small":
         image = [256,64]
+        target_shape = tuple(args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
     elif args.data =="Burger2D_small":
         image = [128,128]
-    model_list = {
-            "PASR_small":PASR(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,time_update = args.time_update,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding),
-             "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
-            "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
-            "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
-            "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
-            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
-            # "PASR_MLP_G_aug":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            # "PASR_MLP_G_aug_small":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-
-    }
-    model = torch.nn.DataParallel(model_list[args.model]).to(device)
+        target_shape = tuple(args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
+    model = FNO3D(args.modes, args.modes, args.modes,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=None,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', )
+    model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +
                 "_data_" + str(args.data) + 
