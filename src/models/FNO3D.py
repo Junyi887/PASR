@@ -3,7 +3,7 @@ import torch.nn as nn
 from .basics import SpectralConv3d
 import torch.nn.functional as F
 
-class FNO3d(nn.Module):
+class FNO3D(nn.Module):
     def __init__(self, 
                  modes1, modes2, modes3,
                  HR_shape,
@@ -25,7 +25,7 @@ class FNO3d(nn.Module):
             act: {tanh, gelu, relu, leaky_relu}, activation function
             pad_ratio: the ratio of the extended domain
         '''
-        super(FNO3d, self).__init__()
+        super(FNO3D, self).__init__()
 
         if isinstance(pad_ratio, float):
             pad_ratio = [pad_ratio, pad_ratio]
@@ -42,7 +42,7 @@ class FNO3d(nn.Module):
             self.layers = [width] * 4
         else:
             self.layers = layers
-        self.fc0 = nn.Linear(in_dim, layers[0])
+        self.fc0 = nn.Linear(in_dim, self.layers[0])
 
         self.sp_convs = nn.ModuleList([SpectralConv3d(
             in_size, out_size, mode1_num, mode2_num, mode3_num)
@@ -68,7 +68,7 @@ class FNO3d(nn.Module):
         # dimension in LR
         B,C,T,H,W = x.shape
         x = F.interpolate(x, size=(self.hr_shape[2],self.hr_shape[3],self.hr_shape[4]), mode='trilinear', align_corners=False)
-        x.permute(0, 2, 3, 4, 1) # from bcxyz to bxyzc
+        x = x.permute(0, 2, 3, 4, 1) # from bcxyz to bxyzc
         size_z = x.shape[-2]
         length = len(self.ws)
         batchsize = x.shape[0]

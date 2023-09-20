@@ -369,8 +369,8 @@ class Special_Loader(Dataset):
             y_list.append(y) 
         X_list.append(self.get_X(y)) # first one and last one as LR input
             # t_list.append(t)
-        y = torch.stack(y_list,dim = 0)
-        X = torch.stack(X_list,dim = 0) 
+        y = torch.stack(y_list,dim = 1)
+        X = torch.stack(X_list,dim = 1) 
         # t = torch.stack(t_list,dim = 0) 
         return X,y
 

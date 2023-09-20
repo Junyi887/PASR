@@ -373,6 +373,7 @@ def get_prediction(model_dic,lr_input_tensor,hr_target_tensor,scale_factor,in_ch
         pred = torch.cat((pred0,pred),dim=1)
     return pred.detach().cpu().numpy()
 
+
 def get_metric_RFNE(pred,truth):
     RFNE = torch.norm(pred - hr_target_tensor.float().cuda(), p=2, dim=(1, 2, 3)) / torch.norm(hr_target_tensor.float().cuda(), p=2, dim=(1, 2, 3))
     avg_RFNE = RFNE.mean().item()
@@ -526,18 +527,18 @@ plot_vorticity_correlation("decay_turb_p",w_pred_p,w_truth)
 # plot_PDF("rbc",pred,hr_target,lr_input)
 
 
-# model_dic = MODEL_INFO["decay_turb_p"]
-# lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data("decay_turb",timescale_factor = 5,num_snapshot = 20,in_channel=3,upscale_factor=4)
-# pred = get_prediction(model_dic,lr_input_tensor,hr_target_tensor,scale_factor=4,in_channels=3,task_dt=4,n_snapshot=20,ode_step=8)
-# u_truth = hr_target[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
-# v_truth = hr_target[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
-# u_pred = pred[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
-# v_pred = pred[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
-# plot_energy_specturm(u_truth,v_truth,u_pred,v_pred,'decay_turb')
-# rnfe1,rfne2 = get_metric_RFNE(torch.from_numpy(pred).float().cuda(),hr_target_tensor)
-# print(f"averaged RFNE {rnfe1}, cumulative RFNE {rfne2} for data decay_turb")
-# w_truth = hr_target[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
-# w_pred = pred[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
-# plot_vorticity_correlation("decay_turb",w_pred,w_truth)
-# plot_for_comparision("decay_turb",pred,hr_target,lr_input,time_span=10,vmin=-5.7,vmax=7.82)
-# plot_PDF("decay_turb",pred,hr_target,lr_input)
+model_dic = MODEL_INFO["decay_turb"]
+lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data("decay_turb",timescale_factor = 1,num_snapshot = 100,in_channel=3,upscale_factor=4)
+pred = get_prediction(model_dic,lr_input_tensor,hr_target_tensor,scale_factor=4,in_channels=3,task_dt=4,n_snapshot=100,ode_step=2)
+u_truth = hr_target[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+v_truth = hr_target[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+u_pred = pred[:,:,1].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+v_pred = pred[:,:,2].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+plot_energy_specturm(u_truth,v_truth,u_pred,v_pred,'decay_turb')
+rnfe1,rfne2 = get_metric_RFNE(torch.from_numpy(pred).float().cuda(),hr_target_tensor)
+print(f"averaged RFNE {rnfe1}, cumulative RFNE {rfne2} for data decay_turb")
+w_truth = hr_target[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+w_pred = pred[:,:,0].transpose(0,1,2,3).reshape(-1,pred.shape[-2],pred.shape[-1])
+plot_vorticity_correlation("decay_turb",w_pred,w_truth)
+plot_for_comparision("decay_turb",pred,hr_target,lr_input,time_span=10,vmin=-5.7,vmax=7.82)
+plot_PDF("decay_turb",pred,hr_target,lr_input)

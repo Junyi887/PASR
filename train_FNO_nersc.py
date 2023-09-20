@@ -68,7 +68,7 @@ def validation(args,model, val1_loader,val2_loader,device):
             out_t = model(inputs) 
             loss_t = criterion_Data(out_t, target)
             #B,C,T,H,W
-            RFNE_t = torch.norm(out_t-target,p=2,dim = (2,3,4))/torch.norm(target[:,1:,...],p=2,dim = (2,3,4))
+            RFNE_t = torch.norm(out_t-target,p=2,dim = (2,3,4))/torch.norm(target,p=2,dim = (2,3,4))
             target_loss1 += loss_t.item() 
             input_loss1 += 0
             RFNE1_loss += RFNE_t.mean().item()
@@ -85,7 +85,7 @@ def validation(args,model, val1_loader,val2_loader,device):
             out_t = model(inputs) 
             loss_t = criterion_Data(out_t, target)
             #B,C,T,H,W
-            RFNE_t = torch.norm(out_t-target,p=2,dim = (2,3,4))/torch.norm(target[:,1:,...],p=2,dim = (2,3,4))
+            RFNE_t = torch.norm(out_t-target,p=2,dim = (2,3,4))/torch.norm(target,p=2,dim = (2,3,4))
             target_loss2 += loss_t.item() 
             input_loss2 += 0
             RFNE2_loss += RFNE_t.mean().item()
@@ -166,33 +166,31 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
 
 
 parser = argparse.ArgumentParser(description='training parameters')
-parser.add_argument('--data', type =str ,default= 'Decay_turb')
-parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
+parser.add_argument('--data', type =str ,default= 'Decay_turb_FNO')
+parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence_small")
 ## data processing arugments
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 5)
-parser.add_argument('--in_channels',type = int, default= 1)
-parser.add_argument('--batch_size', type = int, default= 8)
-parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
+parser.add_argument('--in_channels',type = int, default= 3)
+parser.add_argument('--batch_size', type = int, default= 16)
 parser.add_argument('--n_snapshots',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
+parser.add_argument('--crop_size', type = int, default= 256)
 ## model parameters 
-parser.add_argument('--gating_layers',type =int, default= 3)
-parser.add_argument('--gating_method',type =str, default= 'leaky')
+parser.add_argument('--model', type = str, default= "FNO")
 parser.add_argument('--modes', type = int, default= 12)
 parser.add_argument('--width', type = int, default= 16)
 parser.add_argument('--hidden_dim', type = int, default= 128 ) # euler
-parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
 ## training (optimization) parameters
-parser.add_argument('--epochs', type = int, default= 3)
+parser.add_argument('--epochs', type = int, default= 200)
 parser.add_argument('--loss_type', type =str ,default= 'L2')
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 parser.add_argument('--normalization',type =str, default= 'False')
 parser.add_argument('--physics',type =str, default= 'False')
 parser.add_argument('--gamma',type =float, default= 0.95)
-parser.add_argument('--lr_step',type =int, default= 80)
+parser.add_argument('--lr_step',type =int, default= 100)
 parser.add_argument('--patience',type =int, default= 15)
 parser.add_argument('--scheduler',type =str, default= 'StepLR')
 parser.add_argument('--lr', type = float, default= 1e-4)
@@ -226,32 +224,31 @@ if __name__ == "__main__":
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
-if args.normalization == "True":
-    mean, std = getNorm(args)
-else:
-    mean, std = [0], [1]
-    mean, std = mean * args.in_channels, std * args.in_channels
+    if args.normalization == "True":
+        mean, std = getNorm(args)
+    else:
+        mean, std = [0], [1]
+        mean, std = mean * args.in_channels, std * args.in_channels
 
+    layers = [64, 64, 64, 64, 64]
+    modes1 = [8, 8, 8, 8]
+    modes2 = [8, 8, 8, 8]
+    modes3 = [8, 8, 8, 8]
 
-    if args.data =="Decay_turb_small": 
+    if args.data =="Decay_turb_small" or args.data =="Decay_turb_FNO": 
         image = [128,128]
-        target_shape = tuple(args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-    elif args.data =="rbc_small":
+        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
+    elif args.data =="rbc_small" or args.data =="rbc_FNO":
         image = [256,64]
-        target_shape = tuple(args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
-    elif args.data =="Burger2D_small":
+        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
+    elif args.data =="Burger2D_small" or args.data =="Burger2D_FNO":
         image = [128,128]
-        target_shape = tuple(args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-    model = FNO3D(args.modes, args.modes, args.modes,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=None,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', )
-    model = torch.nn.DataParallel(model).to(device)
+        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
+    model = FNO3D(modes1, modes2, modes3,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', ).to(device)
+    # model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +
                 "_data_" + str(args.data) + 
-                "_crop_size_" + str(args.crop_size) +
-                "_ode_step_" + str(args.ode_step) +
-                "_ode_method_" + str(args.ode_method) +
-                "_task_dt_" +  str(args.task_dt) + 
-                "_num_snapshots_" + str(args.n_snapshots) +
                 "_upscale_factor_" + str(args.scale_factor) +
                 "_timescale_factor_" + str(args.timescale_factor) +
                 "_loss_type_" + str(args.loss_type) +
