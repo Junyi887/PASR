@@ -33,6 +33,95 @@ MODEL_INFO = {"decay_turb":'results/PASR_MLP_small_data_Decay_turb_small_crop_si
             "rbc_physics": "results/PASR_MLP_small_data_rbc_small_crop_size_256_ode_step_10_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L2_lamb_1.0_lr_0.0002_gamma_0.95_normalizaiton_False7385.pt",
             "rbc": "results/PASR_MLP_small_data_rbc_small_crop_size_256_ode_step_10_ode_method_Euler_task_dt_4_num_snapshots_20_upscale_factor_4_timescale_factor_5_loss_type_L2_lamb_1.0_lr_0.0002_gamma_0.95_normalizaiton_False5486.pt"
 }
+def plot_new_energy_specturm(E_truth,E_pred):
+    s = E_truth.shape[-1]
+    E_truth_sp = spectrum_2d(E_truth, s)
+
+# Generate the spectrum plot and set all the settings
+    fig, ax = plt.subplots(figsize=(10,10))
+
+    linewidth = 3
+    ax.set_yscale('log')
+
+    length = 16 # typically till the resolution length of the dataset
+    buffer = 10 # just add a buffer to the plot
+    k = np.arange(length + buffer) * 1.0
+    ax.plot(truth_sp, 'k', linestyle=":", label="NS", linewidth=4)
+
+    ax.set_xlim(1,length+buffer)
+    ax.set_ylim(10, 10^10)
+    plt.legend(prop={'size': 20})
+    plt.title('Spectrum of {} Datset'.format(dataset_name))
+
+    plt.xlabel('wavenumber')
+    plt.ylabel('energy')
+
+    # show the figure
+    leg = plt.legend(loc='best')
+    leg.get_frame().set_alpha(0.5)
+    plt.show()
+# %%
+def spectrum_2d(signal, n_observations, normalize=True):
+    """This function computes the spectrum of a 2D signal using the Fast Fourier Transform (FFT).
+
+    Paramaters
+    ----------
+    signal : a tensor of shape (T * n_observations * n_observations)
+        A 2D discretized signal represented as a 1D tensor with shape
+        (T * n_observations * n_observations), where T is the number of time
+        steps and n_observations is the spatial size of the signal.
+
+        T can be any number of channels that we reshape into and
+        n_observations * n_observations is the spatial resolution.
+    n_observations: an integer
+        Number of discretized points. Basically the resolution of the signal.
+
+    Returns
+    --------
+    spectrum: a tensor
+        A 1D tensor of shape (s,) representing the computed spectrum.
+    """
+    T = signal.shape[0]
+    X = signal.shape[1]
+    Y = signal.shape[2]
+    signal = signal.view(T, n_observations, n_observations)
+
+    if normalize:
+        signal = torch.fft.fft2(signal)
+    else:
+        signal = torch.fft.rfft2(
+            signal, s=(n_observations, n_observations), normalized=False
+        )
+
+    # 2d wavenumbers following PyTorch fft convention
+    k_max = n_observations // 2
+    wavenumers = torch.cat(
+        (
+            torch.arange(start=0, end=k_max, step=1),
+            torch.arange(start=-k_max, end=0, step=1),
+        ),
+        0,
+    ).repeat(n_observations, 1)
+    k_x = wavenumers.transpose(0, 1)
+    k_y = wavenumers
+
+    # Sum wavenumbers
+    sum_k = torch.abs(k_x) + torch.abs(k_y)
+    sum_k = sum_k
+
+    # Remove symmetric components from wavenumbers
+    index = -1.0 * torch.ones((n_observations, n_observations))
+    k_max1 = k_max + 1
+    index[0:k_max1, 0:k_max1] = sum_k[0:k_max1, 0:k_max1]
+
+    spectrum = torch.zeros((T, n_observations))
+    for j in range(1, n_observations + 1):
+        ind = torch.where(index == j)
+        spectrum[:, j - 1] = (signal[:, ind[0], ind[1]].sum(dim=1)).abs() ** 2
+
+    spectrum = spectrum.mean(dim=0)
+    return spectrum
+
 def plot_for_comparision(data_name,pred,truth,lr_input,time_span,vmin,vmax,channel=0):
     lr_target = lr_input[time_span+1,channel]
     lr_input = lr_input[time_span,channel]
