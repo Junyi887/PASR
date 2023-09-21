@@ -10,32 +10,32 @@ DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x
                  "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
                  "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01]}
 
-def trilinear(file_path, crop, space_scale, time_scale):
-    # Window calculation
+# def trilinear(file_path, crop, space_scale, time_scale):
+#     # Window calculation
 
-    # Loading file and processing data
-    with h5py.File(file_path, 'r') as file:
-        train_hr = file['fields'][()]
+#     # Loading file and processing data
+#     with h5py.File(file_path, 'r') as file:
+#         train_hr = file['fields'][()]
 
-    x_lr_t_lr = train_hr[::time_scale, ::space_scale, ::space_scale]
+#     x_lr_t_lr = train_hr[::time_scale, ::space_scale, ::space_scale]
 
-    # Preparing interpolation
-    x_lr_t_lr = torch.tensor(x_lr_t_lr).unsqueeze(1)
-    pred_x = F.interpolate(x_lr_t_lr, size=(crop, crop), mode='trilinear', align_corners=False).squeeze()
-    t_hr = np.linspace(0, 1, train_hr.shape[0])
-    t_lr = np.linspace(0, 1, x_lr_t_lr.shape[0])
-    cs = CubicSpline(t_lr, pred_x.numpy())
-    pred = torch.tensor(cs(t_hr)).unsqueeze(1)
-    train_poly_truth = torch.tensor(train_hr).unsqueeze(1)
+#     # Preparing interpolation
+#     x_lr_t_lr = torch.tensor(x_lr_t_lr).unsqueeze(1)
+#     pred_x = F.interpolate(x_lr_t_lr, size=(crop, crop), mode='trilinear', align_corners=False).squeeze()
+#     t_hr = np.linspace(0, 1, train_hr.shape[0])
+#     t_lr = np.linspace(0, 1, x_lr_t_lr.shape[0])
+#     cs = CubicSpline(t_lr, pred_x.numpy())
+#     pred = torch.tensor(cs(t_hr)).unsqueeze(1)
+#     train_poly_truth = torch.tensor(train_hr).unsqueeze(1)
 
-    # Error calculation
-    RFNE = torch.stack([
-        torch.norm(pred[i] - train_poly_truth[i]) / torch.norm(train_poly_truth[i])
-        for i in range(len(pred))
-        if i % time_scale != 0
-    ])
+#     # Error calculation
+#     RFNE = torch.stack([
+#         torch.norm(pred[i] - train_poly_truth[i]) / torch.norm(train_poly_truth[i])
+#         for i in range(len(pred))
+#         if i % time_scale != 0
+#     ])
 
-    return torch.mean(RFNE)
+#     return torch.mean(RFNE)
 
 def generate_test_matrix(cols:int, final_index:int):
     rows = (final_index + 1) // (cols - 1)
@@ -59,7 +59,7 @@ def trilinear_interpolation(data_name,timescale_factor = 10,num_snapshot = 10,in
         v_truth = f['tasks']['v'][()]
     final_index = (u_truth.shape[0]-1)//timescale_factor
     idx_matrix = generate_test_matrix(num_snapshot +1 , final_index)*timescale_factor    
-    print(idx_matrix[1:4])
+    print(idx_matrix[1:3])
     if in_channel ==1:
         hr_input = w_truth[idx_matrix[:,0]]
         hr_target = w_truth[idx_matrix[:,:]]

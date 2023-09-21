@@ -13,6 +13,15 @@ from scipy.stats import pearsonr
 from scipy.ndimage import zoom
 CMAP = cmocean.cm.balance
 CMAP = seaborn.cm.icefire
+
+
+import torch
+import numpy as np
+from torch.utils import data
+import matplotlib.pyplot as plt
+import radialProfile
+
+
 # DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/train/Decay_turb_small_128x128_7202.h5', 0.02],
 #             "burger2d": ["../Burgers_2D_small/train/Burgers2D_128x128_702.h5",0.001],
 #             "rbc": ["../RBC_small/train/RBC_small_165_s2.h5",0.01]}
