@@ -65,9 +65,9 @@ def validation(args,model, val1_loader,val2_loader,device):
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_x = model(inputs,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
+            out_x = model(inputs,task_dt = args.task_dt,n_snapshots = 1,ode_step = args.ode_step,time_evol = False) 
             input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True) 
+            out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True) 
             loss_t = criterion_Data(out_t, target[:,1:,...])
             RFNE_t = torch.norm(out_t-target[:,1:,...],p=2,dim = (3,4))/torch.norm(target[:,1:,...],p=2,dim = (3,4))
             target_loss1 += loss_t.item() 
@@ -83,9 +83,9 @@ def validation(args,model, val1_loader,val2_loader,device):
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
-            out_x = model(inputs,task_dt = args.task_dt,n_snapshot = 1,ode_step = args.ode_step,time_evol = False) 
+            out_x = model(inputs,task_dt = args.task_dt,n_snapshots = 1,ode_step = args.ode_step,time_evol = False) 
             input_loss = criterion_Data(out_x[:,0,...], target[:,0,...]) # Experiment change to criterion 1
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True) 
+            out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True) 
             loss_t = criterion_Data(out_t, target[:,1:,...])
             RFNE_t = torch.norm(out_t-target[:,1:,...],p=2,dim = (3,4))/torch.norm(target[:,1:,...],p=2,dim = (3,4))
             target_loss2 += loss_t.item() 
@@ -135,9 +135,9 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,lr_state,d
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
             optimizer.zero_grad()
-            out_x = model(inputs,task_dt = 1,n_snapshot = 1,ode_step = args.ode_step,time_evol = False)
+            out_x = model(inputs,task_dt = 1,n_snapshots = 1,ode_step = args.ode_step,time_evol = False)
             loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshot = args.n_snapshot,ode_step = args.ode_step,time_evol = True)
+            out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True)
             loss_t = criterion_Data(out_t,target[:,1:,:,:,:])
             div = fd_solver.get_div_loss(out_t)
             phy_loss = criterion2(div,torch.zeros_like(div).to(device)) # DO NOT CHANGE THIS ONE. Phy loss has to be L2 norm 
@@ -211,13 +211,26 @@ data_dx = 2*np.pi/2048
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PASR')
     parser.add_argument("--model_path", type=str, default="results/pre_trained_PASR_MLP_small_data_Decay_turb_small_0.pt", help="path to model")
+    parser.add_argument('--n_snapshots',type =int, default= None)
+    parser.add_argument('--batch_size', type = int, default= None)
+    parser.add_argument('--ode_step',type =int, default= None)
+    parser.add_argument('--epochs', type = int, default= None)
+    parser.add_argument('--lr', type = float, default= None)
+    parser.add_argument('--lamb', type = float, default= None)
+    parser.add_argument('--lr_step',type =int, default= None)
+    parser.add_argument('--scheduler',type =str, default= None)
     args = parser.parse_args()
-    
+
     checkpoint = torch.load(args.model_path)
     model_state = checkpoint['model_state_dict']
     opt_state = checkpoint['optimizer_state_dict']
     lr_state = checkpoint['scheduler_state_dict']
+
     config = checkpoint['config'] # config is a dictionary saved by "config": vars(args)
+    config_mapping = ["n_snapshots","batch_size","ode_step","epochs","lr","lamb","lr_step","scheduler"]
+    for item in config_mapping:
+        if getattr(args,item) is not None:
+            config[item] = getattr(args,item)
     args = argparse.Namespace()
     args.__dict__.update(config)
 
@@ -235,7 +248,7 @@ if __name__ == "__main__":
                                                       batch_size = args.batch_size, 
                                                       crop_size = args.crop_size,
                                                       data_path = args.data_path,
-                                                      num_snapshots = args.n_snapshot,
+                                                      num_snapshots = args.n_snapshots,
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
@@ -262,12 +275,12 @@ if __name__ == "__main__":
     }
 
     model = model_list[args.model]
-    model.load_state_dict(model_state)
     model = torch.nn.DataParallel(model).to(device)
+    model.load_state_dict(model_state)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     optimizer.load_state_dict(opt_state)
     savedpath = "pre_trained_" + str(str(args.model) +
-                "_data_" + str(args.data) +  str(ID.item())
+                "_data_" + str(args.data) + "_"+ str(ID.item())
                 ) 
 
     run["config"] = vars(args)   

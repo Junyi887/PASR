@@ -274,7 +274,7 @@ else:
     model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +
-                "_data_" + str(args.data) + str(ID.item())
+                "_data_" + str(args.data) + "_"+  str(ID.item())
                 ) 
 
     run["config"] = vars(args)   
