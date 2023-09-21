@@ -187,6 +187,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,lr_state,d
             'model_state_dict': best_model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
+            'config': vars(args),
             # 'val_sum': np.array(val_list),
             # 'train_sum': np.array(train_list),
             # 'val_x1': np.array(val_list_x1),
@@ -201,44 +202,6 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,lr_state,d
 
 
 
-parser = argparse.ArgumentParser(description='training parameters')
-parser.add_argument('--model', type =str ,default= 'PASR_MLP_small')
-parser.add_argument('--data', type =str ,default= 'Decay_turb')
-parser.add_argument('--loss_type', type =str ,default= 'L1')
-parser.add_argument('--scale_factor', type = int, default= 4)
-parser.add_argument('--timescale_factor', type = int, default= 1)
-parser.add_argument('--task_dt',type =float, default= 4)
-parser.add_argument('--ode_step',type =int, default= 2)
-parser.add_argument('--ode_method',type =str, default= "Euler")
-parser.add_argument('--in_channels',type = int, default= 1)
-parser.add_argument('--batch_size', type = int, default= 8)
-parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
-parser.add_argument('--epochs', type = int, default= 3)
-parser.add_argument('--dtype', type = str, default= "float32")
-parser.add_argument('--seed',type =int, default= 3407)
-
-parser.add_argument('--gating_layers',type =int, default= 3)
-parser.add_argument('--gating_method',type =str, default= 'leaky')
-
-parser.add_argument('--normalization',type =str, default= 'False')
-parser.add_argument('--physics',type =str, default= 'False')
-
-parser.add_argument('--gamma',type =float, default= 0.95)
-parser.add_argument('--lr_step',type =int, default= 80)
-parser.add_argument('--patience',type =int, default= 15)
-parser.add_argument('--scheduler',type =str, default= 'StepLR')
-parser.add_argument('--n_snapshot',type =int, default= 20)
-parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
-parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
-parser.add_argument('--noise_ratio', type = float, default= 0.0)
-parser.add_argument('--lr', type = float, default= 1e-4)
-parser.add_argument('--lamb', type = float, default= 0.3)
-parser.add_argument('--lamb_p', type = float, default= 1)
-parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
-parser.add_argument('--model_path' ,type = str)
-args = parser.parse_args()
-logging.info(args)
-
 data_dx = 2*np.pi/2048
 ########### loaddata ############
 
@@ -246,6 +209,18 @@ data_dx = 2*np.pi/2048
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='PASR')
+    parser.add_argument("--model_path", type=str, default="results/pre_trained_PASR_MLP_small_data_Decay_turb_small_0.pt", help="path to model")
+    args = parser.parse_args()
+    
+    checkpoint = torch.load(args.model_path)
+    model_state = checkpoint['model_state_dict']
+    opt_state = checkpoint['optimizer_state_dict']
+    lr_state = checkpoint['scheduler_state_dict']
+    config = checkpoint['config'] # config is a dictionary saved by "config": vars(args)
+    args = argparse.Namespace()
+    args.__dict__.update(config)
+
     if args.dtype =="float32":
         data_type = torch.float32
     else: 
@@ -271,25 +246,27 @@ if __name__ == "__main__":
     else:
         mean = [0]
         std = [1]
+    if args.data =="Decay_turb_small": 
+        image = [128,128]
+    elif args.data =="rbc_small":
+        image = [256,64]
+    elif args.data =="Burger2D_small":
+        image = [128,128]
     model_list = {
-            "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method).to(device,dtype=data_type),
-            "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method).to(device,dtype=data_type),
-            # "PASR_MLP_G_aug":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-            # "PASR_MLP_G_aug_small":PASR_MLP_G_aug(upscale=args.scale_factor, in_chans=1, img_size=args.crop_size, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std).to(device,dtype=data_type),
-
+            "PASR_small":PASR(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,time_update = args.time_update,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding),
+             "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
+            "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
+            "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
+            "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
+            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
     }
-    checkpoint = torch.load(args.model_path)
-    model_state = checkpoint['model_state_dict']
-    opt_state = checkpoint['optimizer_state_dict']
-    lr_state = checkpoint['scheduler_state_dict']
+
     model = model_list[args.model]
     model.load_state_dict(model_state)
     model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     optimizer.load_state_dict(opt_state)
-    savedpath = str(str(args.model) +
+    savedpath = "pre_trained_" + str(str(args.model) +
                 "_data_" + str(args.data) +  str(ID.item())
                 ) 
 

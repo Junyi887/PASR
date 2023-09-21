@@ -134,7 +134,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
             optimizer.zero_grad()
-            out_x = model(inputs,task_dt = 1,n_snapshots = 1,ode_step = args.ode_step,time_evol = False)
+            out_x = model(inputs,task_dt = args.task_dt,n_snapshots = 1,ode_step = args.ode_step,time_evol = False)
             loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
             out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True)
             loss_t = criterion_Data(out_t,target[:,1:,:,:,:])
@@ -179,6 +179,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             'model_state_dict': best_model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
+            "config": vars(args)
             },"results/"+savedpath + ".pt" ) # remember to change name for each experiment
         # validate 
     return min(val_list_x2),best_epoch

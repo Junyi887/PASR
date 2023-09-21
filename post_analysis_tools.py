@@ -370,12 +370,8 @@ def ssim(true, pred):
     ssim = StructuralSimilarityIndexMeasure()
     return ssim(true, pred)
 
-def get_prediction(model_dic,lr_input_tensor,hr_target_tensor,scale_factor,in_channels,task_dt,n_snapshot,ode_step):
-    model = PASR_MLP(upscale=scale_factor, in_chans=in_channels, img_size=256, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler="pixelshuffle", resi_conv='1conv',mean=[0],std=[1])
-    model = torch.nn.DataParallel(model).cuda()
-    checkpoint = torch.load(model_dic)
-    model_dic = checkpoint['model_state_dict']
-    model.load_state_dict(model_dic)
+def get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor,in_channels,task_dt,n_snapshot,ode_step):
+
     model.eval()
     with torch.no_grad():
         pred0 = model(lr_input_tensor.float().cuda(),task_dt = task_dt,n_snapshot = n_snapshot,ode_step = ode_step,time_evol = False)
@@ -446,6 +442,11 @@ def plot_energy_specturm_phyLoss(u_truth,v_truth,u_pred,v_pred,u_pred_p,v_pred_p
     fig.savefig(f"figures/{data_name}_energy_specturm.png",dpi=300,bbox_inches='tight')
     return print("energy specturm plot done")
 
+def NODE_continuity_check(data_name,time_scale_factor = 5,ode_step = 10):
+    lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data(data_name=data_name,timescale_factor = 5,num_snapshot = 20,in_channel=3,upscale_factor=4)
+    get_prediction(MODEL_INFO[data_name],lr_input_tensor,hr_target_tensor,scale_factor=4,in_channels=3,task_dt=4,n_snapshot=20,ode_step=10)
+    
+
 if __name__ == "__main__":
     get_data_scale("rbc")
     plot_data(data_name = "rbc",timescale_factor =5 ,in_channel=1,vmin=-10,vmax=10,row=3,col=10)
@@ -479,7 +480,10 @@ plot_vorticity_correlation("rbc_p",w_pred_p,w_truth)
 # plot_PDF("rbc",pred,hr_target,lr_input)
 
 ################## decay_turb ##################
-
+model = torch.nn.DataParallel(model).cuda()
+checkpoint = torch.load(model_dic)
+model_dic = checkpoint['model_state_dict']
+model.load_state_dict(model_dic)
 lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data("decay_turb",timescale_factor = 5,num_snapshot = 20,in_channel=3,upscale_factor=4)
 pred = get_prediction(MODEL_INFO["decay_turb"],lr_input_tensor,hr_target_tensor,scale_factor=4,in_channels=3,task_dt=4,n_snapshot=20,ode_step=10)
 pred_p = get_prediction(MODEL_INFO["decay_turb_physics"],lr_input_tensor,hr_target_tensor,scale_factor=4,in_channels=3,task_dt=4,n_snapshot=20,ode_step=10)
