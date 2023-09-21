@@ -248,14 +248,7 @@ if __name__ == "__main__":
     # model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +
-                "_data_" + str(args.data) + 
-                "_upscale_factor_" + str(args.scale_factor) +
-                "_timescale_factor_" + str(args.timescale_factor) +
-                "_loss_type_" + str(args.loss_type) +
-                "_lamb_" + str(args.lamb) +
-                "_lr_" + str(args.lr) +
-                "_gamma_" + str(args.gamma) +
-                "_normalizaiton_" + str(args.normalization) + str(ID.item())
+                "_data_" + str(args.data) + str(ID.item())
                 ) 
 
     run["config"] = vars(args)   

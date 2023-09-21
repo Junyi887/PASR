@@ -235,7 +235,7 @@ parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
 parser.add_argument('--lamb_p', type = float, default= 1)
 parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
-parser.add_argument('--model_path' type = str)
+parser.add_argument('--model_path' ,type = str)
 args = parser.parse_args()
 logging.info(args)
 
@@ -290,19 +290,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     optimizer.load_state_dict(opt_state)
     savedpath = str(str(args.model) +
-                "_data_" + str(args.data) + 
-                "_crop_size_" + str(args.crop_size) +
-                "_ode_step_" + str(args.ode_step) +
-                "_ode_method_" + str(args.ode_method) +
-                "_task_dt_" +  str(args.task_dt) + 
-                "_num_snapshots_" + str(args.n_snapshot) +
-                "_upscale_factor_" + str(args.scale_factor) +
-                "_timescale_factor_" + str(args.timescale_factor) +
-                "_loss_type_" + str(args.loss_type) +
-                "_lamb_" + str(args.lamb) +
-                "_lr_" + str(args.lr) +
-                "_gamma_" + str(args.gamma) +
-                "_normalizaiton_" + str(args.normalization) + str(ID.item())
+                "_data_" + str(args.data) +  str(ID.item())
                 ) 
 
     run["config"] = vars(args)   

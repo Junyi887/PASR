@@ -21,22 +21,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
              batch_size = 1, std = [0.6703, 0.6344, 8.3615],in_channels = 1):  
     
     # data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std
-
-    if data_name in["rbc", "Burger2D", "Decay_turb"]:
-        #To do swap and change 
-        if timescale_factor > 1:
-            train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-            val1_loader = get_data_loader(data_name, data_path, '/val', "test", upscale_factor, timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std,in_channels)
-            val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor//2,num_snapshots*2,noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor//2,num_snapshots*4, noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor//2, num_snapshots*4, noise_ratio, crop_size, method, batch_size, std, in_channels)
-        else: 
-            train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-            val1_loader = get_data_loader(data_name, data_path, '/val', "val", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-            val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
-    elif data_name in["rbc_small", "Burger2D_small", "Decay_turb_small"] or "FNO" in data_name:
+    if data_name in["rbc_small", "Burger2D_small", "Decay_turb_small"] or "FNO" in data_name:
         #To do swap and change 
         if timescale_factor > 1:
             train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
@@ -77,7 +62,7 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
 
 class GetDataset_diffIC_NOCrop(Dataset):
     '''Dataloader from different initial conditions
-    It loads low-resolution image as a first input and gives high-resolution image as targets
+    It loads single low-resolution image as a input and gives following high-resolution images as targets
     '''
     def __init__(self, location, state, transform, upscale_factor,timescale_factor,num_snapshots, noise_ratio, std,crop_size, method,in_channels):
         self.location = location
@@ -245,17 +230,7 @@ class GetDataset_diffIC_NOCrop(Dataset):
                     
         return matrix[:-1,:]
 
-# n_snapshot = 10
-# time_scale_factor = 4
-# # Example usage
-# total_number = 2000 # Total number of time steps
-# cols = n_snapshot 
-#  # Number of columns
-# final_index = (total_number-1)//time_scale_factor  # Final index number
-# toeplitz_matrix = generate_toeplitz(cols, final_index)
-# print("Generated Toeplitz Matrix:")
-# print(toeplitz_matrix*time_scale_factor)
-# print(toeplitz_matrix.shape)
+
 
 class Special_Loader(Dataset):
     '''Dataloader for different initial conditions.
