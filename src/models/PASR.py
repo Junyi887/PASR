@@ -934,7 +934,7 @@ class PASR(nn.Module):
         # during train task_dt is 1, then n_snapshots should be 1
         # if we want to intermediate snapshot change task dt to 0.5, then n_snapshots should be 2
         predictions = []
-        H, W = x.shape[2:]
+        H, W = x.shape[-2],x.shape[-1]
         x = self.check_image_size(x)
         x = self.shiftMean_func(x,"sub")
         x = self.conv_first(x)     #Shallow Feature Extraction
@@ -944,7 +944,7 @@ class PASR(nn.Module):
             # load initial condition
             if time_evol == True:
                 for i in range (n_snapshots):   
-                    z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
+                    z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                           #ODE time interpolation
                     y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
                     y1 = self.conv_last(self.upsample(y1))  
                     y1 = self.shiftMean_func(y1,"add")    
