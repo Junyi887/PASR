@@ -38,19 +38,19 @@ DECAY_TURB_ = {"train_path":'../Decay_Turbulence_small/train/Decay_turb_small_12
                "resol":(128,128),
                }
 
-RBC_= {"train_path":'../RBC_small/train/RBC_small_702_s2.h5',
-               "test_path":'../RBC_small/test/RBC_small_33_s2.h5',
-               "dt":0.01,
-               "resol":(256,64)}
+# RBC_= {"train_path":'../RBC_small/train/RBC_small_702_s2.h5',
+#                "test_path":'../RBC_small/test/RBC_small_33_s2.h5',
+#                "dt":0.01,
+#                "resol":(256,64)}
 
-BURGER_2D_ = {"train_path":'../Burgers_2D_small/train/Burgers2D_128x128_1573.h5',
-                "test_path":'../Burgers_2D_small/test/Burgers2D_128x128_79.h5',
-                "dt":0.001,
-                "resol":(128,128)}
+# BURGER_2D_ = {"train_path":'../Burgers_2D_small/train/Burgers2D_128x128_1573.h5',
+#                 "test_path":'../Burgers_2D_small/test/Burgers2D_128x128_79.h5',
+#                 "dt":0.001,
+#                 "resol":(128,128)}
               
-DATA_INFO_TEST = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
-                 "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
-                 "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01]}
+# DATA_INFO_TEST = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
+#                  "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
+#                  "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01]}
 
 class Conv2dDerivative(nn.Module):
     def __init__(self, DerFilter, resol, kernel_size=3, name=''):
@@ -79,7 +79,6 @@ class Conv2dDerivative(nn.Module):
 class Fluid_Properties_Calculator(nn.Module):
     def __init__(self,data_name):
         self.data_name = data_name
-        self.data_path = DATA_INFO_TEST[data_name][0]
     def _conv_operator(self,kernel_size,dxdy):
         if kernel_size ==5:
             self.dx = Conv2dDerivative(
@@ -246,21 +245,21 @@ class Fluid_Properties_Calculator(nn.Module):
         }
         return realsize, EK_avsphr,result_dict
     
-    def get_energy_spectrum_simple(self,uv,normalize):
-        # adpat from Ray wang
-        import radialProfile
-        """Convert TKE field to spectrum"""
-        tke = uv**2
-        tke = tke.sum(axis=1)
-        sp = np.fft.fft2(tke)
-        sp = np.fft.fftshift(sp)
-        sp = np.real(sp*np.conjugate(sp))
-        sp1D = radialProfile.azimuthalAverage(sp)
-            tensor = inverse_seqs(tensor)
-    spec = np.array([tke2spectrum(TKE(tensor[i])) for i in range(tensor.shape[0])])
-    return np.mean(spec, axis = 0), np.std(spec, axis = 0)
+    # def get_energy_spectrum_simple(self,uv,normalize):
+    #     # adpat from Ray wang
+    #     import radialProfile
+    #     """Convert TKE field to spectrum"""
+    #     tke = uv**2
+    #     tke = tke.sum(axis=1)
+    #     sp = np.fft.fft2(tke)
+    #     sp = np.fft.fftshift(sp)
+    #     sp = np.real(sp*np.conjugate(sp))
+    #     sp1D = radialProfile.azimuthalAverage(sp)
+    #         tensor = inverse_seqs(tensor)
+    # spec = np.array([tke2spectrum(TKE(tensor[i])) for i in range(tensor.shape[0])])
+    # return np.mean(spec, axis = 0), np.std(spec, axis = 0)
 
-        return sp1D 
+    #     return sp1D 
 
     def get_vorticity_energy_spectrum(nx,ny,w):
     
