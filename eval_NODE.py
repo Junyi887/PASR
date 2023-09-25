@@ -134,7 +134,7 @@ if __name__ == "__main__":
     lr_input2,hr_target2,lr_input_tensor2,hr_target_tensor2 = get_test_data("decay_turb",timescale_factor=2,num_snapshot = 40,in_channel=3,upscale_factor=4)
 
     pred = get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt,n_snapshots = 20,ode_step=args.ode_step)
-    pred2 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt//2,n_snapshots = 40,ode_step=args.ode_step//2)
+    pred2 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt//2,n_snapshots = 40,ode_step=args.ode_step)
     RFNE,RFNE_mean,RFNE_avg = get_metric_RFNE(pred,hr_target_tensor)
     RFNE2,RFNE2_mean2,RFNE_avg2 = get_metric_RFNE(pred2,hr_target_tensor2)
     print(RFNE[-5,:,0])
