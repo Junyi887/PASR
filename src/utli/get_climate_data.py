@@ -4,7 +4,7 @@ import numpy as np
 import glob
 
 location = ""
-files_paths = glob.glob(location + "../superbench/datasets/era5/*/*.h5") #only take s
+files_paths = glob.glob(location + "../superbench/datasets/era5/test_2/2015.h5") #only take s
 files_paths = sorted(files_paths, key=lambda x: int(os.path.basename(x).split('.')[0]))
 n_files = len(files_paths)
 print(files_paths)
