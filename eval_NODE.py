@@ -19,7 +19,6 @@ import torch
 import numpy as np
 from torch.utils import data
 import matplotlib.pyplot as plt
-import radialProfile
 
 DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
                  "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
@@ -33,7 +32,7 @@ def get_test_data(data_name,timescale_factor = 10,num_snapshot = 10,in_channel=1
         v_truth = f['tasks']['v'][()]
     final_index = (u_truth.shape[0]-1)//timescale_factor
     idx_matrix = generate_test_matrix(num_snapshot +1 , final_index)*timescale_factor    
-    print(idx_matrix[1:4])
+    print(idx_matrix[0:2])
     if in_channel ==1:
         hr_input = w_truth[idx_matrix[:,0]]
         hr_target = w_truth[idx_matrix[:,:]]
@@ -96,8 +95,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PASR')
     parser.add_argument("--model_path", type=str, default="results/pre_trained_PASR_MLP_small_data_Decay_turb_small_0.pt", help="path to model")
     parser.add_argument("--test_data_name", type=str, default="decay_turb", help="decay_turb, burger2d, rbc")
-    args = parser.parse_args()
-    checkpoint = torch.load(args.model_path)
+    parsed_args = parser.parse_args()
+    checkpoint = torch.load(parsed_args.model_path)
     model_state = checkpoint['model_state_dict']
     config = checkpoint['config']
     args = argparse.Namespace()
@@ -129,10 +128,10 @@ if __name__ == "__main__":
     model = model_list[args.model]
     model = torch.nn.DataParallel(model).to(device)
     model.load_state_dict(model_state)
-    lr_input_m1,hr_target_m1,lr_input_tensor_m1,hr_target_tensor_m1 = get_test_data(args.test_data_name,timescale_factor=8,num_snapshot = 10,in_channel=3,upscale_factor=4)
-    lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data(args.test_data_name,timescale_factor=4,num_snapshot = 20,in_channel=3,upscale_factor=4)
-    lr_input2,hr_target2,lr_input_tensor2,hr_target_tensor2 = get_test_data(args.test_data_name,timescale_factor=2,num_snapshot = 40,in_channel=3,upscale_factor=4)
-    lr_input3,hr_target3,lr_input_tensor3,hr_target_tensor3 = get_test_data(args.test_data_name,timescale_factor=1,num_snapshot = 80,in_channel=3,upscale_factor=4)
+    lr_input_m1,hr_target_m1,lr_input_tensor_m1,hr_target_tensor_m1 = get_test_data(parsed_args.test_data_name,timescale_factor=8,num_snapshot = 10,in_channel=3,upscale_factor=4)
+    lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data(parsed_args.test_data_name,timescale_factor=4,num_snapshot = 20,in_channel=3,upscale_factor=4)
+    lr_input2,hr_target2,lr_input_tensor2,hr_target_tensor2 = get_test_data(parsed_args.test_data_name,timescale_factor=2,num_snapshot = 40,in_channel=3,upscale_factor=4)
+    lr_input3,hr_target3,lr_input_tensor3,hr_target_tensor3 = get_test_data(parsed_args.test_data_name,timescale_factor=1,num_snapshot = 80,in_channel=3,upscale_factor=4)
     print("input shape", lr_input.shape,lr_input2.shape)
     pred_m1 = get_prediction(model,lr_input_tensor_m1,hr_target_tensor_m1,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt*2,n_snapshots = 10,ode_step=args.ode_step*2)
     pred = get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt,n_snapshots = 20,ode_step=args.ode_step)
@@ -145,6 +144,7 @@ if __name__ == "__main__":
     print(RFNE.shape)
     print(RFNE2.shape)
     print(RFNE3.shape)
+    print(RFNE_m1[12,:,0])
     print(RFNE[12,:,0])
     print(RFNE2[12,:,0])
     print(RFNE3[12,:,0])
@@ -152,6 +152,6 @@ if __name__ == "__main__":
         ,"RFNE1":{"all":RFNE,"avg":RFNE_mean}
                   ,"RFNE2":{"all":RFNE2,"avg":RFNE_mean2}
                     ,"RFNE3":{"all":RFNE3,"avg":RNFE_mean3}}
-    np.save("RFNE_decay_turb_small.npy",result_dic)
+    torch.save(result_dic,"RFNE_"+ str(parsed_args.test_data_name) + ".pt")
     # print(RFNE[-11:-1,:,:].mean())
     # print(RFNE2[-11:-1,:,:].mean())
