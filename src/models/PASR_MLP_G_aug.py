@@ -650,42 +650,37 @@ class Gating(nn.Module):
         return x 
     
 class Aug_Gated_NODE(nn.Module):
-    def __init__(self,in_dim,ode_method ="Euler",aug_dim = 5):
+    def __init__(self, in_dim, out_dim=None, num_layers=4, kernel_size=3, padding=1, activation_fn=nn.Tanh, ode_method="Euler"):
         super(Aug_Gated_NODE, self).__init__()
-        self.aug_dim = aug_dim
-        self.model = nn.Sequential(
-            nn.Linear(in_dim, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim),
-            nn.Tanh()
-        ) 
-        self.gating = Gating(in_dim,self.aug_dim)
-        self.in_dim = in_dim
+        
+        # If out_dim is not specified, it will be same as in_dim
+        if out_dim is None:
+            out_dim = in_dim*2
+        
+        layers = []
+        for i in range(num_layers):
+            layers.append(nn.Conv2d(in_dim if i == 0 else out_dim, out_dim, kernel_size, stride=1, padding=padding))
+            layers.append(nn.ReLU())
+            if i == num_layers - 1: # last layers 
+                layers.append(nn.Conv2d(out_dim, in_dim, kernel_size, stride=1, padding=padding)) 
+                layers.append(activation_fn())
+        
+        self.model = nn.Sequential(*layers)
         self.int_method = ode_method
-    def forward(self, x,ode_step = 1,task_dt = 1.0):
-        B,C,H,W = x.shape
-        x = x.flatten(2).transpose(1, 2)  # B h*w C
+
+    def forward(self, x, ode_step=1, task_dt=1.0):
         h = task_dt / ode_step
-        t_cat = h*torch.ones((B,H*W,self.aug_dim),device = x.device)
-        x_aug = torch.cat((x,t_cat),dim = 2)
         if self.int_method == "Euler":
             for i in range(ode_step):
-                x = x + self.gating(x_aug)*self.model(x) 
+                x = x + h*self.model(x) 
         elif self.int_method == "RK4":
             for i in range(ode_step):
                 f1 = self.model(x)
-                f2 = self.model(x+h/2.0*f1)
-                f3 = self.model(x+h/2.0*f2)
-                f4 = self.model(x+h*f3)
-                x = x + self.gating(x_aug)*(f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0) #512
-        x = x.transpose(1, 2).view(B, C, H, W) 
-        return x 
+                f2 = self.model(x + h/2.0*f1)
+                f3 = self.model(x + h/2.0*f2)
+                f4 = self.model(x + h*f3)
+                x = x + h * (f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0)
+        return x
 
 class PASR_MLP_G_aug(nn.Module):
     """ PASR
