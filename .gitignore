@@ -21,3 +21,4 @@ output2.out
 resul1ts/*.png
 src/data_loader_concise.py
 src/analysis_tools/*
+*.pt

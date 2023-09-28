@@ -140,6 +140,6 @@ class DataInfoLoader():
 
 if __name__ == "__main__":
   print("hello")
-  info = DataInfoLoader("../RBC_small/*/*.h5")
+  info = DataInfoLoader("../Decay_Turbulence_small/*/*.h5")
   print(info.get_mean_std())
   print(info.get_min_max())

@@ -21,7 +21,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
              batch_size = 1, std = [0.6703, 0.6344, 8.3615],in_channels = 1):  
     
     # data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std
-    if data_name in["rbc_small", "Burger2D_small", "Decay_turb_small", "FNO","ConvLSTM"]:
+    if data_name in["rbc_small", "Burger2D_small", "Decay_turb_small"] or  "FNO" in data_name or "ConvLSTM" in data_name:
         #To do swap and change 
         if timescale_factor > 1:
             train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)

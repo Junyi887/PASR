@@ -85,7 +85,7 @@ def validation(args,model, val1_loader,val2_loader,device):
             out_t = model(inputs) 
             loss_t = criterion_Data(out_t, target)
             #B,C,T,H,W
-            RFNE_t = torch.norm(out_t-target,p=2,dim = (2,3,4))/torch.norm(target,p=2,dim = (2,3,4))
+            RFNE_t = torch.norm(out_t-target,p=2,dim = (-1,-2))/torch.norm(target,p=2,dim = (-1,-2))
             target_loss2 += loss_t.item() 
             input_loss2 += 0
             RFNE2_loss += RFNE_t.mean().item()
@@ -159,6 +159,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             'model_state_dict': best_model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
+            "config": vars(args),
             },"results/"+savedpath + ".pt" ) # remember to change name for each experiment
         # validate 
     return min(val_list_x2),best_epoch

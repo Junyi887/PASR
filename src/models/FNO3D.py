@@ -2,7 +2,24 @@ import torch
 import torch.nn as nn
 from .basics import SpectralConv3d
 import torch.nn.functional as F
+class ShiftMean(nn.Module):
+    # note my data has shape [b,c,t,h,w]
+    # data: [t,b,c,h,w]
+    # channel: p, T, u, v
+    def __init__(self, mean, std):
+        super(ShiftMean, self).__init__()
+        c = len(mean)
+        self.mean = torch.Tensor(mean).view(1, c, 1, 1, 1) # B, C, T, X, Y
+        self.std = torch.Tensor(std).view(1, c, 1, 1, 1)
 
+    def forward(self, x, mode):
+        if mode == 'sub':
+            return (x - self.mean.cuda()) / self.std.cuda()
+        elif mode == 'add':
+            return x * self.std.cuda() + self.mean.cuda()
+        else:
+            raise NotImplementedError
+        
 class FNO3D(nn.Module):
     def __init__(self, 
                  modes1, modes2, modes3,
@@ -12,7 +29,7 @@ class FNO3D(nn.Module):
                  layers=None,
                  in_dim=3, out_dim=3,
                  act='gelu', 
-                 pad_ratio=[0., 0.]):
+                 pad_ratio=[0., 0.],mean=[0],std =[1]):
         '''
         Args:
             modes1: list of int, first dimension maximal modes for each layer
@@ -37,7 +54,7 @@ class FNO3D(nn.Module):
         self.modes2 = modes2
         self.modes3 = modes3
         self.pad_ratio = pad_ratio
-
+        self.shift_mean = ShiftMean(mean, std)  
         if layers is None:
             self.layers = [width] * 4
         else:
@@ -68,6 +85,7 @@ class FNO3D(nn.Module):
         # dimension in LR
         B,C,T,H,W = x.shape
         x = F.interpolate(x, size=(self.hr_shape[2],self.hr_shape[3],self.hr_shape[4]), mode='trilinear', align_corners=False)
+        x.shift_mean(x, 'sub')
         x = x.permute(0, 2, 3, 4, 1) # from bcxyz to bxyzc
         size_z = x.shape[-2]
         length = len(self.ws)
@@ -87,6 +105,7 @@ class FNO3D(nn.Module):
         x = self.act(x)
         x = self.fc2(x)
         x = x.permute(0, 4, 1, 2, 3)
+        x.shift_mean(x, 'add')
         return x
     
 

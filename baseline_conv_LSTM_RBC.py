@@ -30,7 +30,7 @@ from src.models import *
 from src.utli import *
 from src.data_loader_nersc import getData
 import neptune
-
+import time
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 ID = torch.randint(10000,(1,1))
@@ -38,6 +38,7 @@ run = neptune.init_run(
     project="junyiICSI/PASR",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
     tags = [str(ID.item())],
+    # mode = "debug"
     )  # your credentials
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
@@ -105,7 +106,7 @@ class ConvLSTMCell(nn.Module):
 
         self.hidden_feats = hidden_feats
         self.hidden_kernel_size = 3
-        self.num_features = 4
+        self.num_features = 3
         self.input_padding = input_padding
         self.padding = int((self.hidden_kernel_size - 1) / 2) # for the hidden state
 
@@ -185,9 +186,8 @@ class temporal_sr(nn.Module):
         x = x.permute(1,3,4,2,0) # [b,h,w,c,t]
         x = x.contiguous().view(b*h*w, c, t)
 
-        x = F.interpolate(x, scale_factor=self.t_upscale_factor, mode='linear', align_corners=True)   
-        
-        x = x.contiguous().view(b, h, w, c, t*self.t_upscale_factor)
+        x = F.interpolate(x, size=self.t_upscale_factor+1, mode='linear', align_corners=True)   
+        x = x.contiguous().view(b, h, w, c, 1+self.t_upscale_factor)
         x = x.permute(4,0,3,1,2) # [t,b,c,h,w]
 
         return x
@@ -215,7 +215,7 @@ class PhySR(nn.Module):
         for i in range(self.n_convlstm):
             name = 'convlstm{}'.format(i)
             cell = ConvLSTMCell(
-                    input_feats=4,
+                    input_feats=3,
                     hidden_feats=n_feats,
                     input_kernel_size=3,
                     input_stride=1,
@@ -226,10 +226,10 @@ class PhySR(nn.Module):
 
         ################## spatial super-resolution ###################
         body = [ResBlock(n_feats, expansion_ratio=4, res_scale=0.1) for _ in range(self.n_resblock)]
-        tail = [weight_norm(nn.Conv2d(n_feats, 4*(self.s_up_factor ** 2), 
+        tail = [weight_norm(nn.Conv2d(n_feats, 3*(self.s_up_factor ** 2), 
             kernel_size=3, padding=1, padding_mode='circular')), nn.PixelShuffle(self.s_up_factor)]  
 
-        skip = [weight_norm(nn.Conv2d(4, 4*(self.s_up_factor ** 2), kernel_size=5, stride=1,
+        skip = [weight_norm(nn.Conv2d(3, 3*(self.s_up_factor ** 2), kernel_size=5, stride=1,
             padding=2, padding_mode='circular')), nn.PixelShuffle(self.s_up_factor)]    
 
         self.body = nn.Sequential(*body)
@@ -244,6 +244,7 @@ class PhySR(nn.Module):
 
     def forward(self, x, initial_state):
         # input: [t,b,c,h,w]
+        tt,bb,cc,hh,ww = x.shape
         internal_state = []
         outputs = []
         
@@ -252,14 +253,11 @@ class PhySR(nn.Module):
             
         # temporal super-resolution
         x = self.tsr(x) 
-
         for step in range(self.step):
             # input:[t,b,c,h,w]
             xt = x[step,...]
-
             # skip connection
             s = self.skip(xt)
-
             # temporal correction
             for i in range(self.n_convlstm):
                 name = 'convlstm{}'.format(i)
@@ -276,10 +274,9 @@ class PhySR(nn.Module):
             # spatial super-resolution
             xt = self.body(xt)
             xt = self.tail(xt)
-
             # residual connection
             xt += s
-            xt = xt.view(1, 5, 4, 512, 128)
+            xt = xt.view(1, bb, cc, hh*4, ww*4)
             
             if step in self.effective_step:
                 outputs.append(xt)    
@@ -386,7 +383,7 @@ class LossGenerator(nn.Module):
         # [p,T,u,v]
 
         # laplace u, [t-2,b,c,h,w]
-        u = output[:, :, 2:3, :, :]
+        u = output[:, :, 1:2, :, :]
         len_t,len_b,len_c,len_h,len_w = u.shape 
         # [t,b,c,h,w] -> [t*b,c,h,w]
         u = u.reshape(len_t*len_b, len_c, len_h, len_w)
@@ -395,7 +392,7 @@ class LossGenerator(nn.Module):
         u_x = u_x.reshape(len_t,len_b,len_c,len_h-4,len_w-4)
 
         # laplace v, [t-2,b,c,h,w]
-        v = output[:, :, 3:4, :, :]
+        v = output[:, :, 2:3, :, :]
         len_t,len_b,len_c,len_h,len_w = v.shape 
         v = v.reshape(len_t*len_b, len_c, len_h, len_w)
         v_y = self.dy(v)  
@@ -415,13 +412,13 @@ class LossGenerator(nn.Module):
         ############### spatial derivatives #################
         # u_x, u_y, v_x, v_y, u_xx, u_yy
         # laplace u
-        u = output[:, :, 2:3, :, :]
+        u = output[:, :, 1, :, :]
 
         ############### temporal derivatives #################
 
         ############### spatial derivatives #################
         # laplace u, [t-2,b,c,h,w]
-        u = output[:, :, 0:1, :, :]
+        u = output[:, :, 1:2, :, :]
         len_t,len_b,len_c,len_h,len_w = u.shape 
         # [t,b,c,h,w] -> [t*b,c,h,w]
         u = u.reshape(len_t*len_b, len_c, len_h, len_w)
@@ -430,7 +427,7 @@ class LossGenerator(nn.Module):
         laplace_u = laplace_u.reshape(len_t,len_b,len_c,len_h-4,len_w-4)
 
         # laplace v, [t-2,b,c,h,w]
-        v = output[:, :, 1:2, :, :]
+        v = output[:, :, 2:3, :, :]
         len_t,len_b,len_c,len_h,len_w = v.shape 
         v = v.reshape(len_t*len_b, len_c, len_h, len_w)
         laplace_v = self.laplace(v)  
@@ -438,7 +435,7 @@ class LossGenerator(nn.Module):
 
         ############### temporal derivatives #################
         # u_t, [t,b,c,h-4,w-4]
-        u = output[:, :, 0:1, 2:-2, 2:-2]
+        u = output[:, :, 1:2, 2:-2, 2:-2]
         len_t,len_b,len_c,len_h,len_w = u.shape 
         u = u.permute(3,4,1,2,0) # [h,w,b,c,t]
         u = u.reshape(len_h*len_w*len_b, len_c, len_t) # [h*w*b,c,t]
@@ -450,7 +447,7 @@ class LossGenerator(nn.Module):
         u_t = u_t.permute(4,2,3,0,1)
 
         # v_t, [t,b,c,h-4,w-4]
-        v = output[:, :, 1:2, 2:-2, 2:-2]
+        v = output[:, :, 2:3, 2:-2, 2:-2]
         len_t,len_b,len_c,len_h,len_w = v.shape 
         v = v.permute(3,4,1,2,0) # [h,w,b,c,t]
         v = v.reshape(len_h*len_w*len_b, len_c, len_t) # [h*w*b,c,t]
@@ -462,8 +459,8 @@ class LossGenerator(nn.Module):
         v_t = v_t.permute(4,2,3,0,1)
 
         ############### corresponding u & v ###################
-        u = output[:, :, 0:1, 2:-2, 2:-2]  # [step, b, c, height(Y), width(X)]
-        v = output[:, :, 1:2, 2:-2, 2:-2]  # [step, b, c, height(Y), width(X)]
+        u = output[:, :, 1:2, 2:-2, 2:-2]  # [step, b, c, height(Y), width(X)]
+        v = output[:, :, 2:3, 2:-2, 2:-2]  # [step, b, c, height(Y), width(X)]
 
         # make sure the dimensions consistent
         assert laplace_u.shape == u_t.shape
@@ -532,9 +529,8 @@ def train(model, train_loader, val_loader, init_state, n_iters, lr, print_every,
             
             optimizer.zero_grad()
 
-            lres, hres = lres.cuda(), hres.cuda() 
-            lres, hres = lres.transpose(0,1), hres.transpose(0,1) # (b,t,c,h,w) -> (t,b,c,h,w)
-            
+            lres, hres = lres.float().cuda(), hres.float().cuda()  
+            lres, hres = lres.permute(2,0,1,3,4), hres.permute(2,0,1,3,4) # (b,c,t,h,w) -> (t,b,c,h,w)
             outputs = model(lres, init_state)
 
             # compute loss 
@@ -561,23 +557,29 @@ def train(model, train_loader, val_loader, init_state, n_iters, lr, print_every,
             # for print training loss (details)
             print('Epoch %d: data loss(%.8f), phy loss(%.8f)' %(
                 epoch+1, data_loss.item(), phy_loss.item()))
-
+            print("here")
             # calculate the validation loss
             val_loss, val_error = validate(model, val_loader, init_state, loss_function, beta)
+            run["train/val_loss"].log(val_loss)
+            run["train/val_error"].log(val_error)
+            run["train/train_loss"].log(print_loss_mean)
+            run["train/lr"].log(scheduler.get_last_lr())
+            val_loss_list.append(val_loss)
+            val_error_list.append(val_error)
 
             # for print validation loss
             print('Epoch (%d/%d %d%%): val loss %.8f, val error %.8f'  % (epoch+1, n_iters, 
                 (epoch+1)/n_iters*100, val_loss, val_error))
             print('')
-
-            val_loss_list.append(val_loss)
-            val_error_list.append(val_error)
-
             # save model
             if val_error < best_error:
                 save_checkpoint(model, optimizer, scheduler, model_save_path)
                 best_error = val_error
-
+        if (epoch+1) % 100 == 0:
+            pred_error = test(model, val2_loader, init_state, save_path, fig_save_path)
+            run["train/test_error"].log(pred_error)
+            print('Epoch (%d/%d %d%%): val loss %.8f, val error %.8f, test error %.8f'  % (epoch+1, n_iters, 
+                (epoch+1)/n_iters*100, val_loss, val_error, pred_error))
     return train_loss_list, val_loss_list, val_error_list
 
 
@@ -589,8 +591,9 @@ def validate(model, val_loader, init_state, loss_function, beta):
 
     for idx, (lres, hres) in enumerate(val_loader):
 
-        lres, hres = lres.cuda(), hres.cuda() 
-        lres, hres = lres.transpose(0,1), hres.transpose(0,1) # (b,t,c,h,w) -> (t,b,c,h,w)
+        lres, hres = lres.float().cuda(), hres.float().cuda()  
+        lres, hres = lres.permute(2,0,1,3,4), hres.permute(2,0,1,3,4) # (b,c,t,h,w) -> (t,b,c,h,w)
+
         outputs = model(lres, init_state)
  
         # calculate the loss
@@ -598,9 +601,8 @@ def validate(model, val_loader, init_state, loss_function, beta):
         val_loss += loss.item()
         
         # calculate the error
-        error = torch.sqrt(MSE_function(hres, outputs.detach()) / MSE_function(
-            hres, torch.zeros_like(hres).cuda()))
-        val_error += error.item()
+        error = torch.norm(hres-outputs.detach(),p=2,dim = (-1,-2)) / torch.norm(hres,p=2,dim = (-1,-2))
+        val_error += error.mean().item()
 
     val_error = val_error / len(val_loader) 
     val_loss = val_loss / len(val_loader)
@@ -619,32 +621,31 @@ def test(model, test_loader, init_state, save_path, fig_save_path):
 
     for idx, (lres, hres) in enumerate(test_loader):
 
-        lres, hres = lres.cuda(), hres.cuda() 
-        lres, hres = lres.transpose(0,1), hres.transpose(0,1) # (b,t,c,h,w) -> (t,b,c,h,w)
+        lres, hres = lres.float().cuda(), hres.float().cuda()  
+        lres, hres = lres.permute(2,0,1,3,4), hres.permute(2,0,1,3,4) # (b,c,t,h,w) -> (t,b,c,h,w)
         outputs = model(lres, init_state)
 
         # calculate the error
-        error = torch.sqrt(MSE_function(hres, outputs.detach()) / MSE_function(
-            hres, torch.zeros_like(hres).cuda()))
-        pred_error += error.item()
+        error = torch.norm(hres-outputs.detach(),p=2,dim = (-1,-2)) / torch.norm(hres,p=2,dim = (-1,-2))
+        pred_error += error.mean().item()
 
         torch.save({"pred": outputs.detach().cpu(), "lres": lres.cpu(), 
-            "hres": hres.cpu()}, save_path + 'output_'+str(idx)+'.pt')
+            "hres": hres.cpu()}, save_path + 'eval_results/RBC_output_'+str(idx)+'.pt')
 
-        # comparison plot
-        t = np.arange(hres.shape[0])
-        for b in range(hres.shape[1]):
-            u_pred = outputs[:, b, 0, :, :].detach().cpu().numpy()
-            u_true = hres[:, b, 0, :, :].cpu().numpy() 
+        # # comparison plot
+        # t = np.arange(hres.shape[0])
+        # for b in range(hres.shape[1]):
+        #     u_pred = outputs[:, b, 0, :, :].detach().cpu().numpy()
+        #     u_true = hres[:, b, 0, :, :].cpu().numpy() 
 
-            plt.figure()
-            plt.plot(t, u_pred[:, 66, 66], label = 'u-wdsr')
-            plt.plot(t, u_true[:, 66, 66], label = 'u-Ref.')
+        #     plt.figure()
+        #     plt.plot(t, u_pred[:, 66, 66], label = 'u-wdsr')
+        #     plt.plot(t, u_true[:, 66, 66], label = 'u-Ref.')
 
-            plt.xlabel('t')
-            plt.ylabel('u')
-            plt.legend()
-            plt.savefig(fig_save_path + 'u_comp_[i=%d][b=%d].png' %(idx, b))
+        #     plt.xlabel('t')
+        #     plt.ylabel('u')
+        #     plt.legend()
+        #     plt.savefig(fig_save_path + 'u_comp_[i=%d][b=%d].png' %(idx, b))
 
     pred_error = pred_error/len(test_loader)
 
@@ -683,7 +684,7 @@ def get_init_state(batch_size, hidden_channels, output_size, mode='coord'):
     if mode == 'coord':
         for i in range(num_layers):
             resolution = output_size[i][0]
-            x, y = [np.linspace(-64, 64, resolution+1)] * 2
+            x, y = [np.linspace(-6654, 64, resolution+1)] * 2
             x, y = np.meshgrid(x[:-1], y[:-1])  # [32, 32]
             xy = np.concatenate((x[None, :], y[None, :]), 0) # [2, 32, 32]
             xy = np.repeat(xy, int(hidden_channels[i]/2), axis=0) # [c,h,w]
@@ -713,89 +714,69 @@ def get_init_state(batch_size, hidden_channels, output_size, mode='coord'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='training parameters')
 
-    parser.add_argument('--data', type =str ,default= 'Decay_turb')
-    parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
+    parser.add_argument('--data', type =str ,default= 'rbc_ConvLSTM')
+    parser.add_argument('--data_path',type = str,default = "../RBC_small")
     ## data processing arugments
     parser.add_argument('--in_channels',type = int, default= 3)
+    parser.add_argument('--batch_size',type = int, default= 64)
     parser.add_argument('--scale_factor', type = int, default= 4)
     parser.add_argument('--timescale_factor', type = int, default= 4)
     parser.add_argument('--n_snapshots',type =int, default= 20)
     parser.add_argument('--down_method', type = str, default= "bicubic")
     parser.add_argument('--noise_ratio', type = float, default= 0.0)
+
     args = parser.parse_args()
     # define the data file path 
     trainloader,val1_loader,val2_loader,_,_ = getData(upscale_factor = args.scale_factor, 
                                                       timescale_factor= args.timescale_factor,
                                                       batch_size = args.batch_size, 
-                                                      crop_size = args.crop_size,
+                                                      crop_size = 256,
                                                       data_path = args.data_path,
                                                       num_snapshots = args.n_snapshots,
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
     # get mean and std
-    n_datasets = data_loader.__len__()
-    print('The number of datasets is: ', n_datasets)
-    data = data_loader[0][1] #[4,4,512,128]
-    total_hres = torch.zeros(n_datasets, data.shape[0], data.shape[1], data.shape[2], data.shape[3])
-    total_lres = torch.zeros(n_datasets, 8, 4, 64, 16) # [b,t,c,h,w]
 
-    for i in range(len(data_loader)):
-        total_hres[i,...] = data_loader[i][1]
-        total_lres[i,...] = data_loader[i][0]
+    # "../RBC_small/*/*.h5"
+    normalizer = DataInfoLoader("../RBC_small/*/*.h5")
+    mean,std = normalizer.get_mean_std()
+    print('mean of hres is:',mean.tolist())
+    print('stf of hres is:', std.tolist())
 
-    mean_hres = torch.mean(total_hres, axis = (0,1,3,4)) 
-    std_hres = torch.std(total_hres, axis = (0,1,3,4))
-    print('mean of hres is:', mean_hres)
-    print('stf of hres is:', std_hres)
-
-    # split data
-    split_ratio = [int(n_datasets*0.7), int(n_datasets*0.2), int(n_datasets*0.1)] # 28, 8, 4
-    train_data, val_data, test_data = torch.utils.data.random_split(data_loader, split_ratio)
-    
-    # change to pytorch data
-    # data in train_loader is [b, t, c, h, w] -> [1, 151, 2, 32, 32]
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size = 5, 
-        shuffle=True, num_workers=0) 
-
-    val_loader = torch.utils.data.DataLoader(val_data, batch_size = 5, 
-        shuffle=False, num_workers=0)    
-
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size = 5, 
-        shuffle=False, num_workers=0)
 
     ######################### build model #############################
     # training parameters
-    n_iters = 4000 # 500 
+    n_iters = 1000 # 500 
     learning_rate = 1e-3
     print_every = 2   
     dt = 0.01
     dx = 1.0 / 128 
-    steps = 32 # 40 
+    steps = 21 # 40 
     effective_step = list(range(0, steps))
     
     beta = 0.025 # 0.025 # for physics loss        
-    save_path = ''
-    fig_save_path = './figures/2DRB[a=1,b=0.025,len=32,channel32,512x128]/'
+    save_path = 'ConvLSTM_RBC_'
+    fig_save_path = 'ConvLSTM_RBC_'
     print('Super-Resolution for 2D RB equation...')
 
     model = PhySR(
         n_feats = 32,
         n_layers = [1, 2], # [n_convlstm, n_resblock]
-        upscale_factor = [4, 8], # [t_up, s_up]
-        shift_mean_paras = [mean_hres, std_hres],  
+        upscale_factor = [args.n_snapshots, 4], # [t_up, s_up]
+        shift_mean_paras = [mean.tolist(), std.tolist()],  
         step = steps,
         effective_step = effective_step).cuda()
 
     # define the initial states and initial output for model
     init_state = get_init_state(
-        batch_size = [5], 
+        batch_size = [args.batch_size], 
         hidden_channels = [32], 
-        output_size = [[64, 16]], # 32, 32
+        output_size = [[64, 16]], # 32, 32 
         mode = 'random')
 
     start = time.time()
-    train_loss_list, val_loss_list, val_error_list = train(model, train_loader, val_loader, 
+    train_loss_list, val_loss_list, val_error_list = train(model, trainloader, val1_loader, 
         init_state, n_iters, learning_rate, print_every, dt, dx, beta, save_path)
     end = time.time()
     print('The training time is: ', (end - start))
@@ -806,7 +787,7 @@ if __name__ == '__main__':
     np.save(save_path + 'val_error', val_error_list)
 
     ###################### model inference ###########################
-    pred_error = test(model, test_loader, init_state, save_path, fig_save_path)
+    pred_error = test(model, val2_loader, init_state, save_path, fig_save_path)
     print('The predictive error is: ', pred_error)
     print('Test completed')
 
