@@ -630,7 +630,7 @@ def test(model, test_loader, init_state, save_path, fig_save_path):
         pred_error += error.mean().item()
 
         torch.save({"pred": outputs.detach().cpu(), "lres": lres.cpu(), 
-            "hres": hres.cpu()}, save_path + 'eval_results/RBC_output_'+str(idx)+'.pt')
+            "hres": hres.cpu()}, save_path + '_output_'+str(idx)+'.pt')
 
         # # comparison plot
         # t = np.arange(hres.shape[0])
