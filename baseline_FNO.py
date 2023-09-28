@@ -129,11 +129,12 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             loss.backward()
             optimizer.step()
             avg_loss += loss.item()
-        result_val1,result_val2 = validation(args,model, val1_loader,val2_loader,device)
         if args.scheduler == "plateau":
             scheduler.step(result_val1[1])
         else: 
             scheduler.step()
+
+        result_val1,result_val2 = validation(args,model, val1_loader,val2_loader,device)
 
         avg_val = result_val1[1] + lamb*result_val1[0]
         val_list_x2.append(result_val2[2])
@@ -171,9 +172,9 @@ parser.add_argument('--data', type =str ,default= 'Decay_turb_FNO')
 parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence_small")
 ## data processing arugments
 parser.add_argument('--scale_factor', type = int, default= 4)
-parser.add_argument('--timescale_factor', type = int, default= 5)
+parser.add_argument('--timescale_factor', type = int, default= 4)
 parser.add_argument('--in_channels',type = int, default= 3)
-parser.add_argument('--batch_size', type = int, default= 16)
+parser.add_argument('--batch_size', type = int, default= 8)
 parser.add_argument('--n_snapshots',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
@@ -182,19 +183,19 @@ parser.add_argument('--crop_size', type = int, default= 256)
 parser.add_argument('--model', type = str, default= "FNO")
 parser.add_argument('--modes', type = int, default= 12)
 parser.add_argument('--width', type = int, default= 16)
-parser.add_argument('--hidden_dim', type = int, default= 128 ) # euler
+parser.add_argument('--hidden_dim', type = int, default= 40 ) # euler
 ## training (optimization) parameters
-parser.add_argument('--epochs', type = int, default= 200)
+parser.add_argument('--epochs', type = int, default= 500)
 parser.add_argument('--loss_type', type =str ,default= 'L2')
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
-parser.add_argument('--normalization',type =str, default= 'False')
+parser.add_argument('--normalization',type =str, default= 'True')
 parser.add_argument('--physics',type =str, default= 'False')
-parser.add_argument('--gamma',type =float, default= 0.95)
+parser.add_argument('--gamma',type =float, default= 0.998)
 parser.add_argument('--lr_step',type =int, default= 100)
 parser.add_argument('--patience',type =int, default= 15)
 parser.add_argument('--scheduler',type =str, default= 'StepLR')
-parser.add_argument('--lr', type = float, default= 1e-4)
+parser.add_argument('--lr', type = float, default= 1e-3)
 parser.add_argument('--lamb', type = float, default= 0.3)
 parser.add_argument('--lamb_p', type = float, default= 1)
 
@@ -225,8 +226,21 @@ if __name__ == "__main__":
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
+    if args.data =="Decay_turb_small" or args.data =="Decay_turb_FNO": 
+        image = [128,128]
+        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
+        ALL_DATA_PATH = "../Decay_Turbulence_small/*/*.h5"
+    elif args.data =="rbc_small" or args.data =="rbc_FNO":
+        image = [256,64]
+        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
+        ALL_DATA_PATH = "../RBC_small/*/*.h5"
+    elif args.data =="Burger2D_small" or args.data =="Burger2D_FNO":
+        image = [128,128]
+        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
+        ALL_DATA_PATH = "../Burgers2D_small/*/*.h5"
+
     if args.normalization == "True":
-        stats_loader = DataInfoLoader(args.data_path)
+        stats_loader = DataInfoLoader(ALL_DATA_PATH)
         mean, std = stats_loader.get_mean_std()
         min,max = stats_loader.get_min_max()
         if args.in_channels==1:
@@ -247,15 +261,7 @@ if __name__ == "__main__":
     modes2 = [8, 8, 8, 8]
     modes3 = [8, 8, 8, 8]
 
-    if args.data =="Decay_turb_small" or args.data =="Decay_turb_FNO": 
-        image = [128,128]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-    elif args.data =="rbc_small" or args.data =="rbc_FNO":
-        image = [256,64]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
-    elif args.data =="Burger2D_small" or args.data =="Burger2D_FNO":
-        image = [128,128]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
+
     model = FNO3D(modes1, modes2, modes3,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', ).to(device)
     # model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)

@@ -85,7 +85,7 @@ class FNO3D(nn.Module):
         # dimension in LR
         B,C,T,H,W = x.shape
         x = F.interpolate(x, size=(self.hr_shape[2],self.hr_shape[3],self.hr_shape[4]), mode='trilinear', align_corners=False)
-        x.shift_mean(x, 'sub')
+        x = self.shift_mean(x, 'sub')
         x = x.permute(0, 2, 3, 4, 1) # from bcxyz to bxyzc
         size_z = x.shape[-2]
         length = len(self.ws)
@@ -105,7 +105,7 @@ class FNO3D(nn.Module):
         x = self.act(x)
         x = self.fc2(x)
         x = x.permute(0, 4, 1, 2, 3)
-        x.shift_mean(x, 'add')
+        x = self.shift_mean(x, 'add')
         return x
     
 
