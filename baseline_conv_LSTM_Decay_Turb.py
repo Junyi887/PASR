@@ -726,6 +726,7 @@ if __name__ == '__main__':
     parser.add_argument('--noise_ratio', type = float, default= 0.0)
 
     args = parser.parse_args()
+    run["config"] = vars(args) 
     # define the data file path 
     trainloader,val1_loader,val2_loader,_,_ = getData(upscale_factor = args.scale_factor, 
                                                       timescale_factor= args.timescale_factor,
