@@ -20,6 +20,87 @@ import numpy as np
 from torch.utils import data
 import matplotlib.pyplot as plt
 
+def energy_specturm(u,v):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import time
+    from math import sqrt
+    c  = sqrt(1.4);
+    Ma = 0.1;
+    U0 = 1.0; 
+    data = np.stack((u,v),axis=1)
+    print ("shape of data = ",data.shape)
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Reading files...localtime",localtime, "- END\n")
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Computing spectrum... ",localtime)
+    N = data.shape[-1]
+    M= data.shape[-2]
+    print("N =",N)
+    print("M =",M)
+    eps = 1e-16 # to void log(0)
+    U = data[:,0].mean(axis=0)
+    V = data[:,1].mean(axis=0)
+    amplsU = abs(np.fft.fftn(U)/U.size)
+    amplsV = abs(np.fft.fftn(V)/V.size)
+    print(f"amplsU.shape = {amplsU.shape}")
+    EK_U  = amplsU**2
+    EK_V  = amplsV**2 
+    EK_U = np.fft.fftshift(EK_U)
+    EK_V = np.fft.fftshift(EK_V)
+    sign_sizex = np.shape(EK_U)[0]
+    sign_sizey = np.shape(EK_U)[1]
+    box_sidex = sign_sizex
+    box_sidey = sign_sizey
+    box_radius = int(np.ceil((np.sqrt((box_sidex)**2+(box_sidey)**2))/2.)+1)
+    centerx = int(box_sidex/2)
+    centery = int(box_sidey/2)
+    print ("box sidex     =",box_sidex) 
+    print ("box sidey     =",box_sidey) 
+    print ("sphere radius =",box_radius )
+    print ("centerbox     =",centerx)
+    print ("centerboy     =",centery)
+    EK_U_avsphr = np.zeros(box_radius,)+eps ## size of the radius
+    EK_V_avsphr = np.zeros(box_radius,)+eps ## size of the radius
+    for i in range(box_sidex):
+        for j in range(box_sidey):          
+            wn =  int(np.round(np.sqrt((i-centerx)**2+(j-centery)**2)))
+            EK_U_avsphr[wn] = EK_U_avsphr [wn] + EK_U [i,j]
+            EK_V_avsphr[wn] = EK_V_avsphr [wn] + EK_V [i,j]     
+    EK_avsphr = 0.5*(EK_U_avsphr + EK_V_avsphr)
+    realsize = len(np.fft.rfft(U[:,0]))
+    TKEofmean_discrete = 0.5*(np.sum(U/U.size)**2+np.sum(V/V.size)**2)
+    TKEofmean_sphere   = EK_avsphr[0]
+    total_TKE_discrete = np.sum(0.5*(U**2+V**2))/(N*M) # average over whole domaon / divied by total pixel-value
+    total_TKE_sphere   = np.sum(EK_avsphr)
+    result_dict = {
+    "Real Kmax": realsize,
+    "Spherical Kmax": len(EK_avsphr),
+    "KE of the mean velocity discrete": TKEofmean_discrete,
+    "KE of the mean velocity sphere": TKEofmean_sphere,
+    "Mean KE discrete": total_TKE_discrete,
+    "Mean KE sphere": total_TKE_sphere
+    }
+    print(result_dict)
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Computing spectrum... ",localtime, "- END \n")
+    return realsize, EK_avsphr,result_dict
+
+
+def plot_energy_specturm(u_truth,v_truth,u_pred,v_pred,data_name):
+    realsize_truth, EK_avsphr_truth,result_dict_truth = energy_specturm(u_truth,v_truth)
+    realsize_pred, EK_avsphr_pred,result_dict_pred = energy_specturm(u_pred,v_pred)
+    fig= plt.figure(figsize=(5,5))
+    plt.title(f"Kinetic Energy Spectrum -- {data_name}")
+    plt.xlabel(r"k (wavenumber)")
+    plt.ylabel(r"TKE of the k$^{th}$ wavenumber")
+    print(realsize_truth)
+    plt.loglog(np.arange(0,realsize_truth),((EK_avsphr_truth[0:realsize_truth] )),'k',label = "truth")
+    plt.loglog(np.arange(0,realsize_pred),((EK_avsphr_pred[0:realsize_pred] )),'r',label = "pred")
+    plt.ylim(1e-7,1)
+    plt.legend()
+    fig.savefig(f"{data_name}_energy_specturm.png",dpi=300,bbox_inches='tight')
+
 DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
                  "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
                  "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01]}
@@ -130,25 +211,26 @@ if __name__ == "__main__":
     model.load_state_dict(model_state)
     lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data(parsed_args.test_data_name,timescale_factor=4,num_snapshot = 20,in_channel=3,upscale_factor=4)
     pred = get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt,n_snapshots = 20,ode_step=args.ode_step)
-    pred_extrapolate = get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt,n_snapshots = 20*10,ode_step=args.ode_step)
     # pred = pred.flatten(0,1)
     pred_numpy = pred.numpy()
-    pred2_numpy = pred_extrapolate.numpy()
     B,T,C,H,W = pred_numpy.shape
     B_lr,C_lr,H_lr,W_lr = lr_input.shape
-
-    np.save(f"results{parsed_args.test_data_name}.npy",{
-        "pred_numpy":pred_numpy,
-        "hr_target":hr_target,
-        "lr_input":lr_input,
-    })
-    np.save("rbc_extrapolate.npy",pred2_numpy)
-    if parsed_args.test_data_name == 'rbc':
-        xx,yy = 4,1
-        vmin,vmax = -30,32
-    else:
-        xx,yy = 2,2
-        vmin,vmax = -7.9,7.2
+    u_truth = hr_target[4,:,1,:,:]
+    v_truth = hr_target[4,:,2,:,:]
+    u_pred = pred_numpy[4,:,1,:,:]
+    v_pred = pred_numpy[4,:,2,:,:]
+    plot_energy_specturm(u_truth,v_truth,u_pred,v_pred,"DT")
+    # np.save(f"results_{parsed_args.test_data_name}.npy",{
+    #     "pred_numpy":pred_numpy,
+    #     "hr_target":hr_target,
+    #     "lr_input":lr_input
+    # })
+    # if parsed_args.test_data_name == 'rbc':
+    #     xx,yy = 4,1
+    #     vmin,vmax = -30,32
+    # else:
+    #     xx,yy = 2,2
+    #     vmin,vmax = -7.9,7.2
     # fig,a = plt.subplots(1,1,figsize = (xx,yy))
     # counts = 0
     # for i in range(B-12):
@@ -169,11 +251,9 @@ if __name__ == "__main__":
 
     # fig,a = plt.subplots(1,1,figsize = (xx,yy))
     # counts = 0
-    # for i in range(B_lr-12):
+    # for i in tqdm(range(B_LR-12)):
     #     a.axis("off")
     #     a.imshow(lr_input[i+3,0,:,:],cmap = seaborn.cm.icefire,vmin = vmin,vmax = vmax)
     #     fig.savefig(f"frames/{parsed_args.test_data_name}_LR_{counts}.png",bbox_inches = "tight",dpi = 400)
     #     counts +=1 
 
-
-    # fig,axs = plt.subplot(1,1,figsize = (10,10))
