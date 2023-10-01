@@ -153,5 +153,16 @@ if __name__ == "__main__":
                   ,"RFNE2":{"all":RFNE2,"avg":RFNE_mean2}
                     ,"RFNE3":{"all":RFNE3,"avg":RNFE_mean3}}
     torch.save(result_dic,"RFNE_"+ str(parsed_args.test_data_name) + ".pt")
+    fig,axs = plt.subplots(2,10)
+    pred_numpy = pred.numpy()
+    print(pred_numpy.shape)
+    i = 1
+    for ax in axs:
+        for a in ax:
+            a.axis("off")
+            a.imshow(pred_numpy[10,i,0,:,:],cmap = cmocean.cm.balance)
+            i+=1 
+    fig.savefig("euler.png",bbox_inches = "tight")
+    
     # print(RFNE[-11:-1,:,:].mean())
     # print(RFNE2[-11:-1,:,:].mean())
