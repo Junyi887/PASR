@@ -136,7 +136,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
 
         result_val1,result_val2 = validation(args,model, val1_loader,val2_loader,device)
 
-        avg_val = result_val1[1] + lamb*result_val1[0]
+        avg_val = result_val1[1]
         val_list_x2.append(result_val2[2])
         run['train/train_loss'].log(avg_loss / len(trainloader))
         run['val/val_loss'].log(avg_val)

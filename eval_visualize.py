@@ -128,41 +128,49 @@ if __name__ == "__main__":
     model = model_list[args.model]
     model = torch.nn.DataParallel(model).to(device)
     model.load_state_dict(model_state)
-    lr_input_m1,hr_target_m1,lr_input_tensor_m1,hr_target_tensor_m1 = get_test_data(parsed_args.test_data_name,timescale_factor=8,num_snapshot = 10,in_channel=3,upscale_factor=4)
     lr_input,hr_target,lr_input_tensor,hr_target_tensor = get_test_data(parsed_args.test_data_name,timescale_factor=4,num_snapshot = 20,in_channel=3,upscale_factor=4)
-    lr_input2,hr_target2,lr_input_tensor2,hr_target_tensor2 = get_test_data(parsed_args.test_data_name,timescale_factor=2,num_snapshot = 40,in_channel=3,upscale_factor=4)
-    lr_input3,hr_target3,lr_input_tensor3,hr_target_tensor3 = get_test_data(parsed_args.test_data_name,timescale_factor=1,num_snapshot = 80,in_channel=3,upscale_factor=4)
-    print("input shape", lr_input.shape,lr_input2.shape)
-    pred_m1 = get_prediction(model,lr_input_tensor_m1,hr_target_tensor_m1,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt*2,n_snapshots = 10,ode_step=args.ode_step*2)
     pred = get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt,n_snapshots = 20,ode_step=args.ode_step)
-    pred2 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt/2,n_snapshots = 40,ode_step=args.ode_step//2)
-    pred3 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt/4,n_snapshots = 80,ode_step=args.ode_step//4)
-    RFNE_m1,RFNE_mean_m1,RFNE_avg_m1 = get_metric_RFNE(pred_m1,hr_target_tensor_m1)
-    RFNE,RFNE_mean,RFNE_avg = get_metric_RFNE(pred,hr_target_tensor)
-    RFNE2,RFNE_mean2,RFNE_avg2 = get_metric_RFNE(pred2,hr_target_tensor2)
-    RFNE3,RNFE_mean3,RFNE_avg3 = get_metric_RFNE(pred3,hr_target_tensor3)
-    print(RFNE.shape)
-    print(RFNE2.shape)
-    print(RFNE3.shape)
-    print(RFNE_m1[12,:,0])
-    print(RFNE[12,:,0])
-    print(RFNE2[12,:,0])
-    print(RFNE3[12,:,0])
-    result_dic = {"RFNE_m1":{"all":RFNE_m1,"avg":RFNE_mean_m1}
-        ,"RFNE1":{"all":RFNE,"avg":RFNE_mean}
-                  ,"RFNE2":{"all":RFNE2,"avg":RFNE_mean2}
-                    ,"RFNE3":{"all":RFNE3,"avg":RNFE_mean3}}
-    torch.save(result_dic,"RFNE_"+ str(parsed_args.test_data_name) + ".pt")
-    fig,axs = plt.subplots(2,10)
+    # pred = pred.flatten(0,1)
     pred_numpy = pred.numpy()
-    print(pred_numpy.shape)
-    i = 1
-    for ax in axs:
-        for a in ax:
-            a.axis("off")
-            a.imshow(pred_numpy[10,i,0,:,:],cmap = cmocean.cm.balance)
-            i+=1 
-    fig.savefig("target.png",bbox_inches = "tight")
+    B,T,C,H,W = pred_numpy.shape
+    B_lr,C_lr,H_lr,W_lr = lr_input.shape
 
-    # print(RFNE[-11:-1,:,:].mean())
-    # print(RFNE2[-11:-1,:,:].mean())
+    np.save("results2.npy",{
+        "pred_numpy":pred_numpy,
+        "hr_target":hr_target,
+        "lr_input":lr_input
+    })
+    if test_data_name == 'rbc':
+        xx,yy = 4,1
+        vmin,vmax = -30,32
+    else:
+        xx,yy = 2,2
+        vmin,vmax = -7.9,7.2
+    fig,a = plt.subplots(1,1,figsize = (xx,yy))
+    counts = 0
+    for i in range(B-12):
+        for j in range (T-1):
+            a.axis("off")
+            a.imshow(pred_numpy[i+3,j,0,:,:],cmap = seaborn.cm.icefire,vmin = vmin,vmax = vmax)
+            fig.savefig(f"frames/{args.test_data_name}_prediction_{counts}.png",bbox_inches = "tight",dpi = 400)
+            counts +=1 
+    
+    fig,a = plt.subplots(1,1,figsize = (xx,yy))
+    counts = 0
+    for i in range(B-12):
+        for j in range (T-1):
+            a.axis("off")
+            a.imshow(hr_target[i+3,j,0,:,:],cmap = seaborn.cm.icefire,vmin = vmin,vmax = vmax)
+            fig.savefig(f"frames/{args.test_data_name}_target_{counts}.png",bbox_inches = "tight",dpi = 400)
+            counts +=1 
+
+    fig,a = plt.subplots(1,1,figsize = (xx,yy))
+    counts = 0
+    for i in tqdm(range(B_LR-12)):
+        a.axis("off")
+        a.imshow(lr_input[i+3,0,:,:],cmap = seaborn.cm.icefire,vmin = vmin,vmax = vmax)
+        fig.savefig(f"frames/{args.test_data_name}_LR_{counts}.png",bbox_inches = "tight",dpi = 400)
+        counts +=1 
+
+
+    # fig,axs = plt.subplot(1,1,figsize = (10,10))
