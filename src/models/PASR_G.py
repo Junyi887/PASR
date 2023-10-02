@@ -633,14 +633,14 @@ class Gating(nn.Module):
         super(Gating, self).__init__()
         
         layers = []
-        layers.append(nn.Linear(in_dim, in_dim*2))
-        layers.append(nn.ReLU())
+        # layers.append(nn.Linear(in_dim, in_dim*2))
+        # layers.append(nn.ReLU())
 
-        for _ in range(num_layers):
-            layers.append(nn.Linear(in_dim*2, in_dim*2))
-            layers.append(nn.ReLU())
+        # for _ in range(num_layers):
+        #     layers.append(nn.Linear(in_dim*2, in_dim*2))
+        #     layers.append(nn.ReLU())
 
-        layers.append(nn.Linear(in_dim*2, in_dim))
+        # layers.append(nn.Linear(in_dim*2, in_dim))
         layers.append(nn.Sigmoid())
         
         self.model = nn.Sequential(*layers)
@@ -649,24 +649,26 @@ class Gating(nn.Module):
     def forward(self, x):
         x = self.model(x)
         return x
-
     
 class Gated_NODE(nn.Module):
-    def __init__(self,in_dim,ode_method ="Euler",num_layers=3,gating_method ='leaky'):
+    def __init__(self,in_dim,out_dim= None,ode_method ="Euler",gating_method ='leaky',num_layers=4, kernel_size=3, padding=1, activation_fn=nn.Tanh):
         super(Gated_NODE, self).__init__()
 
-        self.model = nn.Sequential(
-            nn.Linear(in_dim, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim*2),
-            nn.ReLU(),
-            nn.Linear(in_dim*2, in_dim),
-            nn.Tanh()
-        ) 
+        # If out_dim is not specified, it will be same as in_dim
+        if out_dim is None:
+            out_dim = in_dim*2
+        
+        layers = []
+        for i in range(num_layers):
+            layers.append(nn.Conv2d(in_dim if i == 0 else out_dim, out_dim, kernel_size, stride=1, padding=padding))
+            layers.append(nn.ReLU())
+            if i == num_layers - 1: # last layers 
+                layers.append(nn.Conv2d(out_dim, in_dim, kernel_size, stride=1, padding=padding)) 
+                layers.append(activation_fn())
+        
+        self.model = nn.Sequential(*layers)
+        self.int_method = ode_method
+
         self.gating = Gating(in_dim, num_layers=num_layers)
         self.gating_method = gating_method
         self.in_dim = in_dim
@@ -674,7 +676,6 @@ class Gated_NODE(nn.Module):
     def forward(self, x,ode_step = 1,task_dt = 1.0):
         B,C,H,W = x.shape
         # x = x.flatten(2).transpose(1, 2)  # B Ph*Pw C
-        x = x.permute(0, 2, 3, 1)
         h = task_dt / ode_step
         if self.int_method == "Euler":
             for i in range(ode_step):
@@ -693,10 +694,9 @@ class Gated_NODE(nn.Module):
                 f4 = self.model(x+h*f3)
                 x = x + h*self.gating(x)*(f1 / 6.0 + f2 / 3.0 + f3 / 3.0 + f4 / 6.0) #512
         # x = x.transpose(1, 2).view(B, C, H, W) 
-        x = x.permute(0, 3, 1, 2)
         return x 
 
-class PASR_MLP_G(nn.Module):
+class PASR_G(nn.Module):
     """ PASR
 
 
@@ -733,7 +733,7 @@ class PASR_MLP_G(nn.Module):
                  ,mean = [0],std = [1],  
                  ode_method = "Euler",gating_layers = 3,gating_method='leaky',normalization = False,
                  **kwargs):
-        super(PASR_MLP_G, self).__init__()
+        super(PASR_G, self).__init__()
         
         num_in_ch = in_chans
         num_out_ch = in_chans
@@ -902,17 +902,18 @@ class PASR_MLP_G(nn.Module):
         x = self.shiftMean_func(x,"sub")
         x = self.conv_first(x)     #Shallow Feature Extraction
         z0 = self.conv_after_body(self.forward_features(x)) + x       #Deep Feature Extraction + x
-        for i in range (n_snapshots):   
-            if self.upsampler == 'pixelshuffle':
+
+        if self.upsampler == 'pixelshuffle':
             # load initial condition
-                if time_evol == True:
+            if time_evol == True:
+                for i in range (n_snapshots):   
                     z1 = self.ode(z0,task_dt = task_dt,ode_step = ode_step)                              #ODE time interpolation
                     y1 = self.conv_before_upsample(z1)                 #HQ Image Reconstruction
                     y1 = self.conv_last(self.upsample(y1))  
                     y1 = self.shiftMean_func(y1,"add")    
                     predictions.append(y1)
                     z0 = z1
-                else:
+            else:
                     y0 = self.conv_before_upsample(z0)                 #HQ Image Reconstruction
                     y0 = self.conv_last(self.upsample(y0))  
                     y0 = self.shiftMean_func(y0,"add")

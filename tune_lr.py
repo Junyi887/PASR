@@ -148,11 +148,12 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             loss.backward()
             optimizer.step()
             avg_loss += loss.item()
+            if args.scheduler == "plateau":
+                scheduler.step(result_val1[1])
+            else: 
+                scheduler.step()
         result_val1,result_val2 = validation(args,model, val1_loader,val2_loader,device)
-        if args.scheduler == "plateau":
-            scheduler.step(result_val1[1])
-        else: 
-            scheduler.step()
+
 
         avg_val = result_val1[1] + lamb*result_val1[0]
         val_list_x2.append(result_val2[2])
@@ -278,9 +279,9 @@ if __name__ == "__main__":
             "PASR_small":PASR(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,time_update = args.time_update,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding),
              "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
             "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
-            "PASR_G":PASR_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
+            "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
             "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
-            "PASR_G_small":PASR_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
+            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
     }
     model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)

@@ -21,27 +21,28 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
              batch_size = 1, std = [0.6703, 0.6344, 8.3615],in_channels = 1):  
     
     # data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std
-    if data_name in["rbc_small", "Burger2D_small", "Decay_turb_small"] or  "FNO" in data_name or "ConvLSTM" in data_name:
         #To do swap and change 
-        if timescale_factor > 1:
-            train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-            val1_loader = get_data_loader(data_name, data_path, '/val', "test", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-            val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
-        else: 
-            train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-            val1_loader = get_data_loader(data_name, data_path, '/val', "val", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-            val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test1_loader = get_data_loader(data_name, data_path, '/test', "test_one", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
-            test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)    
-        return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
+    if timescale_factor >= 1:
+        train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
+        val1_loader = get_data_loader(data_name, data_path, '/val', "test", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
+        val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
+        test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
+        test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
+    else: 
+        train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
+        val1_loader = get_data_loader(data_name, data_path, '/val', "val", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
+        val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
+        test1_loader = get_data_loader(data_name, data_path, '/test', "test_one", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
+        test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)    
+    return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     
 def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels=1):
     
     transform = torch.from_numpy
-    if "FNO" or "ConvLSTM" in data_name:
+    print("Data Name: ", data_name)
+    if ("FNO" in data_name) or ("ConvLSTM" in data_name): 
         dataset = Special_Loader(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels) 
+        print("Special Loader")
     else:
         dataset = GetDataset_diffIC_NOCrop(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels) 
 

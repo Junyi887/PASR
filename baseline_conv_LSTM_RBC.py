@@ -748,11 +748,11 @@ if __name__ == '__main__':
 
     ######################### build model #############################
     # training parameters
-    n_iters = 1000 # 500 
+    n_iters = 400 # 500 
     learning_rate = 1e-3
     print_every = 2   
     dt = 0.01
-    dx = 1.0 / 128 
+    dx = 1.0 / 64 
     steps = 21 # 40 
     effective_step = list(range(0, steps))
     
