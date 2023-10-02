@@ -40,7 +40,7 @@ run = neptune.init_run(
     tags = [str(ID.item())],
     # mode = "debug"
     )  # your credentials
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 torch.manual_seed(1)
 np.random.seed(1)
