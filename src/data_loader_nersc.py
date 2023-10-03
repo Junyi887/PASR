@@ -22,19 +22,24 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
     
     # data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std
         #To do swap and change 
-    if timescale_factor >= 1:
+    if data_name == "climate":
+        dataset = GetClimateDatasets(data_path, "train",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+        print("Climate Loader")
+        train_set,val_set,test_set = random_split(dataset,[0.8,0.1,0.1])
+        train_loader = DataLoader(train_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
+        val1_loader= DataLoader(val_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
+        val2_loader = DataLoader(test_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
+        test1_loader = val2_loader
+        test2_loader = val2_loader
+        return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
+    else:
         train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
         val1_loader = get_data_loader(data_name, data_path, '/val', "test", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
         val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
         test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
         test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
-    else: 
-        train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-        val1_loader = get_data_loader(data_name, data_path, '/val', "val", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-        val2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
-        test1_loader = get_data_loader(data_name, data_path, '/test', "test_one", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
-        test2_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)    
-    return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
+   
+        return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     
 def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels=1):
     
@@ -43,6 +48,7 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
     if ("FNO" in data_name) or ("ConvLSTM" in data_name): 
         dataset = Special_Loader(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels) 
         print("Special Loader")
+
     else:
         dataset = GetDataset_diffIC_NOCrop(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels) 
 
@@ -431,9 +437,7 @@ class GetClimateDatasets(Dataset):
         self._get_files_stats()
         self.basic_transform = transforms.GaussianBlur(kernel_size=(3,3), sigma=(1,1))
         if method == "bicubic":
-            self.input_transform = transforms.Resize((int(self.img_shape_x/upscale_factor),int(self.img_shape_y/upscale_factor)),Image.BICUBIC,antialias=False) # TODO: compatibility issue for antialias='warn' check torch version
-        elif method == "gaussian_blur":
-            self.input_transform = transforms.GaussianBlur(kernel_size=(3,3), sigma=(1,1))
+            self.input_transform = transforms.Resize((int(self.img_shape_x/upscale_factor),int(self.img_shape_y/upscale_factor)),Image.BICUBIC,antialias=False) # TODO: compatibility issue for antialias='warn' check torch version∂
         
     def _get_files_stats(self):
         # larger dt = 0.1
@@ -446,9 +450,9 @@ class GetClimateDatasets(Dataset):
         print("Found {} files".format(self.n_files))
         with h5py.File(self.files_paths[0], 'r') as _f:
             print("Getting file stats from {}".format(self.files_paths[0]))
-            self.n_samples_per_file = _f['tasks']["u"].shape[0]
-            self.img_shape_x = _f['tasks']["u"].shape[1]
-            self.img_shape_y = _f['tasks']["u"].shape[2]
+            self.n_samples_per_file = _f['fields'].shape[0]
+            self.img_shape_x = _f['fields'].shape[1]
+            self.img_shape_y = _f['fields'].shape[2]
 
         final_index = (self.n_samples_per_file-1)//self.timescale_factor
         if self.state == "test_one":
@@ -470,7 +474,7 @@ class GetClimateDatasets(Dataset):
 
     def _open_file(self, file_idx):
         _file = h5py.File(self.files_paths[file_idx], 'r')
-        self.files[file_idx] = _file['tasks']
+        self.files[file_idx] = _file['fields']
         # self.times[file_idx] = _file['scales/sim_time']
 
     def __len__(self):
@@ -484,19 +488,10 @@ class GetClimateDatasets(Dataset):
         if local_idx !=self.idx_matrix[global_idx%self.input_per_file][0]:
                 raise ValueError(f"Invalid Input index: {local_idx} vs index matrix {self.idx_matrix[global_idx%self.input_per_file][0]}")
         if self.files[file_idx] is None:
-                self._open_file(file_idx)
-        if self.n_in_channels ==3:
-            w,u,v = self.files[file_idx]["vorticity"][local_idx],self.files[file_idx]["u"][local_idx],self.files[file_idx]["v"][local_idx]
-            w,u,v = self.transform(w),self.transform(u),self.transform(v)
-            y = torch.stack((w,u,v),dim = 0)
-        elif self.n_in_channels ==2:
-            u,v = self.files[file_idx]["u"][local_idx],self.files[file_idx]["v"][local_idx]
-            u,v = self.transform(u),self.transform(v)
-            y = torch.stack((u,v),dim = 0)
-        elif self.n_in_channels ==1:
-            w = self.files[file_idx]["vorticity"][local_idx]
-            w = self.transform(w)
-            y = w.unsqueeze(0)
+            self._open_file(file_idx)
+        w = self.files[file_idx][local_idx]
+        w = self.transform(w)
+        y = w.unsqueeze(0)
         X = self.get_X(y)
         y_list.append(y)
         # getting the future samples
@@ -504,19 +499,9 @@ class GetClimateDatasets(Dataset):
             local_idx_future = local_idx+i*self.timescale_factor
             if local_idx_future !=self.idx_matrix[global_idx%self.input_per_file][i]:
                 raise ValueError(f"Invalid target index: {local_idx_future} vs index matrix {self.idx_matrix[global_idx%self.input_per_file][0]}")
-            
-            if self.n_in_channels ==3:
-                w,u,v = self.files[file_idx]["vorticity"][local_idx_future],self.files[file_idx]["u"][local_idx_future],self.files[file_idx]["v"][local_idx_future]
-                w,u,v = self.transform(w),self.transform(u),self.transform(v)
-                y = torch.stack((w,u,v),dim = 0)
-            elif self.n_in_channels ==2:
-                u,v = self.files[file_idx]["u"][local_idx_future],self.files[file_idx]["v"][local_idx_future]
-                u,v = self.transform(u),self.transform(v)
-                y = torch.stack((u,v),dim = 0)
-            elif self.n_in_channels ==1:
-                w = self.files[file_idx]["vorticity"][local_idx_future]
-                w = self.transform(w)
-                y = w.unsqueeze(0)
+            w = self.files[file_idx][local_idx_future]
+            w = self.transform(w)
+            y = w.unsqueeze(0)
             y_list.append(y) 
             # t_list.append(t)
         y = torch.stack(y_list,dim = 0) 
@@ -636,7 +621,7 @@ def random_split(dataset, lengths,
 
 if __name__ == "__main__":
 
-    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'climate',batch_size= 30,data_path="/pscratch/sd/j/junyi012",in_channels=1,timescale_factor= 10)
+    train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= 'climate',batch_size= 30,data_path="/pscratch/sd/j/junyi012/climate_data/pre-processed_s4",in_channels=1,timescale_factor= 10)
     for idx, (input,target) in enumerate (test1_loader):
         input = input
         target = target
@@ -652,12 +637,12 @@ if __name__ == "__main__":
         plt.colorbar()
         plt.savefig(f"target{i}.png")
 
-    list = []
-    for i in range (target.shape[1]):
-        x = np.linalg.norm(target[:,0,0,:,:]-target[:,i,0,:,:],ord = 2, axis = (1,2))/np.linalg.norm(target[:,i,0,:,:],ord = 2, axis = (1,2))
-        print(x.mean())
-        list.append(x.mean())
-    print(list)
+    # list = []
+    # for i in range (target.shape[1]):
+    #     x = np.linalg.norm(target[:,0,0,:,:]-target[:,i,0,:,:],ord = 2, axis = (1,2))/np.linalg.norm(target[:,i,0,:,:],ord = 2, axis = (1,2))
+    #     print(x.mean())
+    #     list.append(x.mean())
+    # print(list)
     # for idx, (input,target) in enumerate (val1_loader):
     #     input = input
     #     target = target
