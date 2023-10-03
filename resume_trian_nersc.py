@@ -252,13 +252,31 @@ if __name__ == "__main__":
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
-    if args.normalization == "True":
-        mean,std = getNorm(args)
-        mean = [mean]
-        std = [std]
-    else:
-        mean = [0]
-        std = [1]
+    def get_normalizer(args):
+        if args.normalization == "True":
+            stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
+            mean, std = stats_loader.get_mean_std()
+            min,max = stats_loader.get_min_max()
+            if args.in_channels==1:
+                mean,std = mean[0].tolist(),std[0].tolist()
+                min,max = min[0].tolist(),max[0].tolist()
+            elif args.in_channels==3:
+                mean,std = mean.tolist(),std.tolist()
+                min,max = min.tolist(),max.tolist()
+            elif args.in_channels==2:
+                mean,std = mean[1:].tolist(),std[1:].tolist()
+                min,max = min[1:].tolist(),max[1:].tolist()
+        else:
+            mean, std = [0], [1]
+            mean, std = mean * args.in_channels, std * args.in_channels
+            min,max = [0],[1]
+            min,max = min * args.in_channels, max * args.in_channels
+        if args.normalization_method =="minmax":
+            return min,max
+        if args.normalization_method =="meanstd":
+            return mean,std
+    mean,std = get_normalizer(args)
+
     if args.data =="Decay_turb_small": 
         image = [128,128]
     elif args.data =="rbc_small":
@@ -269,9 +287,9 @@ if __name__ == "__main__":
             "PASR_small":PASR(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,time_update = args.time_update,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding),
              "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
             "PASR_MLP":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
-            "PASR_MLP_G":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
+            "PASR_G":PASR_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
             "PASR_MLP_small":PASR_MLP(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std),
-            "PASR_MLP_G_small":PASR_MLP_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
+            "PASR_G_small":PASR_G(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,gating_layers=args.gating_layers,gating_method=args.gating_method),
     }
 
     model = model_list[args.model]

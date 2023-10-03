@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 from PIL import Image, ImageFilter
-DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
+DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x128_323.h5', 0.02],
                  "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
                  "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01]}
 
@@ -110,6 +110,6 @@ def trilinear_interpolation(data_name,timescale_factor = 10,num_snapshot = 10,in
     return lr_input,hr_target,lr_input_tensor,hr_target_tensor,trilinear_pred
 
 
-trilinear_interpolation("decay_turb",timescale_factor = 5,num_snapshot = 20,in_channel=3,upscale_factor=4)
-trilinear_interpolation("burger2d",timescale_factor = 5,num_snapshot = 20,in_channel=2,upscale_factor=4)
-trilinear_interpolation("rbc",timescale_factor = 5,num_snapshot = 20,in_channel=3,upscale_factor=4)
+trilinear_interpolation("decay_turb",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)
+trilinear_interpolation("burger2d",timescale_factor = 4,num_snapshot = 20,in_channel=2,upscale_factor=4)
+trilinear_interpolation("rbc",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)

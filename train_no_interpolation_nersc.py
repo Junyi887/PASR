@@ -220,6 +220,7 @@ parser.add_argument('--lamb_p', type = float, default= 1)
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 parser.add_argument('--normalization',type =str, default= 'False')
+parser.add_argument('--normalization_method',type =str, default= 'meanstd')
 parser.add_argument('--physics',type =str, default= 'False')
 parser.add_argument('--gamma',type =float, default= 0.95)
 parser.add_argument('--lr_step',type =int, default= 80)
@@ -250,23 +251,30 @@ if __name__ == "__main__":
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
-    if args.normalization == "True":
-        stats_loader = DataInfoLoader(args.data_path)
-        mean, std = stats_loader.get_mean_std()
-        min,max = stats_loader.get_min_max()
-        if args.in_channels==1:
-            mean,std = mean[0].tolist(),std[0].tolist()
-            min,max = min[0].tolist(),max[0].tolist()
-        elif args.in_channels==3:
-            mean,std = mean.tolist(),std.tolist()
-            min,max = min.tolist(),max.tolist()
-        elif args.in_channels==2:
-            mean,std = mean[1:].tolist(),std[1:].tolist()
-            min,max = min[1:].tolist(),max[1:].tolist()
-    else:
-        mean, std = [0], [1]
-        mean, std = mean * args.in_channels, std * args.in_channels
-
+    def get_normalizer(args):
+        if args.normalization == "True":
+            stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
+            mean, std = stats_loader.get_mean_std()
+            min,max = stats_loader.get_min_max()
+            if args.in_channels==1:
+                mean,std = mean[0].tolist(),std[0].tolist()
+                min,max = min[0].tolist(),max[0].tolist()
+            elif args.in_channels==3:
+                mean,std = mean.tolist(),std.tolist()
+                min,max = min.tolist(),max.tolist()
+            elif args.in_channels==2:
+                mean,std = mean[1:].tolist(),std[1:].tolist()
+                min,max = min[1:].tolist(),max[1:].tolist()
+        else:
+            mean, std = [0], [1]
+            mean, std = mean * args.in_channels, std * args.in_channels
+            min,max = [0],[1]
+            min,max = min * args.in_channels, max * args.in_channels
+        if args.normalization_method =="minmax":
+            return min,max
+        if args.normalization_method =="meanstd":
+            return mean,std
+    mean,std = get_normalizer(args)
 
     if args.data =="Decay_turb_small": 
         image = [128,128]

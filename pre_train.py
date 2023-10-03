@@ -130,7 +130,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             run['train/lr'].log(lr)
         else:
             run['train/lr'].log(scheduler.get_last_lr())
-        for iteration, batch in enumerate(trainloader):
+        for iteration, batch in enumerate(tqdm(trainloader)):
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.train()
             optimizer.zero_grad()
@@ -138,6 +138,8 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
             out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True)
             loss_t = criterion_Data(out_t,target[:,1:,:,:,:])
+            loss_t = torch.norm(out_t,target[:,1:,:,:,:],p=1,dim = (-1,-2))
+            loss_t = loss_t.mean(dim = (0,2))
             div = fd_solver.get_div_loss(out_t)
             phy_loss = criterion2(div,torch.zeros_like(div).to(device)) # DO NOT CHANGE THIS ONE. Phy loss has to be L2 norm 
             if args.physics == "True":
@@ -148,12 +150,11 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             loss.backward()
             optimizer.step()
             avg_loss += loss.item()
-            if args.scheduler == "plateau":
-                scheduler.step(result_val1[1])
-            else: 
-                scheduler.step()
         result_val1,result_val2 = validation(args,model, val1_loader,val2_loader,device)
-
+        if args.scheduler == "plateau":
+            scheduler.step(result_val1[1])
+        else: 
+            scheduler.step()
 
         avg_val = result_val1[1] + lamb*result_val1[0]
         val_list_x2.append(result_val2[2])
