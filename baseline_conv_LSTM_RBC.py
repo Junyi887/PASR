@@ -756,7 +756,7 @@ if __name__ == '__main__':
     steps = 21 # 40 
     effective_step = list(range(0, steps))
     
-    beta = 0.025 # 0.025 # for physics loss        
+    beta = 0.0 # 0.025 # for physics loss        
     save_path = 'ConvLSTM_RBC_'
     fig_save_path = 'ConvLSTM_RBC_'
     print('Super-Resolution for 2D RB equation...')

@@ -493,9 +493,9 @@ def LossGen(output, truth, beta, loss_func):
     output = torch.cat((output[:, :, :, -2:, :], output, output[:, :, :, 0:3, :]), dim=3)
     
     # divergence loss
-    div = loss_func.get_div_loss(output)
-    phy_loss = MSE_loss(div, torch.zeros_like(div).cuda())
-    
+    # div = loss_func.get_div_loss(output)
+    # phy_loss = MSE_loss(div, torch.zeros_like(div).cuda())
+    phy_loss = 0
     # f_u, f_v = loss_func.GetPhyLoss(output)
     #phy_loss = MSE_loss(f_u, torch.zeros_like(f_u).cuda()) + MSE_loss(
     #            f_v, torch.zeros_like(f_v).cuda())
@@ -740,8 +740,10 @@ if __name__ == '__main__':
     # get mean and std
 
     # "../RBC_small/*/*.h5"
-    normalizer = DataInfoLoader("../Decay_Turbulence_small/*/*.h5")
-    mean,std = normalizer.get_mean_std()
+    min = [196.6398630794458]
+    max = [318.90588255242176] 
+    mean =[278.35330263805355] 
+    std = [20.867389868976833]
     print('mean of hres is:',mean.tolist())
     print('stf of hres is:', std.tolist())
 
@@ -757,9 +759,9 @@ if __name__ == '__main__':
     effective_step = list(range(0, steps))
     
     beta = 0.0 # 0.025 # for physics loss        
-    save_path = 'ConvLSTM_Decay_Turb_'
-    fig_save_path = 'ConvLSTM_Decay_Turb_'
-    print('Super-Resolution for 2D DT equation...')
+    save_path = 'ConvLSTM_Climate_'
+    fig_save_path = 'ConvLSTM_Climate_'
+    print('Super-Resolution for 2D Climate equation...')
 
     model = PhySR(
         n_feats = 32,
@@ -773,7 +775,7 @@ if __name__ == '__main__':
     init_state = get_init_state(
         batch_size = [args.batch_size], 
         hidden_channels = [32], 
-        output_size = [[32, 32]], # 32, 32 
+        output_size = [[45, 90]], 
         mode = 'random')
 
     start = time.time()
