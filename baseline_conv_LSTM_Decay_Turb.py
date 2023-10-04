@@ -495,7 +495,7 @@ def LossGen(output, truth, beta, loss_func):
     # divergence loss
     div = loss_func.get_div_loss(output)
     phy_loss = MSE_loss(div, torch.zeros_like(div).cuda())
-    
+    # phy_loss = torch.tensor(0.0).float().cuda()
     # f_u, f_v = loss_func.GetPhyLoss(output)
     #phy_loss = MSE_loss(f_u, torch.zeros_like(f_u).cuda()) + MSE_loss(
     #            f_v, torch.zeros_like(f_v).cuda())

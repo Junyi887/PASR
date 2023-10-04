@@ -88,8 +88,8 @@ class ShiftMean(nn.Module):
     # channel: p, T, u, v
     def __init__(self, mean, std):
         super(ShiftMean, self).__init__()
-        self.mean = torch.Tensor(mean).view(1, 1, 3, 1, 1)
-        self.std = torch.Tensor(std).view(1, 1, 3, 1, 1)
+        self.mean = torch.Tensor(mean).view(1, 1, 1, 1, 1)
+        self.std = torch.Tensor(std).view(1, 1, 1, 1, 1)
 
     def forward(self, x, mode):
         if mode == 'sub':
@@ -215,7 +215,7 @@ class PhySR(nn.Module):
         for i in range(self.n_convlstm):
             name = 'convlstm{}'.format(i)
             cell = ConvLSTMCell(
-                    input_feats=3,
+                    input_feats=1,
                     hidden_feats=n_feats,
                     input_kernel_size=3,
                     input_stride=1,
@@ -226,10 +226,10 @@ class PhySR(nn.Module):
 
         ################## spatial super-resolution ###################
         body = [ResBlock(n_feats, expansion_ratio=4, res_scale=0.1) for _ in range(self.n_resblock)]
-        tail = [weight_norm(nn.Conv2d(n_feats, 3*(self.s_up_factor ** 2), 
+        tail = [weight_norm(nn.Conv2d(n_feats, 1*(self.s_up_factor ** 2), 
             kernel_size=3, padding=1, padding_mode='circular')), nn.PixelShuffle(self.s_up_factor)]  
 
-        skip = [weight_norm(nn.Conv2d(3, 3*(self.s_up_factor ** 2), kernel_size=5, stride=1,
+        skip = [weight_norm(nn.Conv2d(1, 1*(self.s_up_factor ** 2), kernel_size=5, stride=1, # need to change the channel here 
             padding=2, padding_mode='circular')), nn.PixelShuffle(self.s_up_factor)]    
 
         self.body = nn.Sequential(*body)
@@ -495,7 +495,7 @@ def LossGen(output, truth, beta, loss_func):
     # divergence loss
     # div = loss_func.get_div_loss(output)
     # phy_loss = MSE_loss(div, torch.zeros_like(div).cuda())
-    phy_loss = 0
+    phy_loss = torch.tensor(0.0).float().cuda()
     # f_u, f_v = loss_func.GetPhyLoss(output)
     #phy_loss = MSE_loss(f_u, torch.zeros_like(f_u).cuda()) + MSE_loss(
     #            f_v, torch.zeros_like(f_v).cuda())
@@ -714,10 +714,10 @@ def get_init_state(batch_size, hidden_channels, output_size, mode='coord'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='training parameters')
 
-    parser.add_argument('--data', type =str ,default= 'decay_turb_ConvLSTM')
-    parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence_small")
+    parser.add_argument('--data', type =str ,default= 'climate_sequence')
+    parser.add_argument('--data_path',type = str,default = "/pscratch/sd/j/junyi012/climate_data/pre-processed_s4")
     ## data processing arugments
-    parser.add_argument('--in_channels',type = int, default= 3)
+    parser.add_argument('--in_channels',type = int, default=  1)
     parser.add_argument('--batch_size',type = int, default= 32)
     parser.add_argument('--scale_factor', type = int, default= 4)
     parser.add_argument('--timescale_factor', type = int, default= 4)
@@ -740,10 +740,10 @@ if __name__ == '__main__':
     # get mean and std
 
     # "../RBC_small/*/*.h5"
-    min = [196.6398630794458]
-    max = [318.90588255242176] 
-    mean =[278.35330263805355] 
-    std = [20.867389868976833]
+    min = np.array([196.6398630794458])
+    max = np.array([318.90588255242176])
+    mean =np.array([278.35330263805355])
+    std = np.array([20.867389868976833])
     print('mean of hres is:',mean.tolist())
     print('stf of hres is:', std.tolist())
 

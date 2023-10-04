@@ -118,7 +118,7 @@ class GetDataset_diffIC_NOCrop(Dataset):
             self.img_shape_y = _f['tasks']["u"].shape[2]
 
         final_index = (self.n_samples_per_file-1)//self.timescale_factor
-        if self.state == "test_one":
+        if self.state == "no_roll_out":
             self.idx_matrix = self.generate_test_matrix(cols = self.num_snapshots+1, final_index=final_index)*self.timescale_factor
             print(self.idx_matrix)
         else:
