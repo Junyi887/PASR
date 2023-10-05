@@ -238,7 +238,7 @@ if __name__ == "__main__":
     modes2 = [8, 8, 8, 8]
     modes3 = [8, 8, 8, 8]
 
-    target_shape = (args.batch_size, args.in_channels, args.n_snapshots,180 , 360)
+    target_shape = (args.batch_size, args.in_channels, args.n_snapshots+1,180 , 360)
 
     model = FNO3D(modes1, modes2, modes3,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu',mean =mean,std = std ).to(device)
     # model = torch.nn.DataParallel(model).to(device)
