@@ -168,13 +168,13 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
 
 
 parser = argparse.ArgumentParser(description='training parameters')
-parser.add_argument('--data', type =str ,default= 'Decay_turb_FNO')
+parser.add_argument('--data', type =str ,default= 'climate_sequence')
 parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence_small")
 ## data processing arugments
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 4)
-parser.add_argument('--in_channels',type = int, default= 3)
-parser.add_argument('--batch_size', type = int, default= 8)
+parser.add_argument('--in_channels',type = int, default= 1)
+parser.add_argument('--batch_size', type = int, default= 1)
 parser.add_argument('--n_snapshots',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
@@ -185,14 +185,14 @@ parser.add_argument('--modes', type = int, default= 12)
 parser.add_argument('--width', type = int, default= 16)
 parser.add_argument('--hidden_dim', type = int, default= 40 ) # euler
 ## training (optimization) parameters
-parser.add_argument('--epochs', type = int, default= 500)
+parser.add_argument('--epochs', type = int, default= 10000)
 parser.add_argument('--loss_type', type =str ,default= 'L2')
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 parser.add_argument('--normalization',type =str, default= 'True')
 parser.add_argument('--physics',type =str, default= 'False')
-parser.add_argument('--gamma',type =float, default= 0.998)
-parser.add_argument('--lr_step',type =int, default= 100)
+parser.add_argument('--gamma',type =float, default= 0.5)
+parser.add_argument('--lr_step',type =int, default= 500)
 parser.add_argument('--patience',type =int, default= 15)
 parser.add_argument('--scheduler',type =str, default= 'StepLR')
 parser.add_argument('--lr', type = float, default= 1e-3)
@@ -226,54 +226,25 @@ if __name__ == "__main__":
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
-    if args.data =="Decay_turb_small" or args.data =="Decay_turb_FNO": 
-        image = [128,128]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-        ALL_DATA_PATH = "../Decay_Turbulence_small/*/*.h5"
-    elif args.data =="rbc_small" or args.data =="rbc_FNO":
-        image = [256,64]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
-        ALL_DATA_PATH = "../RBC_small/*/*.h5"
-    elif args.data =="Burger2D_small" or args.data =="Burger2D_FNO":
-        image = [128,128]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-        ALL_DATA_PATH = "../Burgers2D_small/*/*.h5"
-
-    def get_normalizer(args):
-        if args.normalization == "True":
-            stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
-            mean, std = stats_loader.get_mean_std()
-            min,max = stats_loader.get_min_max()
-            if args.in_channels==1:
-                mean,std = mean[0].tolist(),std[0].tolist()
-                min,max = min[0].tolist(),max[0].tolist()
-            elif args.in_channels==3:
-                mean,std = mean.tolist(),std.tolist()
-                min,max = min.tolist(),max.tolist()
-            elif args.in_channels==2:
-                mean,std = mean[1:].tolist(),std[1:].tolist()
-                min,max = min[1:].tolist(),max[1:].tolist()
-            if args.normalization_method =="minmax":
-                return min,max
-            if args.normalization_method =="meanstd":
-                return mean,std
-        else:
-            mean, std = [0], [1]
-            mean, std = mean * args.in_channels, std * args.in_channels
-            return mean,std
-    mean,std = get_normalizer(args)
-
+    
+    min = np.array([196.6398630794458])
+    max = np.array([318.90588255242176])
+    mean =np.array([278.35330263805355])
+    std = np.array([20.867389868976833])
+    print('mean of hres is:',mean.tolist())
+    print('stf of hres is:', std.tolist())
     layers = [64, 64, 64, 64, 64]
     modes1 = [8, 8, 8, 8]
     modes2 = [8, 8, 8, 8]
     modes3 = [8, 8, 8, 8]
 
+    target_shape = (args.batch_size, args.in_channels, args.n_snapshots,180 , 360)
 
-    model = FNO3D(modes1, modes2, modes3,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', ).to(device)
+    model = FNO3D(modes1, modes2, modes3,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu',mean =mean,std = std ).to(device)
     # model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +
-                "_data_" + str(args.data) +"_"+ str(ID.item())
+                "_data_" + str(args.data) +"_" +str(ID.item())
                 ) 
 
     run["config"] = vars(args)   
