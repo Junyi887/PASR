@@ -759,8 +759,8 @@ if __name__ == '__main__':
     effective_step = list(range(0, steps))
     
     beta = 0.0 # 0.025 # for physics loss        
-    save_path = 'ConvLSTM_Climate_'
-    fig_save_path = 'ConvLSTM_Climate_'
+    save_path = 'ConvLSTM_Climate_' +str(ID.item())
+    fig_save_path = 'ConvLSTM_Climate_' +str(ID.item())
     print('Super-Resolution for 2D Climate equation...')
 
     model = PhySR(
