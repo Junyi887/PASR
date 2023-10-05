@@ -757,8 +757,8 @@ if __name__ == '__main__':
     effective_step = list(range(0, steps))
     
     beta = 0.0 # 0.025 # for physics loss        
-    save_path = 'ConvLSTM_RBC_' +str(ID.item())
-    fig_save_path = 'ConvLSTM_RBC_'+str(ID.item())
+    save_path = 'ConvLSTM_RBC_' +str(ID.item()) +"_"
+    fig_save_path = 'ConvLSTM_RBC_'+str(ID.item())+"_"
     print('Super-Resolution for 2D RB equation...')
 
     model = PhySR(
