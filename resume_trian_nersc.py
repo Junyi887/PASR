@@ -266,14 +266,13 @@ if __name__ == "__main__":
             elif args.in_channels==2:
                 mean,std = mean[1:].tolist(),std[1:].tolist()
                 min,max = min[1:].tolist(),max[1:].tolist()
+            if args.normalization_method =="minmax":
+                return min,max
+            if args.normalization_method =="meanstd":
+                return mean,std
         else:
             mean, std = [0], [1]
             mean, std = mean * args.in_channels, std * args.in_channels
-            min,max = [0],[1]
-            min,max = min * args.in_channels, max * args.in_channels
-        if args.normalization_method =="minmax":
-            return min,max
-        if args.normalization_method =="meanstd":
             return mean,std
     mean,std = get_normalizer(args)
 
