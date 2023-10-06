@@ -1,0 +1,294 @@
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+from torch.nn.utils import weight_norm
+from torch.autograd import Variable
+
+torch.manual_seed(1)
+np.random.seed(1)
+torch.set_default_dtype(torch.float32)
+
+
+lapl_op = [[[[    0,   0, -1/12,   0,     0],
+             [    0,   0,   4/3,   0,     0],
+             [-1/12, 4/3,    -5, 4/3, -1/12],
+             [    0,   0,   4/3,   0,     0],
+             [    0,   0, -1/12,   0,     0]]]]
+
+par_y = [[[[    0,   0,   0,   0,     0],
+           [    0,   0,   0,   0,     0],
+           [1/12, -8/12,  0,  8/12, -1/12],
+           [    0,   0,   0,   0,     0],
+           [    0,   0,   0,   0,     0]]]]
+
+
+par_x = [[[[    0,   0,   1/12,   0,     0],
+           [    0,   0,   -8/12,   0,     0],
+           [    0,   0,   0,   0,     0],
+           [    0,   0,   8/12,   0,     0],
+           [    0,   0,   -1/12,   0,     0]]]]
+
+
+def initialize_weights(module):
+
+    c = 1
+    if isinstance(module, nn.Conv2d):
+        module.weight.data.uniform_(-c*np.sqrt(1 / (3 * 3 * 320)), 
+            c*np.sqrt(1 / (3 * 3 * 320)))
+
+    if isinstance(module, nn.Conv1d):
+        module.weight.data.uniform_(-c*np.sqrt(1 / (3 * 3 * 320)), 
+            c*np.sqrt(1 / (3 * 3 * 320)))
+     
+    elif isinstance(module, nn.Linear):
+        module.bias.data.zero_()
+
+
+class ShiftMean(nn.Module):
+    # note my data has shape [b,c,t,h,w]
+    # data: [t,b,c,h,w]
+    # channel: p, T, u, v
+    def __init__(self, mean, std):
+        super(ShiftMean, self).__init__()
+        self.mean = torch.Tensor(mean).view(1, 1, 3, 1, 1)
+        self.std = torch.Tensor(std).view(1, 1, 3, 1, 1)
+
+    def forward(self, x, mode):
+        if mode == 'sub':
+            return (x - self.mean.cuda()) / self.std.cuda()
+        elif mode == 'add':
+            return x * self.std.cuda() + self.mean.cuda()
+        else:
+            raise NotImplementedError
+
+
+class ConvLSTMCell(nn.Module):
+    def __init__(self, input_feats, hidden_feats, input_kernel_size, input_stride, input_padding):
+        super(ConvLSTMCell, self).__init__()
+
+        self.hidden_feats = hidden_feats
+        self.hidden_kernel_size = 3
+        self.num_features = 3
+        self.input_padding = input_padding
+        self.padding = int((self.hidden_kernel_size - 1) / 2) # for the hidden state
+
+        # input gate
+        self.Wxi = nn.Conv2d(input_feats, hidden_feats, input_kernel_size, input_stride, 
+            input_padding, bias=True, padding_mode='circular')
+        self.Whi = nn.Conv2d(hidden_feats, hidden_feats, self.hidden_kernel_size, 
+            1, padding=1, bias=False, padding_mode='circular')
+
+        # forget gate
+        self.Wxf = nn.Conv2d(input_feats, hidden_feats, input_kernel_size, input_stride, 
+            input_padding, bias=True, padding_mode='circular')
+        self.Whf = nn.Conv2d(hidden_feats, hidden_feats, self.hidden_kernel_size, 
+            1, padding=1, bias=False, padding_mode='circular')
+
+        # candidate gate
+        self.Wxc = nn.Conv2d(input_feats, hidden_feats, input_kernel_size, input_stride, 
+            input_padding, bias=True, padding_mode='circular')
+        self.Whc = nn.Conv2d(hidden_feats, hidden_feats, self.hidden_kernel_size, 
+            1, padding=1, bias=False, padding_mode='circular')
+
+        # output gate
+        self.Wxo = nn.Conv2d(input_feats, hidden_feats, input_kernel_size, input_stride, 
+            input_padding, bias=True, padding_mode='circular')
+        self.Who = nn.Conv2d(hidden_feats, hidden_feats, self.hidden_kernel_size, 
+            1, padding=1, bias=False, padding_mode='circular')       
+
+        # initialization
+        nn.init.zeros_(self.Wxi.bias)
+        nn.init.zeros_(self.Wxf.bias)
+        nn.init.zeros_(self.Wxc.bias)
+        self.Wxo.bias.data.fill_(1.0)
+
+    def forward(self, x, h, c):
+        
+        ci = torch.sigmoid(self.Wxi(x) + self.Whi(h))
+        cf = torch.sigmoid(self.Wxf(x) + self.Whf(h))
+        cc = cf * c + ci * torch.tanh(self.Wxc(x) + self.Whc(h))
+        co = torch.sigmoid(self.Wxo(x) + self.Who(h))
+        ch = co * torch.tanh(cc)
+        
+        return ch, cc
+
+    def init_hidden_tensor(self, prev_state):
+
+        return (Variable(prev_state[0]).cuda(), Variable(prev_state[1]).cuda())
+
+
+class ResBlock(nn.Module):
+    def __init__(self, n_feats, expansion_ratio, res_scale=0.1):
+        super(ResBlock, self).__init__()
+
+        self.res_scale = res_scale
+        self.conv1 = weight_norm(nn.Conv2d(n_feats, n_feats*expansion_ratio, kernel_size=3, 
+            padding=1, padding_mode='circular'))
+        self.conv2 = weight_norm(nn.Conv2d(n_feats*expansion_ratio, n_feats, kernel_size=3, 
+            padding=1, padding_mode='circular'))
+        self.act = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        s = x
+        x = self.act(self.conv1(x))
+        x = self.conv2(x)
+        x = s + self.res_scale * x
+
+        return x
+
+class temporal_sr(nn.Module):
+    def __init__(self, t_upscale_factor):
+        super(temporal_sr, self).__init__()
+
+        self.t_upscale_factor = t_upscale_factor
+
+    def forward(self, x):  
+
+        t, b, c, h, w = x.shape  
+        x = x.permute(1,3,4,2,0) # [b,h,w,c,t]
+        x = x.contiguous().view(b*h*w, c, t)
+
+        x = F.interpolate(x, size=self.t_upscale_factor+1, mode='linear', align_corners=True)   
+        x = x.contiguous().view(b, h, w, c, 1+self.t_upscale_factor)
+        x = x.permute(4,0,3,1,2) # [t,b,c,h,w]
+
+        return x
+
+
+class PhySR(nn.Module):
+    def __init__(self, n_feats, n_layers, upscale_factor, shift_mean_paras, step=1, effective_step=[1]):
+
+        super(PhySR, self).__init__()
+        # n_layers: [n_convlstm, n_resblock]
+
+        self.n_convlstm, self.n_resblock = n_layers
+        self.t_up_factor, self.s_up_factor = upscale_factor
+        self.mean, self.std = shift_mean_paras
+        
+        self.step = step
+        self.effective_step = effective_step
+        self._all_layers = []
+
+        ################## temporal super-resolution ###################
+        # temporal interpolation
+        self.tsr = temporal_sr(self.t_up_factor)
+
+        # temporal correction - convlstm
+        for i in range(self.n_convlstm):
+            name = 'convlstm{}'.format(i)
+            cell = ConvLSTMCell(
+                    input_feats=3,
+                    hidden_feats=n_feats,
+                    input_kernel_size=3,
+                    input_stride=1,
+                    input_padding=1) 
+
+            setattr(self, name, cell)
+            self._all_layers.append(cell)
+
+        ################## spatial super-resolution ###################
+        body = [ResBlock(n_feats, expansion_ratio=4, res_scale=0.1) for _ in range(self.n_resblock)]
+        tail = [weight_norm(nn.Conv2d(n_feats, 3*(self.s_up_factor ** 2), 
+            kernel_size=3, padding=1, padding_mode='circular')), nn.PixelShuffle(self.s_up_factor)]  
+
+        skip = [weight_norm(nn.Conv2d(3, 3*(self.s_up_factor ** 2), kernel_size=5, stride=1,
+            padding=2, padding_mode='circular')), nn.PixelShuffle(self.s_up_factor)]    
+
+        self.body = nn.Sequential(*body)
+        self.tail = nn.Sequential(*tail)
+        self.skip = nn.Sequential(*skip)
+
+        # initialize weights
+        self.apply(initialize_weights)
+
+        # shiftmean
+        self.shift_mean = ShiftMean(self.mean, self.std)    
+
+    def forward(self, x, initial_state):
+        # input: [t,b,c,h,w]
+        tt,bb,cc,hh,ww = x.shape
+        internal_state = []
+        outputs = []
+        
+        # normalize
+        x = self.shift_mean(x, mode='sub')
+            
+        # temporal super-resolution
+        x = self.tsr(x) 
+        for step in range(self.step):
+            # input:[t,b,c,h,w]
+            xt = x[step,...]
+            # skip connection
+            s = self.skip(xt)
+            # temporal correction
+            for i in range(self.n_convlstm):
+                name = 'convlstm{}'.format(i)
+                if step == 0:
+                    (h, c) = getattr(self, name).init_hidden_tensor(
+                        prev_state = initial_state[i])  
+                    internal_state.append((h,c))
+                
+                # one-step forward
+                (h, c) = internal_state[i]
+                xt, new_c = getattr(self, name)(xt, h, c)
+                internal_state[i] = (xt, new_c)  
+
+            # spatial super-resolution
+            xt = self.body(xt)
+            xt = self.tail(xt)
+            # residual connection
+            xt += s
+            xt = xt.view(1, bb, cc, hh*4, ww*4)
+            
+            if step in self.effective_step:
+                outputs.append(xt)    
+
+        outputs = torch.cat(tuple(outputs), dim=0)
+        outputs = self.shift_mean(outputs, mode='add')
+
+        return outputs
+
+
+class Conv2dDerivative(nn.Module):
+    def __init__(self, DerFilter, resol, kernel_size=3, name=''):
+        super(Conv2dDerivative, self).__init__()
+
+        self.resol = resol  # constant in the finite difference
+        self.name = name
+        self.input_channels = 1
+        self.output_channels = 1
+        self.kernel_size = kernel_size
+
+        self.padding = int((kernel_size - 1) / 2)
+        self.filter = nn.Conv2d(self.input_channels, self.output_channels, self.kernel_size, 
+            1, padding=0, bias=False)
+
+        # Fixed gradient operator
+        self.filter.weight = nn.Parameter(torch.FloatTensor(DerFilter), requires_grad=False)  
+
+    def forward(self, input):
+        derivative = self.filter(input)
+        return derivative / self.resol
+
+
+class Conv1dDerivative(nn.Module):
+    def __init__(self, DerFilter, resol, kernel_size=3, name=''):
+        super(Conv1dDerivative, self).__init__()
+
+        self.resol = resol  # $\delta$*constant in the finite difference
+        self.name = name
+        self.input_channels = 1
+        self.output_channels = 1
+        self.kernel_size = kernel_size
+
+        self.padding = int((kernel_size - 1) / 2)
+        self.filter = nn.Conv1d(self.input_channels, self.output_channels, self.kernel_size, 
+            1, padding=0, bias=False)
+        # Fixed gradient operator
+        self.filter.weight = nn.Parameter(torch.FloatTensor(DerFilter), requires_grad=False)  
+
+    def forward(self, input):
+        derivative = self.filter(input)
+        return derivative / self.resol

@@ -13,6 +13,7 @@ import math
 from torch import default_generator, randperm
 from torch._utils import _accumulate
 from torch.utils.data.dataset import Subset
+from torch.nn.utils import weight_norm
 #"../superbench/datasets/nskt16000_1024"
 #../datasets/rbc_diff_IC/rbc_IC1
 def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
