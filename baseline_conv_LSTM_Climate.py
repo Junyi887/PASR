@@ -27,7 +27,7 @@ from scipy.io import loadmat
 from tqdm import tqdm
 import h5py
 from src.models import *
-from src.utli import *
+from src.util import *
 from src.data_loader_nersc import getData
 import neptune
 import time

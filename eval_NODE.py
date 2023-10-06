@@ -14,7 +14,7 @@ from scipy.ndimage import zoom
 CMAP = cmocean.cm.balance
 CMAP = seaborn.cm.icefire
 import argparse
-from src.utli import *
+from src.util import *
 import torch
 import numpy as np
 from torch.utils import data
