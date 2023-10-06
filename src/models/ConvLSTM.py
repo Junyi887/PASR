@@ -5,11 +5,45 @@ import torch.optim as optim
 import numpy as np
 from torch.nn.utils import weight_norm
 from torch.autograd import Variable
-
+import torch.nn.functional as F
 torch.manual_seed(1)
 np.random.seed(1)
 torch.set_default_dtype(torch.float32)
 
+def get_init_state(batch_size, hidden_channels, output_size, mode='coord'):
+    '''initial hidden states for all convlstm layers'''
+    # (b, c, h, w)
+
+    num_layers = len(hidden_channels)
+    initial_state = []
+    if mode == 'coord':
+        for i in range(num_layers):
+            resolution = output_size[i][0]
+            x, y = [np.linspace(-6654, 64, resolution+1)] * 2
+            x, y = np.meshgrid(x[:-1], y[:-1])  # [32, 32]
+            xy = np.concatenate((x[None, :], y[None, :]), 0) # [2, 32, 32]
+            xy = np.repeat(xy, int(hidden_channels[i]/2), axis=0) # [c,h,w]
+            xy = np.repeat(xy[None, :], batch_size[i], 0) # [b,c,h,w]
+            xy = torch.tensor(xy, dtype=torch.float32)
+            initial_state.append((xy, xy))
+
+    elif mode == 'zero':
+        for i in range(num_layers):
+            (h0, c0) = (torch.zeros(batch_size[i], hidden_channels[i], output_size[i][0], 
+                output_size[i][1]), torch.zeros(batch_size[i], hidden_channels[i], output_size[i][0], 
+                output_size[i][1]))
+            initial_state.append((h0,c0))
+
+    elif mode == 'random':
+        for i in range(num_layers):
+            (h0, c0) = (torch.randn(batch_size[i], hidden_channels[i], output_size[i][0], 
+                output_size[i][1]), torch.randn(batch_size[i], hidden_channels[i], output_size[i][0], 
+                output_size[i][1]))
+            initial_state.append((h0,c0))
+    else:
+        raise NotImplementedError
+
+    return initial_state
 
 lapl_op = [[[[    0,   0, -1/12,   0,     0],
              [    0,   0,   4/3,   0,     0],
@@ -52,8 +86,9 @@ class ShiftMean(nn.Module):
     # channel: p, T, u, v
     def __init__(self, mean, std):
         super(ShiftMean, self).__init__()
-        self.mean = torch.Tensor(mean).view(1, 1, 3, 1, 1)
-        self.std = torch.Tensor(std).view(1, 1, 3, 1, 1)
+        c = len(mean)
+        self.mean = torch.Tensor(mean).view(1, 1, c, 1, 1)
+        self.std = torch.Tensor(std).view(1, 1, c, 1, 1)
 
     def forward(self, x, mode):
         if mode == 'sub':
@@ -158,7 +193,7 @@ class temporal_sr(nn.Module):
 
 
 class PhySR(nn.Module):
-    def __init__(self, n_feats, n_layers, upscale_factor, shift_mean_paras, step=1, effective_step=[1]):
+    def __init__(self, n_feats, n_layers, upscale_factor, shift_mean_paras, step=1, effective_step=[1],in_channels=3):
 
         super(PhySR, self).__init__()
         # n_layers: [n_convlstm, n_resblock]
@@ -179,7 +214,7 @@ class PhySR(nn.Module):
         for i in range(self.n_convlstm):
             name = 'convlstm{}'.format(i)
             cell = ConvLSTMCell(
-                    input_feats=3,
+                    input_feats=in_channels,
                     hidden_feats=n_feats,
                     input_kernel_size=3,
                     input_stride=1,
@@ -190,10 +225,10 @@ class PhySR(nn.Module):
 
         ################## spatial super-resolution ###################
         body = [ResBlock(n_feats, expansion_ratio=4, res_scale=0.1) for _ in range(self.n_resblock)]
-        tail = [weight_norm(nn.Conv2d(n_feats, 3*(self.s_up_factor ** 2), 
+        tail = [weight_norm(nn.Conv2d(n_feats, in_channels*(self.s_up_factor ** 2), 
             kernel_size=3, padding=1, padding_mode='circular')), nn.PixelShuffle(self.s_up_factor)]  
 
-        skip = [weight_norm(nn.Conv2d(3, 3*(self.s_up_factor ** 2), kernel_size=5, stride=1,
+        skip = [weight_norm(nn.Conv2d(in_channels, in_channels*(self.s_up_factor ** 2), kernel_size=5, stride=1,
             padding=2, padding_mode='circular')), nn.PixelShuffle(self.s_up_factor)]    
 
         self.body = nn.Sequential(*body)

@@ -111,5 +111,5 @@ def trilinear_interpolation(data_name,timescale_factor = 10,num_snapshot = 10,in
 
 
 trilinear_interpolation("decay_turb",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)
-trilinear_interpolation("burger2d",timescale_factor = 4,num_snapshot = 20,in_channel=2,upscale_factor=4)
+# trilinear_interpolation("burger2d",timescale_factor = 4,num_snapshot = 20,in_channel=2,upscale_factor=4)
 trilinear_interpolation("rbc",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)

@@ -4,3 +4,4 @@ from .PASR_G import PASR_G
 from .PASR_MLP_G_aug import PASR_MLP_G_aug
 from .FNO3D import FNO3D
 from .ConvLSTM import PhySR
+from .ConvLSTM import get_init_state
