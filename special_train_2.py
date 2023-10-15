@@ -209,7 +209,7 @@ parser.add_argument('--n_snapshots',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic")
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 ## model parameters 
-parser.add_argument('--model', type =str ,default= 'PASR_MLP_small')
+parser.add_argument('--model', type =str ,default= 'PASR_small')
 parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
 parser.add_argument('--time_update',type =str, default= 'NODE')
 parser.add_argument('--ode_step',type =int, default= 2)
