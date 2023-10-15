@@ -33,11 +33,13 @@ import neptune
 import time
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-ID = torch.randint(10000,(1,1))
+import random
+ID = random.randint(0, 10000)
+
 run = neptune.init_run(
     project="junyiICSI/PASR",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
-    tags = [str(ID.item())],
+    tags = [str(ID)],
     # mode = "debug"
     )  # your credentials
 # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -757,8 +759,8 @@ if __name__ == '__main__':
     effective_step = list(range(0, steps))
     
     beta = 0.0 # 0.025 # for physics loss        
-    save_path = 'ConvLSTM_Decay_Turb_' + str(ID.item())+"_"
-    fig_save_path = 'ConvLSTM_Decay_Turb_' +str(ID.item())+"_"
+    save_path = 'ConvLSTM_Decay_Turb_' + str(ID)+"_"
+    fig_save_path = 'ConvLSTM_Decay_Turb_' +str(ID)+"_"
     print('Super-Resolution for 2D DT equation...')
 
     model = PhySR(

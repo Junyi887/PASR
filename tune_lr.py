@@ -32,11 +32,12 @@ import argparse
 import neptune 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-ID = torch.randint(10000,(1,1))
+import random
+ID = random.randint(0, 10000)
 run = neptune.init_run(
     project="junyiICSI/PASR",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
-    tags = [str(ID.item())],
+    tags = [str(ID)],
     )  # your credentials
 # Replace the final print statement
 def psnr(true, pred):
@@ -293,7 +294,7 @@ if __name__ == "__main__":
     model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +
-                "_data_" + str(args.data) + "_"+  str(ID.item())
+                "_data_" + str(args.data) + "_"+  str(ID)
                 ) 
 
     run["config"] = vars(args)   
