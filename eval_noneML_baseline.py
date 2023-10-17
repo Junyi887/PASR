@@ -10,6 +10,8 @@ DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x
                  "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
                  "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01]}
 
+
+
 # def trilinear(file_path, crop, space_scale, time_scale):
 #     # Window calculation
 

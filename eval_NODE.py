@@ -19,6 +19,33 @@ import torch
 import numpy as np
 from torch.utils import data
 import matplotlib.pyplot as plt
+def get_psnr(true, pred):
+    # shape with B,T,C,H,W
+    print("adfadfadf",true.shape,pred.shape)
+    mse = torch.mean((true - pred)**2,dim= (-1,-2))
+    if mse.min() <= 1e-16:
+        return float('inf')
+    B,T,C = mse.shape
+    print(mse.shape)
+    list = []
+    for i in range(T):
+        max_value = torch.max(true)
+        psnr = 20 * torch.log10(max_value / torch.sqrt(mse[:,i,:])) # return psnr in shape B,C,T
+        list.append(psnr)
+    return torch.stack(list,dim =1) # return psnr in shape B,C,T
+
+def get_ssim(true,pred):
+    from torchmetrics import StructuralSimilarityIndexMeasure
+    ssim = StructuralSimilarityIndexMeasure().cuda()
+    B,T,C,H,W = true.shape
+    true = true.reshape(B*T,C,H,W)
+    pred = pred.reshape(B*T,C,H,W)
+    list = []
+    for i in range(C):
+        ssim_score = ssim(pred[:,i:(i+1)],true[:,i:(i+1)])
+        list.append(ssim_score) 
+    list = torch.stack(list,dim =-1) # return ssim in shape B,C
+    return list
 
 DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
                  "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
@@ -155,8 +182,17 @@ if __name__ == "__main__":
     # pred2 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt/2,n_snapshots = 40,ode_step=args.ode_step//2)
     # pred3 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt/4,n_snapshots = 80,ode_step=args.ode_step//4)
     RFNE,MAE,MSE = get_metric_RFNE(pred,hr_target_tensor)
+    PSNR = get_psnr(pred[:].float().cuda(),hr_target_tensor[:].float().cuda())
+    SSIM = get_ssim(pred[:].float().cuda(),hr_target_tensor[:].float().cuda())
     print(RFNE.shape)
-    print(RFNE.mean(axis =(0,2)))
+    print(f"RFNE {RFNE[5:].mean():.4f} +/- {RFNE[5:].std():.4f}")
+    print(f"MAE {MAE[5:].mean():.4f} +/- {MAE[5:].std():.4f}")
+    print("Channel-wise RFNE " ,RFNE[5:].mean(axis =(0,1)))
+    print("Channel-wise MAE " ,MAE[5:].mean(axis =(0,1)))
+    print(f"SSIM {SSIM.mean():.4f} +/- {SSIM.std():.4f}")
+    print(f"PSNR {PSNR.mean():.4f} +/- {PSNR.std():.4f}")
+    print("channel wise SSIM ", SSIM.tolist())
+    print("channel wise PSNR  ", PSNR.mean(axis=(0,1)).tolist())
     # print(MAE.mean(axis =(0,2)))
     # np.save(f"{parsed_args.saved_name}_RFNE.npy",RFNE)
     # np.save(f"{parsed_args.saved_name}_MAE.npy",MAE)
