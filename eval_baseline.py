@@ -149,11 +149,11 @@ def trilinear_interpolation(lr_input_tensor,hr_target_tensor):
 # trilinear_interpolation(lr_input_tensor,hr_target_tensor)
 
 if __name__ == "__main__":
-    lr_input,hr_target,lr_input_tensor,hr_target_tensor = load_test_data_squence("decay_turb",timescale_factor = 4,num_snapshot = 100,in_channel=3,upscale_factor=4)
-    _,RFNE_tri,MSE_tri,MAE_tri = trilinear_interpolation(lr_input_tensor,hr_target_tensor)
-    print(RFNE_tri.shape)
-    print(RFNE_tri.mean(axis=(0,1)))
-    np.save("DT_RFNE_trilinear_extrapolation.npy",RFNE_tri)
+    # lr_input,hr_target,lr_input_tensor,hr_target_tensor = load_test_data_squence("decay_turb",timescale_factor = 4,num_snapshot = 100,in_channel=3,upscale_factor=4)
+    # _,RFNE_tri,MSE_tri,MAE_tri = trilinear_interpolation(lr_input_tensor,hr_target_tensor)
+    # print(RFNE_tri.shape)
+    # print(RFNE_tri.mean(axis=(0,1)))
+    # np.save("DT_RFNE_trilinear_extrapolation.npy",RFNE_tri)
     # np.save("DT_MSE_trilinear.npy",MSE_tri)
     # np.save("DT_MAE_trilinear.npy",MAE_tri)
     # print("all channel batch and time averaged (Trilinear)",RFNE_tri.mean())

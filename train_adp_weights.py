@@ -32,8 +32,11 @@ import argparse
 import neptune 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-def getWeights(length,k):
-    y = 1 + k* torch.linspace(1,length,length)
+def getWeights(length,k,b = None):
+    x = torch.linspace(0,length,length+1)
+    y = 1 + (k-1)/length * x
+    if b is not None:
+        y[0] = b
     return y
     
 import random
@@ -44,6 +47,7 @@ run = neptune.init_run(
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NGIxYjI4YS0yNDljLTQwOWMtOWY4YS0wOGNhM2Q5Y2RlYzQifQ==",
     tags = [str(ID)],
     )  # your credentials
+
 # Replace the final print statement
 def psnr(true, pred):
     mse = torch.mean((true - pred) ** 2)
@@ -143,13 +147,11 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             model.train()
             optimizer.zero_grad()
             out_x = model(inputs,task_dt = args.task_dt,n_snapshots = 1,ode_step = args.ode_step,time_evol = False)
-            loss_x = criterion_Data(out_x[:,0,...], target[:,0,...])
-            out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True)\
+            out_t = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots,ode_step = args.ode_step,time_evol = True)
+            out = torch.cat((out_x,out_t),dim =1)
             # # -------------------------------------------------#
-            loss_t = criterion_t(out_t, target[:,1:,:,:,:])  # [b, t, c, h, w]
-            loss_t = torch.mean(loss_t, dim=(0, 2, 3, 4))   # [t]
-            loss_t *= getWeights(len(loss_t),lamb).to(device)                           # [t], TODO: variable weights need to be initialized with shape [t]
-            loss_t = loss_t.sum()                   # [1]
+            loss = criterion_t(out, target)  # [b, t, c, h, w]
+            loss = loss.mean(dim=(0,2,3,4)) * getWeights(args.n_snapshots+1,lamb).to(device)                           # [t], TODO: variable weights need to be initialized with shape [t]            # [1]
             # -------------------------------------------------#
             # loss_t = criterion_Data(out_t, target[:,1:,:,:,:])
 
@@ -201,22 +203,21 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
 
 parser = argparse.ArgumentParser(description='training parameters')
 
-parser.add_argument('--data', type =str ,default= 'Decay_turb')
+parser.add_argument('--data', type =str ,default= 'Decay_turb_small')
 parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 ## data processing arugments
-parser.add_argument('--in_channels',type = int, default= 1)
+parser.add_argument('--in_channels',type = int, default= 3)
 parser.add_argument('--batch_size', type = int, default= 8)
 parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
 parser.add_argument('--scale_factor', type = int, default= 4)
-parser.add_argument('--timescale_factor', type = int, default= 1)
+parser.add_argument('--timescale_factor', type = int, default= 4)
 parser.add_argument('--n_snapshots',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic")
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
 ## model parameters 
-parser.add_argument('--model', type =str ,default= 'PASR_MLP_small')
+parser.add_argument('--model', type =str ,default= 'PASR_small')
 parser.add_argument('--upsampler', type = str, default= "pixelshuffle") # nearest+conv
-parser.add_argument('--time_update',type =str, default= 'NODE')
 parser.add_argument('--ode_step',type =int, default= 2)
 parser.add_argument('--ode_method',type =str, default= "Euler")
 parser.add_argument('--ode_kernel',type=int, default= 3)
