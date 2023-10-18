@@ -19,6 +19,69 @@ import torch
 import numpy as np
 from torch.utils import data
 import matplotlib.pyplot as plt
+def energy_specturm(u,v):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import time
+    from math import sqrt
+    data = np.stack((u,v),axis=1)
+    print ("shape of data = ",data.shape)
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Reading files...localtime",localtime, "- END\n")
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Computing spectrum... ",localtime)
+    N = data.shape[-1]
+    M= data.shape[-2]
+    print("N =",N)
+    print("M =",M)
+    eps = 1e-16 # to void log(0)
+    U = data[:,0].mean(axis=0)
+    V = data[:,1].mean(axis=0)
+    amplsU = abs(np.fft.fftn(U)/U.size)
+    amplsV = abs(np.fft.fftn(V)/V.size)
+    print(f"amplsU.shape = {amplsU.shape}")
+    EK_U  = amplsU**2
+    EK_V  = amplsV**2 
+    EK_U = np.fft.fftshift(EK_U)
+    EK_V = np.fft.fftshift(EK_V)
+    sign_sizex = np.shape(EK_U)[0]
+    sign_sizey = np.shape(EK_U)[1]
+    box_sidex = sign_sizex
+    box_sidey = sign_sizey
+    box_radius = int(np.ceil((np.sqrt((box_sidex)**2+(box_sidey)**2))/2.)+1)
+    centerx = int(box_sidex/2)
+    centery = int(box_sidey/2)
+    print ("box sidex     =",box_sidex) 
+    print ("box sidey     =",box_sidey) 
+    print ("sphere radius =",box_radius )
+    print ("centerbox     =",centerx)
+    print ("centerboy     =",centery)
+    EK_U_avsphr = np.zeros(box_radius,)+eps ## size of the radius
+    EK_V_avsphr = np.zeros(box_radius,)+eps ## size of the radius
+    for i in range(box_sidex):
+        for j in range(box_sidey):          
+            wn =  int(np.round(np.sqrt((i-centerx)**2+(j-centery)**2)))
+            EK_U_avsphr[wn] = EK_U_avsphr [wn] + EK_U [i,j]
+            EK_V_avsphr[wn] = EK_V_avsphr [wn] + EK_V [i,j]     
+    EK_avsphr = 0.5*(EK_U_avsphr + EK_V_avsphr)
+    realsize = len(np.fft.rfft(U[:,0]))
+    TKEofmean_discrete = 0.5*(np.sum(U/U.size)**2+np.sum(V/V.size)**2)
+    TKEofmean_sphere   = EK_avsphr[0]
+    total_TKE_discrete = np.sum(0.5*(U**2+V**2))/(N*M) # average over whole domaon / divied by total pixel-value
+    total_TKE_sphere   = np.sum(EK_avsphr)
+    result_dict = {
+    "Real Kmax": realsize,
+    "Spherical Kmax": len(EK_avsphr),
+    "KE of the mean velocity discrete": TKEofmean_discrete,
+    "KE of the mean velocity sphere": TKEofmean_sphere,
+    "Mean KE discrete": total_TKE_discrete,
+    "Mean KE sphere": total_TKE_sphere
+    }
+    print(result_dict)
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Computing spectrum... ",localtime, "- END \n")
+    return realsize, EK_avsphr,result_dict
+
 def get_psnr(true, pred):
     # shape with B,T,C,H,W
     print("adfadfadf",true.shape,pred.shape)
@@ -117,6 +180,22 @@ def generate_test_matrix(cols:int, final_index:int):
         current_value -= 1  # Repeat the last element in the next row
     return matrix[:-1,:]
 
+# def plot_energy_specturm_phyLoss(data_name,dic):
+#     # pred_trilinear = 
+#     realsize_truth, EK_avsphr_truth,result_dict_truth = energy_specturm(u_truth,v_truth)
+#     realsize_pred, EK_avsphr_pred,result_dict_pred = energy_specturm(u_pred,v_pred)
+#     realsize_pred_p, EK_avsphr_pred_p,result_dict_pred_p = energy_specturm(u_pred_p,v_pred_p)
+#     fig= plt.figure(figsize=(5,5))
+#     plt.title(f"Kinetic Energy Spectrum -- {data_name}")
+#     plt.xlabel(r"k (wavenumber)")
+#     plt.ylabel(r"TKE of the k$^{th}$ wavenumber")
+#     print(realsize_truth)
+#     plt.loglog(np.arange(0,realsize_truth),((EK_avsphr_truth[0:realsize_truth] )),'k',label = "truth")
+#     plt.loglog(np.arange(0,realsize_pred),((EK_avsphr_pred[0:realsize_pred] )),'r',label = "pred")
+#     plt.loglog(np.arange(0,realsize_pred_p),((EK_avsphr_pred_p[0:realsize_pred_p] )),'b',label = "pred (physics constraint)")
+#     plt.legend()
+#     fig.savefig(f"{data_name}_energy_specturm.png",dpi=300,bbox_inches='tight')
+#     return print("energy specturm plot done")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PASR')
@@ -193,6 +272,7 @@ if __name__ == "__main__":
     print(f"PSNR {PSNR.mean():.4f} +/- {PSNR.std():.4f}")
     print("channel wise SSIM ", SSIM.tolist())
     print("channel wise PSNR  ", PSNR.mean(axis=(0,1)).tolist())
+    np.save(f"pred_{parsed_args.test_data_name}.npy",pred.numpy())
     # print(MAE.mean(axis =(0,2)))
     # np.save(f"{parsed_args.saved_name}_RFNE.npy",RFNE)
     # np.save(f"{parsed_args.saved_name}_MAE.npy",MAE)
