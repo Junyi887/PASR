@@ -223,7 +223,7 @@ if __name__ == "__main__":
     np.save("RBC_RFNE_trilinear.npy",RFNE_tri)
     np.save("RBC_MSE_trilinear.npy",MSE_tri)
     np.save("RBC_MAE_trilinear.npy",MAE_tri)
-    np.save("pred_RBC_tri.npy",pred_tri)
+    np.save("p/home/junyi/workspace/PASR/.neptunered_RBC_tri.npy",pred_tri)
     print(f"RFNE (Trilinear): {RFNE_tri.mean():.4f} +/- {RFNE_tri.std():.4f}")
     print(f"MAE (Trilinear): {MAE_tri.mean():.4f} +/- {MAE_tri.std():.4f}")
     print(f"RINE (Trilinear): {RINE_tri.mean():.4f} +/- {RINE_tri.std():.4f}")
