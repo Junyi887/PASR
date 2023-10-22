@@ -494,7 +494,7 @@ def LossGen(output, truth, beta, loss_func):
     output = torch.cat((output[:, :, :, :, -2:], output, output[:, :, :, :, 0:3]), dim=4)
     output = torch.cat((output[:, :, :, -2:, :], output, output[:, :, :, 0:3, :]), dim=3)
     
-    # divergence loss
+    # divergence losssave
     div = loss_func.get_div_loss(output)
     phy_loss = MSE_loss(div, torch.zeros_like(div).cuda())
     # phy_loss = torch.tensor(0.0).float().cuda()
@@ -631,8 +631,8 @@ def test(model, test_loader, init_state, save_path, fig_save_path):
         error = torch.norm(hres-outputs.detach(),p=2,dim = (-1,-2)) / torch.norm(hres,p=2,dim = (-1,-2))
         pred_error += error.mean().item()
 
-        torch.save({"pred": outputs.detach().cpu(), "lres": lres.cpu(), 
-            "hres": hres.cpu()}, save_path + '_output_'+str(idx)+'.pt')
+        # torch.save({"pred": outputs.detach().cpu(), "lres": lres.cpu(), 
+        #     "hres": hres.cpu()}, save_path + '_output_'+str(idx)+'.pt')
 
         # # comparison plot
         # t = np.arange(hres.shape[0])
