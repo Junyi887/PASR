@@ -130,13 +130,8 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             loss.backward()
             optimizer.step()
             avg_loss += loss.item()
-        if args.scheduler == "plateau":
-            scheduler.step(result_val1[1])
-        else: 
-            scheduler.step()
-
+        scheduler.step()
         result_val1,result_val2 = validation(args,model, val1_loader,val2_loader,device)
-
         avg_val = result_val1[1]
         val_list_x2.append(result_val2[2])
         run['train/train_loss'].log(avg_loss / len(trainloader))
@@ -184,7 +179,7 @@ parser.add_argument('--crop_size', type = int, default= 256)
 parser.add_argument('--model', type = str, default= "FNO")
 parser.add_argument('--modes', type = int, default= 12)
 parser.add_argument('--width', type = int, default= 16)
-parser.add_argument('--hidden_dim', type = int, default= 40 ) # euler
+parser.add_argument('--hidden_dim', type = int, default= 64) # euler
 ## training (optimization) parameters
 parser.add_argument('--epochs', type = int, default= 500)
 parser.add_argument('--loss_type', type =str ,default= 'L2')
@@ -192,7 +187,7 @@ parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 parser.add_argument('--normalization',type =str, default= 'True')
 parser.add_argument('--physics',type =str, default= 'False')
-parser.add_argument('--gamma',type =float, default= 0.998)
+parser.add_argument('--gamma',type =float, default= 0.5)
 parser.add_argument('--lr_step',type =int, default= 100)
 parser.add_argument('--patience',type =int, default= 15)
 parser.add_argument('--scheduler',type =str, default= 'StepLR')

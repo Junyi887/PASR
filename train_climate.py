@@ -187,7 +187,7 @@ parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence")
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 ## data processing arugments
 parser.add_argument('--in_channels',type = int, default= 1)
-parser.add_argument('--batch_size', type = int, default= 8)
+parser.add_argument('--batch_size', type = int, default= 16)
 parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 1)

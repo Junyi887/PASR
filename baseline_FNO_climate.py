@@ -175,7 +175,7 @@ parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence_smal
 parser.add_argument('--scale_factor', type = int, default= 4)
 parser.add_argument('--timescale_factor', type = int, default= 4)
 parser.add_argument('--in_channels',type = int, default= 1)
-parser.add_argument('--batch_size', type = int, default= 1)
+parser.add_argument('--batch_size', type = int, default= 128)
 parser.add_argument('--n_snapshots',type =int, default= 20)
 parser.add_argument('--down_method', type = str, default= "bicubic") # bicubic 
 parser.add_argument('--noise_ratio', type = float, default= 0.0)
@@ -186,7 +186,7 @@ parser.add_argument('--modes', type = int, default= 12)
 parser.add_argument('--width', type = int, default= 16)
 parser.add_argument('--hidden_dim', type = int, default= 40 ) # euler
 ## training (optimization) parameters
-parser.add_argument('--epochs', type = int, default= 10000)
+parser.add_argument('--epochs', type = int, default= 800)
 parser.add_argument('--loss_type', type =str ,default= 'L2')
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)

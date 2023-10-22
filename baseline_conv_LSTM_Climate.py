@@ -631,8 +631,8 @@ def test(model, test_loader, init_state, save_path, fig_save_path):
         error = torch.norm(hres-outputs.detach(),p=2,dim = (-1,-2)) / torch.norm(hres,p=2,dim = (-1,-2))
         pred_error += error.mean().item()
 
-        torch.save({"pred": outputs.detach().cpu(), "lres": lres.cpu(), 
-            "hres": hres.cpu()}, save_path + '_output_'+str(idx)+'.pt')
+        # torch.save({"pred": outputs.detach().cpu(), "lres": lres.cpu(), 
+        #     "hres": hres.cpu()}, save_path + '_output_'+str(idx)+'.pt')
 
         # # comparison plot
         # t = np.arange(hres.shape[0])
@@ -787,9 +787,9 @@ if __name__ == '__main__':
     print('The training time is: ', (end - start))
     print('')
 
-    np.save(save_path + 'train_loss', train_loss_list)
-    np.save(save_path + 'val_loss', val_loss_list)
-    np.save(save_path + 'val_error', val_error_list)
+    # np.save(save_path + 'train_loss', train_loss_list)
+    # np.save(save_path + 'val_loss', val_loss_list)
+    # np.save(save_path + 'val_error', val_error_list)
 
     ###################### model inference ###########################
     pred_error = test(model, val2_loader, init_state, save_path, fig_save_path)
