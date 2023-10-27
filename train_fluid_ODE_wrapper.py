@@ -205,7 +205,7 @@ parser.add_argument('--ode_layer',type=int, default= 4)
 parser.add_argument('--aug_dim_t',type=int,default= 5)
 parser.add_argument('--task_dt',type =float, default= 1)
 ## training (optimization) parameters
-parser.add_argument('--epochs', type = int, default= 3)
+parser.add_argument('--epochs', type = int, default= 200)
 parser.add_argument('--lr', type = float, default= 1e-4)
 parser.add_argument('--lamb', type = float, default= 0.3)
 parser.add_argument('--lamb_p', type = float, default= 1)
