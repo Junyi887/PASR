@@ -148,7 +148,7 @@ def load_test_data(data_name,timescale_factor = 10,num_snapshot = 10,in_channel=
 def get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor,in_channels,task_dt,n_snapshots,ode_step):
     model.eval()
     with torch.no_grad():
-        pred = model(lr_input_tensor.float().cuda(),n_snapshots = n_snapshots,task_dt=task_dt)
+        pred = model(lr_input_tensor.float().cuda(),n_snapshots = n_snapshots)
     return pred.detach().cpu()
 
 
@@ -247,12 +247,12 @@ if __name__ == "__main__":
     model = torch.nn.DataParallel(model).to(device)
     model.load_state_dict(model_state)
     # lr_input_m1,hr_target_m1,lr_input_tensor_m1,hr_target_tensor_m1 = load_test_data(parsed_args.test_data_name,timescale_factor=8,num_snapshot = 10,in_channel=3,upscale_factor=4)
-    lr_input,hr_target,lr_input_tensor,hr_target_tensor = load_test_data(parsed_args.test_data_name,timescale_factor=16,num_snapshot = 20,in_channel=3,upscale_factor=4)
+    lr_input,hr_target,lr_input_tensor,hr_target_tensor = load_test_data(parsed_args.test_data_name,timescale_factor=4,num_snapshot = 20,in_channel=3,upscale_factor=4)
     # lr_input2,hr_target2,lr_input_tensor2,hr_target_tensor2 = load_test_data(parsed_args.test_data_name,timescale_factor=2,num_snapshot = 40,in_channel=3,upscale_factor=4)
     # lr_input3,hr_target3,lr_input_tensor3,hr_target_tensor3 = load_test_data(parsed_args.test_data_name,timescale_factor=1,num_snapshot = 80,in_channel=3,upscale_factor=4)
     print("input shape", lr_input.shape)
     # pred_m1 = get_prediction(model,lr_input_tensor_m1,hr_target_tensor_m1,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt*2,n_snapshots = 10,ode_step=args.ode_step*2)
-    pred = get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor = 4,in_channels = args.in_channels,task_dt =4.0,n_snapshots = 20,ode_step=12)
+    pred = get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt,n_snapshots = 20,ode_step=12)
     # pred2 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt/2,n_snapshots = 40,ode_step=args.ode_step//2)
     # pred3 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt/4,n_snapshots = 80,ode_step=args.ode_step//4)
     RFNE,MAE,MSE = get_metric_RFNE(pred,hr_target_tensor)
