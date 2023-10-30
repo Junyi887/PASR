@@ -271,6 +271,7 @@ if __name__ == "__main__":
     print("input shape", lr_input.shape)
     # pred_m1 = get_prediction(model,lr_input_tensor_m1,hr_target_tensor_m1,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt*2,n_snapshots = 10,ode_step=args.ode_step*2)
     pred = get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor = 4,in_channels = args.in_channels,task_dt =1.0,n_snapshots = 20,ode_step=12)
+    print("pred shape", pred.shape)
     # pred2 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt/2,n_snapshots = 40,ode_step=args.ode_step//2)
     # pred3 = get_prediction(model,lr_input_tensor2,hr_target_tensor2,scale_factor = 4,in_channels = args.in_channels,task_dt = args.task_dt/4,n_snapshots = 80,ode_step=args.ode_step//4)
     RFNE,MAE,MSE,IN = get_metric_RFNE(pred,hr_target_tensor)
@@ -285,6 +286,7 @@ if __name__ == "__main__":
     print(f"PSNR {PSNR.mean():.4f} +/- {PSNR.std():.4f}")
     print("channel wise SSIM ", SSIM.tolist())
     print("channel wise PSNR  ", PSNR.mean(axis=(0,1)).tolist())
+    np.save("NODE_pred_DT.npy",pred)
  # wrap-eval result into json
     import json
     #
@@ -303,10 +305,10 @@ if __name__ == "__main__":
         all_results[key] = {
         }
     # Store the results
-    all_results[key]["RFNE"] = RFNE.mean().item()
-    all_results[key]["MAE"] = MAE.mean().item()
-    all_results[key]["MSE"] = MSE.mean().item()
-    all_results[key]["IN"] = IN.mean().item()
+    all_results[key]["RFNE"] = RFNE[5:].mean().item()
+    all_results[key]["MAE"] = MAE[5:].mean().item()
+    all_results[key]["MSE"] = MSE[5:].mean().item()
+    all_results[key]["IN"] = IN[5:].mean().item()
     all_results[key]["SSIM"] = SSIM.mean().item()
     all_results[key]["PSNR"] = PSNR.mean().item()
     with open("eval.json", "w") as f:
