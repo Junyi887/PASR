@@ -186,6 +186,7 @@ parser.add_argument('--loss_type', type =str ,default= 'L2')
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)
 parser.add_argument('--normalization',type =str, default= 'True')
+parser.add_argument('--normalization_method',type =str, default= 'meanstd')
 parser.add_argument('--physics',type =str, default= 'False')
 parser.add_argument('--gamma',type =float, default= 0.5)
 parser.add_argument('--lr_step',type =int, default= 100)
@@ -265,7 +266,7 @@ if __name__ == "__main__":
     modes3 = [8, 8, 8, 8]
 
 
-    model = FNO3D(modes1, modes2, modes3,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', ).to(device)
+    model = FNO3D(modes1, modes2, modes3,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', mean=mean,std=std).to(device)
     # model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +

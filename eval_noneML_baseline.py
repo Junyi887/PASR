@@ -114,4 +114,28 @@ def trilinear_interpolation(data_name,timescale_factor = 10,num_snapshot = 10,in
 
 trilinear_interpolation("decay_turb",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)
 # trilinear_interpolation("burger2d",timescale_factor = 4,num_snapshot = 20,in_channel=2,upscale_factor=4)
-trilinear_interpolation("rbc",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)
+import json
+#
+magic_batch = 5
+# Check if the results file already exists and load it, otherwise initialize an empty list
+try:
+    with open("eval.json", "r") as f:
+        all_results = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    all_results = {}
+    print("No results file found, initializing a new one.")
+# Create a unique key based on your parameters
+key = f"{args.model}_{args.data}_{args.ode_method}"
+# Check if the key already exists in the dictionary
+if key not in all_results:
+    all_results[key] = {
+    }
+# Store the results
+all_results[key]["RFNE"] = RFNE.mean().item()
+all_results[key]["MAE"] = MAE.mean().item()
+all_results[key]["MSE"] = MSE.mean().item()
+all_results[key]["IN"] = IN.mean().item()
+all_results[key]["SSIM"] = SSIM.mean().item()
+all_results[key]["PSNR"] = PSNR.mean().item()
+with open("eval.json", "w") as f:
+    json.dump(all_results, f, indent=4)

@@ -25,36 +25,52 @@ DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x
                  "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01]}
 
 def load_test_data(data_name,timescale_factor = 10,num_snapshot = 10,in_channel=1,upscale_factor=4):
-
-    with h5py.File(DATA_INFO[data_name][0],'r') as f:
-        w_truth = f['tasks']['vorticity'][()] if in_channel ==1 or in_channel ==3 else None
-        u_truth = f['tasks']['u'][()]
-        v_truth = f['tasks']['v'][()]
-    final_index = (u_truth.shape[0]-1)//timescale_factor
-    idx_matrix = generate_test_matrix(num_snapshot +1 , final_index)*timescale_factor    
-    print(idx_matrix[0:2])
-    if in_channel ==1:
-        hr_input = w_truth[idx_matrix[:,0]]
-        hr_target = w_truth[idx_matrix[:,:]]
-    elif in_channel ==2:
-        hr_input = np.stack((u_truth[idx_matrix[:,0]],v_truth[idx_matrix[:,0]]),axis=1)
-        hr_target = np.stack((u_truth[idx_matrix[:,:]],v_truth[idx_matrix[:,:]]),axis=2)
-    elif in_channel ==3:
-        hr_input = np.stack((w_truth[idx_matrix[:,0]],u_truth[idx_matrix[:,0]],v_truth[idx_matrix[:,0]]),axis=1)
-        hr_target = np.stack((w_truth[idx_matrix[:,:]],u_truth[idx_matrix[:,:]],v_truth[idx_matrix[:,:]]),axis=2)
-    print(hr_target.shape)
-    transform = torch.from_numpy
-    img_shape_x = hr_input.shape[-2]
-    img_shape_y = hr_input.shape[-1]
-    input_transform = transforms.Resize((int(img_shape_x/upscale_factor),int(img_shape_y/upscale_factor)),Image.BICUBIC,antialias=False)
-    lr_input_tensor = input_transform(transform(hr_input))
-    hr_target_tensor = transform(hr_target)
-    lr_input_tensor = lr_input_tensor.unsqueeze(1) if in_channel ==1 else lr_input_tensor
-    hr_target_tensor = hr_target_tensor.unsqueeze(2) if in_channel ==1 else hr_target_tensor
-    lr_input = lr_input_tensor.numpy()
-    return lr_input,hr_target,lr_input_tensor,hr_target_tensor
-
-                 
+    if data_name != "climate":
+        with h5py.File(DATA_INFO[data_name][0],'r') as f:
+            w_truth = f['tasks']['vorticity'][()] if in_channel ==1 or in_channel ==3 else None
+            u_truth = f['tasks']['u'][()]
+            v_truth = f['tasks']['v'][()]
+        final_index = (u_truth.shape[0]-1)//timescale_factor
+        idx_matrix = generate_test_matrix(num_snapshot +1 , final_index)*timescale_factor    
+        print(idx_matrix[0:2])
+        if in_channel ==1:
+            hr_input = w_truth[idx_matrix[:,0]]
+            hr_target = w_truth[idx_matrix[:,:]]
+        elif in_channel ==2:
+            hr_input = np.stack((u_truth[idx_matrix[:,0]],v_truth[idx_matrix[:,0]]),axis=1)
+            hr_target = np.stack((u_truth[idx_matrix[:,:]],v_truth[idx_matrix[:,:]]),axis=2)
+        elif in_channel ==3:
+            hr_input = np.stack((w_truth[idx_matrix[:,0]],u_truth[idx_matrix[:,0]],v_truth[idx_matrix[:,0]]),axis=1)
+            hr_target = np.stack((w_truth[idx_matrix[:,:]],u_truth[idx_matrix[:,:]],v_truth[idx_matrix[:,:]]),axis=2)
+        print(hr_target.shape)
+        transform = torch.from_numpy
+        img_shape_x = hr_input.shape[-2]
+        img_shape_y = hr_input.shape[-1]
+        input_transform = transforms.Resize((int(img_shape_x/upscale_factor),int(img_shape_y/upscale_factor)),Image.BICUBIC,antialias=False)
+        lr_input_tensor = input_transform(transform(hr_input))
+        hr_target_tensor = transform(hr_target)
+        lr_input_tensor = lr_input_tensor.unsqueeze(1) if in_channel ==1 else lr_input_tensor
+        hr_target_tensor = hr_target_tensor.unsqueeze(2) if in_channel ==1 else hr_target_tensor
+        lr_input = lr_input_tensor.numpy()
+        return lr_input,hr_target,lr_input_tensor,hr_target_tensor
+    else:
+        with h5py.File("/pscratch/sd/j/junyi012/climate_data/pre-processed_s4_sig1/climate_ds4_c1_sigma1.h5",'r') as f:
+            u_truth = f['fields'][()][-300:,...]
+        final_index = (u_truth.shape[0]-1)//timescale_factor
+        idx_matrix = generate_test_matrix(num_snapshot +1 , final_index)*timescale_factor    
+        hr_input = u_truth[idx_matrix[:,0]]
+        hr_target = u_truth[idx_matrix[:,:]]
+        transform = torch.from_numpy
+        img_shape_x = hr_input.shape[-2]
+        img_shape_y = hr_input.shape[-1]
+        input_transform = transforms.Resize((int(img_shape_x/upscale_factor),int(img_shape_y/upscale_factor)),Image.BICUBIC,antialias=False)
+        lr_input_tensor = input_transform(transform(hr_input))
+        hr_target_tensor = transform(hr_target)
+        lr_input_tensor = lr_input_tensor.unsqueeze(1)
+        hr_target_tensor = hr_target_tensor.unsqueeze(2)
+        lr_input = lr_input_tensor.numpy()
+        return lr_input,hr_target,lr_input_tensor,hr_target_tensor      
+   
 def get_prediction(model,lr_input_tensor,task_dt,n_snapshots,ode_step):
     model.eval()
     with torch.no_grad():
