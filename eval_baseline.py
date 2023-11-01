@@ -70,7 +70,7 @@ def dispatch_FNO(data_name,in_channels,shape,num_snapshots=20):
     modes3 = [8, 8, 8, 8]
     resol = {"decay_turb":(shape[0],3,21,shape[-2],shape[-1]),"rbc":(shape[0],3,21,shape[-2],shape[-1]),"climate_sequence":(shape[0],1,21,shape[-2],shape[-1])}
     target_shape = resol[data_name]
-    model = FNO3D(modes1, modes2, modes3,target_shape,width=16, fc_dim=64,layers=layers,in_dim=in_channels, out_dim=in_channels, act='gelu',mean=mean,std=std ).cuda()
+    model = FNO3D(modes1, modes2, modes3,target_shape,width=16, fc_dim=fc_dim,layers=layers,in_dim=in_channels, out_dim=in_channels, act='gelu',mean=mean,std=std ).cuda()
     return model
 
 def dispatch_ConvLSTM(data_name,in_channels,num_snapshots=20):
@@ -126,6 +126,8 @@ def eval_ConvLSTM(data_name,model_path,lr_input_tensor,hr_target_tensor):
         lres, hres = lr_input_tensor.permute(2,0,1,3,4), hr_target_tensor.permute(2,0,1,3,4) # (b,c,t,h,w) -> (t,b,c,h,w)
         lres, hres = lres.float().cuda(), hres.float().cuda()
         pred = model(lres,init_state)
+        # pred = (pred - 278.35330263805355)/20.867389868976833
+        # hres = (hres - 278.35330263805355)/20.867389868976833
         print(f"ConvLSTM pred shape{pred.shape}")
         RFNE = torch.norm((pred-hres),dim=(-1,-2))/torch.norm(hres,dim=(-1,-2))
         MSE = torch.mean((pred-hres)**2,dim=(-1,-2))
@@ -138,7 +140,7 @@ def eval_ConvLSTM(data_name,model_path,lr_input_tensor,hr_target_tensor):
         MSE = MSE.permute(1,2,0).cpu().numpy()
         MAE = MAE.permute(1,2,0).cpu().numpy()
         IN = IN.permute(1,2,0).cpu().numpy()
-
+        print("RFNE (ConvLSTM) ", RFNE.mean())
         print(f"SSIM shape {SSIM.shape}")
         print(f"PSNR shape {PSNR.shape}")
         print(f"SSIM (ConvLSTM) {SSIM.mean():.4f} +/- {SSIM.std():.4f}")
@@ -167,6 +169,8 @@ def eval_FNO(data_name,model_path,lr_input_tensor,hr_target_tensor):
         lres, hres = lres.float().cuda(), hres.float().cuda()
         pred = model(lres)
         print(f"FNO pred shape{pred.shape}")
+        # pred = (pred - 278.35330263805355)/20.867389868976833
+        # hres = (hres - 278.35330263805355)/20.867389868976833
         RFNE = torch.norm((pred-hres),dim=(-1,-2))/torch.norm(hres,dim=(-1,-2))
         MSE = torch.mean((pred-hres)**2,dim=(-1,-2))
         MAE = torch.mean(torch.abs(pred-hres),dim=(-1,-2)) 
@@ -178,11 +182,12 @@ def eval_FNO(data_name,model_path,lr_input_tensor,hr_target_tensor):
         MSE = MSE.cpu().numpy()
         MAE = MAE.cpu().numpy()
         IN = IN.cpu().numpy()
-
+        print("RFNE (FNO) ", RFNE.mean())
         print(f"SSIM shape {SSIM.shape}")
         print(f"PSNR shape {PSNR.shape}")
-        print(f"SSIM (FNO) {SSIM.mean():.4f} +/- {SSIM.std():.4f}")
-        print(f"PSNR (FNO) {PSNR.mean():.4f} +/- {PSNR.std():.4f}")
+        print(f"SSIM (FNO) {SSIM.mean():.3f} +/- {SSIM.std():.4f}")
+        print(f"PSNR (FNO) {PSNR.mean():.3f} +/- {PSNR.std():.4f}")
+        print(f"RFNE (FNO) {RFNE.mean():.3f} +/- {RFNE.std():.4f}")
         print("channel wise SSIM (FNO) ", SSIM.tolist())
         print("channel wise PSNR (FNO) ", PSNR.mean(axis=(0,1)).tolist())
 
@@ -252,38 +257,41 @@ def trilinear_interpolation(lr_input_tensor,hr_target_tensor):
     B,C,T,H,W = hr_target_tensor.shape
     trilinear_pred = F.interpolate(lr_input_tensor, size=(T,H,W), mode='trilinear', align_corners=False)
     print(f"trilinear pred shape {trilinear_pred.shape}")
+    # trilinear_pred = (trilinear_pred - 278.35330263805355)/20.867389868976833
+    # hr_target_tensor = (hr_target_tensor - 278.35330263805355)/20.867389868976833
     RFNE = torch.norm((trilinear_pred-hr_target_tensor),dim=(-1,-2))/torch.norm(hr_target_tensor,dim=(-1,-2))
     MSE = torch.mean((trilinear_pred-hr_target_tensor)**2,dim=(-1,-2))
     MAE = torch.mean(torch.abs(trilinear_pred-hr_target_tensor),dim=(-1,-2)) # result in B C T 
     IN = torch.norm((trilinear_pred-hr_target_tensor),dim=(-1,-2),p=np.inf)
     PSNR = get_psnr(hr_target_tensor.permute(0,2,1,3,4),trilinear_pred.permute(0,2,1,3,4))
     SSIM = get_ssim(hr_target_tensor.permute(0,2,1,3,4),trilinear_pred.permute(0,2,1,3,4))
+    print("RFNE (Trilinear) ", RFNE.mean())
     return trilinear_pred.permute(0,2,1,3,4).numpy(),RFNE.numpy(),MSE.numpy(),MAE.numpy(),IN.numpy(),SSIM.cpu().numpy(),PSNR.cpu().numpy()
 
 if __name__ == "__main__":
-    lr_input,hr_target,lr_input_tensor,hr_target_tensor = load_test_data_squence("decay_turb",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)
-    pred_tri,RFNE_tri,MSE_tri,MAE_tri,IN_tri,SSIM_tri,PSNR_tri= trilinear_interpolation(lr_input_tensor,hr_target_tensor)
-    print(f"RFNE (Trilinear): {RFNE_tri.mean():.4f} +/- {RFNE_tri.std():.4f}")
-    print(f"MAE (Trilinear): {MAE_tri.mean():.4f} +/- {MAE_tri.std():.4f}")
-    print(f"IN (Trilinear): {IN_tri.mean():.4f} +/- {IN_tri.std():.4f}")
-    print("channel wise RFNE (Trilinear) ",RFNE_tri.mean(axis=(0,-1)).tolist())
-    print("channel wise MAE (Trilinear) ",MAE_tri.mean(axis=(0,-1)).tolist())
-    print("channel wise IN (Trilinear) ",IN_tri.mean(axis=(0,-1)).tolist())
-    pred_conv,RFNE_conv,MSE_conv,MAE_conv,IN_conv,SSIM_conv,PSNR_conv = eval_ConvLSTM("decay_turb","ConvLSTM_Decay_Turb_7538_checkpoint.pt",lr_input_tensor,hr_target_tensor)
-    pred_FNO,RFNE_FNO,MSE_FNO,MAE_FNO,IN_FNO,SSIM_FNO,PSNR_FNO = eval_FNO("decay_turb","results/FNO_data_Decay_turb_FNO2179.pt",lr_input_tensor,hr_target_tensor)
-    print("hr_target shape",hr_target_tensor.shape)
-    print("pred_conv shape",pred_conv.shape)
-    print("pred_FNO shape",pred_FNO.shape)
-    pred_FNO = pred_FNO.transpose(0,2,1,3,4)
-    hr_target = hr_target.transpose(0,2,1,3,4)
-    lr_input = lr_input.transpose(0,2,1,3,4)
-    np.save("FNO_pred_DT.npy",pred_FNO)
-    np.save("conv_pred_DT.npy",pred_conv)
-    np.save("tri_pred_DT.npy",pred_tri)
-    np.save("hr_target_DT.npy",hr_target)
-    np.save("lr_input_DT.npy",lr_input)
-    print("pred_tri shape",pred_tri.shape)
-    pred_NODE = np.load("NODE_pred_DT.npy")
+    # lr_input,hr_target,lr_input_tensor,hr_target_tensor = load_test_data_squence("decay_turb",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)
+    # pred_tri,RFNE_tri,MSE_tri,MAE_tri,IN_tri,SSIM_tri,PSNR_tri= trilinear_interpolation(lr_input_tensor,hr_target_tensor)
+    # print(f"RFNE (Trilinear): {RFNE_tri.mean():.4f} +/- {RFNE_tri.std():.4f}")
+    # print(f"MAE (Trilinear): {MAE_tri.mean():.4f} +/- {MAE_tri.std():.4f}")
+    # print(f"IN (Trilinear): {IN_tri.mean():.4f} +/- {IN_tri.std():.4f}")
+    # print("channel wise RFNE (Trilinear) ",RFNE_tri.mean(axis=(0,-1)).tolist())
+    # print("channel wise MAE (Trilinear) ",MAE_tri.mean(axis=(0,-1)).tolist())
+    # print("channel wise IN (Trilinear) ",IN_tri.mean(axis=(0,-1)).tolist())
+    # pred_conv,RFNE_conv,MSE_conv,MAE_conv,IN_conv,SSIM_conv,PSNR_conv = eval_ConvLSTM("decay_turb","ConvLSTM_Decay_Turb_7538_checkpoint.pt",lr_input_tensor,hr_target_tensor)
+    # pred_FNO,RFNE_FNO,MSE_FNO,MAE_FNO,IN_FNO,SSIM_FNO,PSNR_FNO = eval_FNO("decay_turb","results/FNO_data_Decay_turb_FNO2179.pt",lr_input_tensor,hr_target_tensor)
+    # print("hr_target shape",hr_target_tensor.shape)
+    # print("pred_conv shape",pred_conv.shape)
+    # print("pred_FNO shape",pred_FNO.shape)
+    # pred_FNO = pred_FNO.transpose(0,2,1,3,4)
+    # hr_target = hr_target.transpose(0,2,1,3,4)
+    # lr_input = lr_input.transpose(0,2,1,3,4)
+    # np.save("pred_FNO_DT.npy",pred_FNO)
+    # np.save("pred_conv_DT.npy",pred_conv)
+    # np.save("pred_tri_DT.npy",pred_tri)
+    # np.save("hr_target_DT.npy",hr_target)
+    # np.save("lr_input_DT.npy",lr_input)
+    # print("pred_tri shape",pred_tri.shape)
+    # pred_NODE = np.load("pred_NODE_DT.npy")
     # fig,ax = plt.subplots(3,5,figsize=(28,18))
     # import seaborn
     # for batch in [0,1,2,5,8]:
@@ -314,15 +322,18 @@ if __name__ == "__main__":
     # print("channel wise RFNE (ConvLSTM) ", RFNE_conv.mean(axis=(0,-1)).tolist())
     # print("channel wise MAE (ConvLSTM) ", MAE_conv.mean(axis=(0,-1)).tolist())
     # print("channel wise IN (ConvLSTM) ", IN_conv.mean(axis=(0,-1)).tolist())
-    # lr_input,hr_target,lr_input_tensor,hr_target_tensor = load_test_data_squence("rbc",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)
-    # pred_tri,RFNE_tri,MSE_tri,MAE_tri,IN_tri,SSIM_tri,PSNR_tri = trilinear_interpolation(lr_input_tensor,hr_target_tensor)
-    # print(f"RFNE (Trilinear): {RFNE_tri.mean():.4f} +/- {RFNE_tri.std():.4f}")
-    # print(f"MAE (Trilinear): {MAE_tri.mean():.4f} +/- {MAE_tri.std():.4f}")
-    # print(f"IN (Trilinear): {IN_tri.mean():.4f} +/- {IN_tri.std():.4f}")
-    # print("channel wise RFNE (Trilinear) ",RFNE_tri.mean(axis=(0,-1)).tolist())
-    # print("channel wise MAE (Trilinear) ",MAE_tri.mean(axis=(0,-1)).tolist())
-    # print("channel wise IN (Trilinear) ",IN_tri.mean(axis=(0,-1)).tolist())
-    # pred_conv,RFNE_conv,MSE_conv,MAE_conv,IN_conv,SSIM_conv,PSNR_conv = eval_ConvLSTM("rbc,"ConvLSTM_RBC_4458_checkpoint.pt",lr_input_tensor,hr_target_tensor)
+    lr_input,hr_target,lr_input_tensor,hr_target_tensor = load_test_data_squence("rbc",timescale_factor = 4,num_snapshot = 20,in_channel=3,upscale_factor=4)
+    pred_tri,RFNE_tri,MSE_tri,MAE_tri,IN_tri,SSIM_tri,PSNR_tri = trilinear_interpolation(lr_input_tensor,hr_target_tensor)
+    pred_conv,RFNE_conv,MSE_conv,MAE_conv,IN_conv,SSIM_conv,PSNR_conv = eval_ConvLSTM("rbc","ConvLSTM_RBC_4458_checkpoint.pt",lr_input_tensor,hr_target_tensor)
+    pred_FNO,RFNE_FNO,MSE_FNO,MAE_FNO,IN_FNO,SSIM_FNO,PSNR_FNO = eval_FNO("rbc","results/FNO_data_rbc_FNO_7838.pt",lr_input_tensor,hr_target_tensor)
+    pred_FNO = pred_FNO.transpose(0,2,1,3,4)
+    hr_target = hr_target.transpose(0,2,1,3,4)
+    lr_input = lr_input.transpose(0,2,1,3,4)
+    np.save("pred_FNO_RBC.npy",pred_FNO)
+    np.save("pred_conv_RBC.npy",pred_conv)
+    np.save("pred_tri_RBC.npy",pred_tri)
+    np.save("hr_target_RBC.npy",hr_target)
+    np.save("lr_input_RBC.npy",lr_input)
     # lr_input,hr_target,lr_input_tensor,hr_target_tensor = load_test_data_squence("climate_sequence",timescale_factor = 4,num_snapshot = 20,in_channel=1,upscale_factor=4)
     # pred_tri,RFNE_tri,MSE_tri,MAE_tri,IN_tri,SSIM_tri,PSNR_tri = trilinear_interpolation(lr_input_tensor,hr_target_tensor)
     # print(f"RFNE (Trilinear): {RFNE_tri.mean():.4f} +/- {RFNE_tri.std():.4f}")
@@ -339,56 +350,59 @@ if __name__ == "__main__":
     # print("channel wise RFNE (ConvLSTM) ", RFNE_conv.mean(axis=(0,-1)).tolist())
     # print("channel wise MAE (ConvLSTM) ", MAE_conv.mean(axis=(0,-1)).tolist())
     # print("channel wise IN (ConvLSTM) ", IN_conv.mean(axis=(0,-1)).tolist())
-    import json
-    #
-    magic_batch = 5
-    # Check if the results file already exists and load it, otherwise initialize an empty list
-    try:
-        with open("eval.json", "r") as f:
-            all_results = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        all_results = {}
-        print("No results file found, initializing a new one.")
+    # import json
+    # #
+    # magic_batch = 5
+    # # Check if the results file already exists and load it, otherwise initialize an empty list
+    # try:
+    #     with open("eval.json", "r") as f:
+    #         all_results = json.load(f)
+    # except (FileNotFoundError, json.JSONDecodeError):
+    #     all_results = {}
+    #     print("No results file found, initializing a new one.")
     # Create a unique key based on your parameters
-    key = f"Tri_Decay_turb_small_None"
-    key2 = f"ConvLSTM_Decay_turb_small_None"
-    key3 = f"FNO_Decay_turb_small_None"
-    # key = f"Tri_Climate_None"
-    # key2 = f"ConvLSTM_Climate_None"
-    # key3 = f"FNO_Climate_None"
-    # Check if the key already exists in the dictionary
-    if key not in all_results:
-        all_results[key] = {
-        }
-    # if key2 not in all_results:
-    #     all_results[key2] = {
+    # key = f"Tri_Decay_turb_small_None"
+    # key2 = f"ConvLSTM_Decay_turb_small_None"
+    # key3 = f"FNO_Decay_turb_small_None"
+    # key = f"Tri_RBC_small_None"
+    # key2 = f"ConvLSTM_RBC_small_None"
+    # key3 = f"FNO_RBC_small_None"
+    # # key = f"Tri_Climate_None"
+    # # key2 = f"ConvLSTM_Climate_None"
+    # # key3 = f"FNO_Climate_None"
+    # # Check if the key already exists in the dictionary
+    # if key not in all_results:
+    #     all_results[key] = {
     #     }
-    if key3 not in all_results:
-        all_results[key3] = {
-        }
-    # Store the results
-    all_results[key]["RFNE"] = RFNE_tri.mean().item()
-    all_results[key]["MAE"] = MAE_tri.mean().item()
-    all_results[key]["MSE"] = MSE_tri.mean().item()
-    all_results[key]["IN"] = IN_tri.mean().item()
-    all_results[key]["SSIM"] = SSIM_tri.mean().item()
-    all_results[key]["PSNR"] = PSNR_tri.mean().item()
-    all_results[key2]["RFNE"] = RFNE_conv.mean().item()
-    all_results[key2]["MAE"] = MAE_conv.mean().item()
-    all_results[key2]["MSE"] = MSE_conv.mean().item()
-    all_results[key2]["IN"] = IN_conv.mean().item()
-    all_results[key2]["SSIM"] = SSIM_conv.mean().item()
-    all_results[key2]["PSNR"] = PSNR_conv.mean().item()
-    all_results[key3]["RFNE"] = RFNE_FNO.mean().item()
-    all_results[key3]["MAE"] = MAE_FNO.mean().item()
-    all_results[key3]["MSE"] = MSE_FNO.mean().item()
-    all_results[key3]["IN"] = IN_FNO.mean().item()
-    all_results[key3]["SSIM"] = SSIM_FNO.mean().item()
-    all_results[key3]["PSNR"] = PSNR_FNO.mean().item()
-    # Save the results    
-    with open("eval.json", "w") as f:
-        json.dump(all_results, f, indent=4)
-        f.close()
+    # # if key2 not in all_results:
+    # #     all_results[key2] = {
+    # #     }
+    # if key3 not in all_results:
+    #     all_results[key3] = {
+    #     }
+    # # Store the results
+    # all_results[key]["RFNE"] = RFNE_tri.mean().item()
+    # all_results[key]["MAE"] = MAE_tri.mean().item()
+    # all_results[key]["MSE"] = MSE_tri.mean().item()
+    # all_results[key]["IN"] = IN_tri.mean().item()
+    # all_results[key]["SSIM"] = SSIM_tri.mean().item()
+    # all_results[key]["PSNR"] = PSNR_tri.mean().item()
+    # all_results[key2]["RFNE"] = RFNE_conv.mean().item()
+    # all_results[key2]["MAE"] = MAE_conv.mean().item()
+    # all_results[key2]["MSE"] = MSE_conv.mean().item()
+    # all_results[key2]["IN"] = IN_conv.mean().item()
+    # all_results[key2]["SSIM"] = SSIM_conv.mean().item()
+    # all_results[key2]["PSNR"] = PSNR_conv.mean().item()
+    # all_results[key3]["RFNE"] = RFNE_FNO.mean().item()
+    # all_results[key3]["MAE"] = MAE_FNO.mean().item()
+    # all_results[key3]["MSE"] = MSE_FNO.mean().item()
+    # all_results[key3]["IN"] = IN_FNO.mean().item()
+    # all_results[key3]["SSIM"] = SSIM_FNO.mean().item()
+    # all_results[key3]["PSNR"] = PSNR_FNO.mean().item()
+    # # Save the results    
+    # with open("eval.json", "w") as f:
+    #     json.dump(all_results, f, indent=4)
+    #     f.close()
 
     
 

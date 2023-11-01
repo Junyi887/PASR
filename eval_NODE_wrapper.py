@@ -286,7 +286,9 @@ if __name__ == "__main__":
     print(f"PSNR {PSNR.mean():.4f} +/- {PSNR.std():.4f}")
     print("channel wise SSIM ", SSIM.tolist())
     print("channel wise PSNR  ", PSNR.mean(axis=(0,1)).tolist())
-    np.save("NODE_pred_DT.npy",pred)
+
+
+    np.save("pred_NODE_RBC.npy",pred)
  # wrap-eval result into json
     import json
     #
