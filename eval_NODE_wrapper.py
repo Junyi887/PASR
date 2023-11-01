@@ -278,18 +278,21 @@ if __name__ == "__main__":
     PSNR = get_psnr(pred[:].float().cuda(),hr_target_tensor[:].float().cuda())
     SSIM = get_ssim(pred[:].float().cuda(),hr_target_tensor[:].float().cuda())
     print(RFNE.shape)
-    print(f"RFNE {RFNE[5:].mean():.4f} +/- {RFNE[5:].std():.4f}")
-    print(f"MAE {MAE[5:].mean():.4f} +/- {MAE[5:].std():.4f}")
+    print(f"RFNE {RFNE[:].mean():.4f} +/- {RFNE[:].std():.4f}")
+    print(f"MAE {MAE[:].mean():.4f} +/- {MAE[:].std():.4f}")
     print("Channel-wise RFNE " ,RFNE[5:].mean(axis =(0,1)))
     print("Channel-wise MAE " ,MAE[5:].mean(axis =(0,1)))
     print(f"SSIM {SSIM.mean():.4f} +/- {SSIM.std():.4f}")
     print(f"PSNR {PSNR.mean():.4f} +/- {PSNR.std():.4f}")
     print("channel wise SSIM ", SSIM.tolist())
     print("channel wise PSNR  ", PSNR.mean(axis=(0,1)).tolist())
+    # import matplotlib.pyplot as plt
+    # fig = plt.figure(figsize=(10,10))
+    # plt.plot(RFNE[5,0,:])
+    # plt.savefig("pred_NODE_interpolation.png",dpi=300,bbox_inches='tight')
 
-
-    np.save("pred_NODE_RBC.npy",pred)
- # wrap-eval result into json
+#     np.save("pred_NODE_RBC.npy",pred)
+#  # wrap-eval result into json
     import json
     #
     magic_batch = 5
@@ -301,12 +304,13 @@ if __name__ == "__main__":
         all_results = {}
         print("No results file found, initializing a new one.")
     # Create a unique key based on your parameters
-    key = f"{args.model}_{args.data}_{args.ode_method}"
+    key = f"{args.model}_{args.data}_{args.ode_method}_physics_{args.physics}"
     # Check if the key already exists in the dictionary
     if key not in all_results:
         all_results[key] = {
         }
     # Store the results
+    # 
     all_results[key]["RFNE"] = RFNE[5:].mean().item()
     all_results[key]["MAE"] = MAE[5:].mean().item()
     all_results[key]["MSE"] = MSE[5:].mean().item()
@@ -315,3 +319,15 @@ if __name__ == "__main__":
     all_results[key]["PSNR"] = PSNR.mean().item()
     with open("eval.json", "w") as f:
         json.dump(all_results, f, indent=4)
+
+
+
+
+# rk4 p results/PASR_ODE_small_data_rbc_small_8031.pt
+# euler p results/PASR_ODE_small_data_rbc_small_9862.pt
+
+
+# rk4 results/PASR_ODE_small_data_Decay_turb_small_6724.pt
+# rk4 results/PASR_ODE_small_data_rbc_small_5723.pt
+# eluer results/PASR_ODE_small_data_Decay_turb_small_8807.pt
+# euler results/PASR_ODE_small_data_rbc_small_1041.pt
