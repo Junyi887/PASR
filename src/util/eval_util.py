@@ -196,7 +196,7 @@ def load_test_data_IC(data_name,timescale_factor = 4,num_snapshot = 10,in_channe
                                            data_path=DATA_INFO[data_name][0],
                                            num_snapshots=num_snapshot,
                                            noise_ratio=0.0,
-                                           data_name="climate_sequence",
+                                           data_name="climate",
                                            in_channels=1,)
         for lr_input,hr_target in test_loader:
             lr_input_tensor = lr_input

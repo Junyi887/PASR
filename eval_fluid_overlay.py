@@ -217,33 +217,68 @@ def plot_RBC_comparision():
         fig.savefig(f"RBC_baseline_{batch}.png",bbox_inches='tight')
 
 def plot_climate_comparision():
-    hr_target = np.load("hr_target_climate.npy")
-    pred_tri = np.load("pred_tri_climate.npy")
-    pred_conv = np.load("pred_conv_climate.npy")
-    pred_FNO = np.load("pred_FNO_climate.npy")
-    pred_NODE = np.load("pred_NODE_climate.npy")
-    fig,ax = plt.subplots(5,3,figsize=(20,8))
-
+    hr_target = np.load("hr_target_climate_s4_sig1.npy")
+    pred_tri = np.load("pred_climate_s4_sig1_trilinear.npy")
+    pred_conv = np.load("pred_climate_s4_sig1_ConvLSTM.npy")
+    pred_FNO = np.load("pred_climate_s4_sig1_FNO.npy")
+    # pred_NODE = np.load("pred_NODE_climate.npy")
+    fig,ax = plt.subplots(5,3,figsize=(10,8))
+    print(hr_target.shape)
     import seaborn
+    import cmocean
     for batch in [0,1,2,3,4]:
         for i in range(3):
-            vmin = hr_target[batch,...,5:-5,5:-5].min()
-            vmax = hr_target[batch,...,5:-5,5:-5].max()
-            ax[0,i].imshow(hr_target[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = seaborn.cm.balance)
+            vmin = hr_target.min()
+            vmax = hr_target.max()
+            ax[0,i].imshow(hr_target[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = cmocean.cm.balance)
             ax[0,i].set_axis_off()
-            ax[1,i].imshow(pred_tri[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = seaborn.cm.balance)
+            ax[1,i].imshow(pred_tri[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = cmocean.cm.balance)
             ax[1,i].set_axis_off()
-            ax[2,i].imshow(pred_FNO[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = seaborn.cm.balance)
+            ax[2,i].imshow(pred_FNO[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = cmocean.cm.balance)
             ax[2,i].set_axis_off()
-            ax[3,i].imshow(pred_conv[batch,i*10,0,5:-5,5:-5].T,vmin=vmin,vmax=vmax,cmap = seaborn.cm.balance)
+            ax[3,i].imshow(pred_conv[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = cmocean.cm.balance)
             ax[3,i].set_axis_off()
-            ax[4,i].imshow(pred_NODE[batch,i*10,0,5:-5,5:-5].T,vmin=vmin,vmax=vmax,cmap = seaborn.cm.balance)
-            ax[4,i].set_axis_off()
+            # ax[4,i].imshow(pred_NODE[batch,i*10,0,:,:].T,vmin=vmin,vmax=vmax,cmap = seaborn.cm.balance)
+            # ax[4,i].set_axis_off()
         fig.savefig(f"Climate_baseline_{batch}.png",bbox_inches='tight')
+
+def plot_climate_comparision_normalized():
+    hr_target = np.load("hr_target_climate_s4_sig1.npy")
+    pred_tri = np.load("pred_climate_s4_sig1_trilinear.npy")
+    pred_conv = np.load("pred_climate_s4_sig1_ConvLSTM.npy")
+    pred_FNO = np.load("pred_climate_s4_sig1_FNO.npy")
+    # pred_NODE = np.load("pred_NODE_climate.npy")
+    fig,ax = plt.subplots(5,3,figsize=(10,8))
+    print(hr_target.shape)
+    import seaborn
+    import cmocean
+    hr_target = (hr_target-hr_target.mean())/(hr_target.std())
+    pred_tri = (pred_tri-pred_tri.mean())/(pred_tri.std())
+    pred_conv = (pred_conv-pred_conv.mean())/(pred_conv.std())
+    pred_FNO = (pred_FNO-pred_FNO.mean())/(pred_FNO.std())
+    
+
+    for batch in [0,1,2,3,4]:
+        for i in range(3):
+            vmin = hr_target.min()
+            vmax = hr_target.max()
+            ax[0,i].imshow(hr_target[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = cmocean.cm.balance)
+            ax[0,i].set_axis_off()
+            ax[1,i].imshow(pred_tri[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = cmocean.cm.balance)
+            ax[1,i].set_axis_off()
+            ax[2,i].imshow(pred_FNO[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = cmocean.cm.balance)
+            ax[2,i].set_axis_off()
+            ax[3,i].imshow(pred_conv[batch,i*10,0,:,:],vmin=vmin,vmax=vmax,cmap = cmocean.cm.balance)
+            ax[3,i].set_axis_off()
+            # ax[4,i].imshow(pred_NODE[batch,i*10,0,:,:].T,vmin=vmin,vmax=vmax,cmap = seaborn.cm.balance)
+            # ax[4,i].set_axis_off()
+        fig.savefig(f"n_Climate_baseline_{batch}.png",bbox_inches='tight')
 import numpy as np 
 import matplotlib.pyplot as plt
 # plot_energy_specturm_overlay("DT")
 # plot_RBC_comparision()
-plot_energy_specturm_overlay("RBC")
+# plot_energy_specturm_overlay("RBC")
 # plot_vorticity_correlation("DT")
 # plot_vorticity_correlation("RBC")
+# plot_climate_comparision()
+plot_climate_comparision_normalized()

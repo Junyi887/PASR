@@ -197,6 +197,7 @@ if __name__ == "__main__":
         batch = 5 
         mean,std = get_normalization(data_name)# data name should be decay_turb, rbc, climate_s4_sig1
         lr_input,hr_target,lr_input_tensor, hr_target_tensor = load_test_data_IC(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=20, upscale_factor=4)
+        print(f"hr_input_tensor shape {hr_target_tensor.shape}")
         lr_input2, hr_target2, lr_input_tensor2, hr_target_tensor2 = load_test_data_sequence(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=20, upscale_factor=4)
         pred_tri,RFNE_tri, MSE_tri, MAE_tri,IN_tri,SSIM_tri,PSNR_tri = trilinear_interpolation(lr_input_tensor2,hr_target_tensor2)
         pred_conv,RFNE_conv, MSE_conv, MAE_conv,IN_conv,SSIM_conv,PSNR_conv = eval_ConvLSTM(data_name,model_info[f"ConvLSTM_{data_name}"],in_channel,lr_input_tensor2,hr_target_tensor2,mean,std)
@@ -214,7 +215,25 @@ if __name__ == "__main__":
         np.save(f"hr_target_{data_name}.npy",hr_target)
 
 
+    def forward_predictions(model, lr_input, n_steps=10, args=None):
+        has_pred = False
+        to_LR = transforms.Resize((int(128/4), int(128/4)), Image.BICUBIC, antialias=False)
+        
+        current_input = lr_input
 
+        for _ in range(n_steps):
+            pred = get_prediction(model, current_input, task_dt=args.task_dt, n_snapshots=5, ode_step=args.ode_step)
+            
+            if has_pred:
+                predictions = torch.cat((predictions[:, 0:-1], pred), dim=1)
+            else:
+                predictions = pred
+                has_pred = True
+
+            # Use the last time snapshot from prediction as the next input
+            current_input = to_LR(pred[:, -1, :, :, :])
+        
+        return predictions
 
 
 
