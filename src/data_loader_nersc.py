@@ -25,7 +25,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
     if data_name == "climate":
         dataset = GetClimateDatasets(data_path, "train",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
         print("Climate Loader")
-        train_set,val_set,test_set = random_split(dataset,[0.8,0.1,0.1])
+        train_set,val_set,test_set = random_split(dataset,[0.8,0.1,0.1],generator=torch.Generator().manual_seed(42))
         train_loader = DataLoader(train_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
         val1_loader= DataLoader(val_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
         val2_loader = DataLoader(test_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
@@ -35,7 +35,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
     elif data_name == "climate_sequence":
         dataset = GetClimateDatasets_special(data_path, "train",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
         print("Climate Loader")
-        train_set,val_set,test_set = random_split(dataset,[0.8,0.1,0.1])
+        train_set,val_set,test_set = random_split(dataset,[0.8,0.1,0.1],generator=torch.Generator().manual_seed(42))
         train_loader = DataLoader(train_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
         val1_loader= DataLoader(val_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
         val2_loader = DataLoader(test_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
@@ -69,7 +69,7 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
 
     dataloader = DataLoader(dataset,
                             batch_size = int(batch_size),
-                            num_workers = 4, # TODO: make a param
+                            num_workers = 2, # TODO: make a param
                             shuffle = shuffle, 
                             sampler = None,
                             drop_last = True,

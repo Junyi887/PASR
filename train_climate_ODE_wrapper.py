@@ -159,7 +159,6 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             run['val/PSNR'].log(result_val1[3])
             run['test/RFNE'].log(result_val2[2])
             run['test/PSNR'].log(result_val2[3])
-            run['train/div'].log(phy_loss.item())
             logging.info("Epoch: {} | train loss: {} | val loss: {} | val_x1: {} | val_t1: {} | val_x2: {} | val_t2: {}".format(epoch, avg_loss/len(trainloader), avg_val, result_val1[0], result_val1[1], result_val2[0],result_val2[1]))
             if avg_val < best_loss_val:
                 best_loss_val = avg_val
@@ -179,11 +178,11 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
 
 parser = argparse.ArgumentParser(description='training parameters')
 
-parser.add_argument('--data', type =str ,default= 'Decay_turb_small')
-parser.add_argument('--data_path',type = str,default = "../Decay_Turbulence_small")
+parser.add_argument('--data', type =str ,default= 'climate')
+parser.add_argument('--data_path',type = str,default = "/pscratch/sd/j/junyi012/climate_data/pre-processed_s4_sig1")
 parser.add_argument('--loss_type', type =str ,default= 'L1')
 ## data processing arugments
-parser.add_argument('--in_channels',type = int, default= 3)
+parser.add_argument('--in_channels',type = int, default= 1)
 parser.add_argument('--batch_size', type = int, default= 16)
 parser.add_argument('--crop_size', type = int, default= 256, help= 'should be same as image dimension')
 parser.add_argument('--scale_factor', type = int, default= 4)
@@ -210,8 +209,8 @@ parser.add_argument('--seed',type =int, default= 3407)
 parser.add_argument('--normalization',type =str, default= 'True')
 parser.add_argument('--normalization_method',type =str, default= 'meanstd')
 parser.add_argument('--physics',type =str, default= 'False')
-parser.add_argument('--gamma',type =float, default= 0.95)
-parser.add_argument('--lr_step',type =int, default= 80)
+parser.add_argument('--gamma',type =float, default= 0.5)
+parser.add_argument('--lr_step',type =int, default= 150)
 parser.add_argument('--patience',type =int, default= 15)
 parser.add_argument('--scheduler',type =str, default= 'StepLR')
 args = parser.parse_args()
@@ -267,7 +266,7 @@ if __name__ == "__main__":
     elif args.data =="climate":
         image = [180,360]
     model_list = {
-            "PASR_ODE_small":PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t),
+            "PASR_ODE_small":PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=9, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t),
     }
     model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)

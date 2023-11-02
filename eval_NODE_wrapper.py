@@ -196,22 +196,7 @@ def generate_test_matrix(cols:int, final_index:int):
         current_value -= 1  # Repeat the last element in the next row
     return matrix[:-1,:]
 
-# def plot_energy_specturm_phyLoss(data_name,dic):
-#     # pred_trilinear = 
-#     realsize_truth, EK_avsphr_truth,result_dict_truth = energy_specturm(u_truth,v_truth)
-#     realsize_pred, EK_avsphr_pred,result_dict_pred = energy_specturm(u_pred,v_pred)
-#     realsize_pred_p, EK_avsphr_pred_p,result_dict_pred_p = energy_specturm(u_pred_p,v_pred_p)
-#     fig= plt.figure(figsize=(5,5))
-#     plt.title(f"Kinetic Energy Spectrum -- {data_name}")
-#     plt.xlabel(r"k (wavenumber)")
-#     plt.ylabel(r"TKE of the k$^{th}$ wavenumber")
-#     print(realsize_truth)
-#     plt.loglog(np.arange(0,realsize_truth),((EK_avsphr_truth[0:realsize_truth] )),'k',label = "truth")
-#     plt.loglog(np.arange(0,realsize_pred),((EK_avsphr_pred[0:realsize_pred] )),'r',label = "pred")
-#     plt.loglog(np.arange(0,realsize_pred_p),((EK_avsphr_pred_p[0:realsize_pred_p] )),'b',label = "pred (physics constraint)")
-#     plt.legend()
-#     fig.savefig(f"{data_name}_energy_specturm.png",dpi=300,bbox_inches='tight')
-#     return print("energy specturm plot done")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PASR')

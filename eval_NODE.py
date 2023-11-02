@@ -174,8 +174,8 @@ def get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor,in_channe
 def get_metric_RFNE(pred,truth):
     # input should be tensor
     print("predshape",pred.shape)
-    pred = (pred - 278.35330263805355)/20.867389868976833
-    truth = (truth - 278.35330263805355)/20.867389868976833
+    # pred = (pred - 278.35330263805355)/20.867389868976833
+    # truth = (truth - 278.35330263805355)/20.867389868976833
     RFNE = torch.norm(pred.float().cuda()- truth.float().cuda(), p=2, dim=(-1, -2)) / torch.norm(truth.float().cuda(), p=2, dim=(-1, -2))
     MAE = torch.mean(torch.abs(pred.float().cuda()- truth.float().cuda()), dim=(-1, -2))
     MSE = torch.mean((pred.float().cuda()- truth.float().cuda())**2, dim=(-1, -2))
