@@ -273,6 +273,42 @@ def plot_climate_comparision_normalized():
             # ax[4,i].imshow(pred_NODE[batch,i*10,0,:,:].T,vmin=vmin,vmax=vmax,cmap = seaborn.cm.balance)
             # ax[4,i].set_axis_off()
         fig.savefig(f"n_Climate_baseline_{batch}.png",bbox_inches='tight')
+
+def plot_vorticity_correlation_extrapolation(data_name):
+    # data_truth = np.load(f"Extrapolation_hr_target_80_{data_name}.npy")
+    # pred_rk4 = np.load(f"Extrapolation_pred_{data_name}_rk4_NODE.npy")
+    # pred_euler = np.load(f"Extrapolation_pred_{data_name}_euler_NODE.npy")
+    data_truth = np.load(f"Extrapolation_loop_back_hr_target_80_{data_name}.npy")
+    pred_rk4 = np.load(f"Extrapolation_loop_back_pred_{data_name}_rk4_NODE.npy")
+    pred_euler = np.load(f"Extrapolation_loop_back_pred_{data_name}_euler_NODE.npy")
+    print(pred_rk4.shape)
+    print(data_truth.shape)
+    print(pred_euler.shape)
+    correlations = np.zeros(pred_rk4.shape[1])
+    correlation_euler = np.zeros(pred_rk4.shape[1])
+    correlation_rk4 = np.zeros(pred_rk4.shape[1])
+    batch =4
+    for batch in range(5):
+        for t in range (pred_rk4.shape[1]):
+            ref_flat = data_truth[batch,t,0].flatten()
+            pred_rk4_flat = pred_rk4[batch,t,0].flatten()
+            pred_euler_flat = pred_euler[batch,t,0].flatten()
+            corr_rk4,_ = pearsonr(ref_flat,pred_rk4_flat)
+            corr_euler,_ = pearsonr(ref_flat,pred_euler_flat)
+            correlation_euler[t] = corr_euler
+            correlation_rk4[t] = corr_rk4
+
+        fig,axs = plt.subplots(1,1,figsize=(10,5))
+        axs.set_xticks(np.arange(0,pred_rk4.shape[1],5))
+        axs.scatter(np.arange(0,pred_rk4.shape[1],1),correlation_euler,color = 'b',label="Euler")
+        axs.scatter(np.arange(0,pred_rk4.shape[1],1),correlation_rk4,color = 'g',label="RK4")
+        axs.legend()
+        axs.set_ylabel("vorticity correlation")
+        axs.set_xlabel("time")
+        axs.set_title(f"vorticity correlation -- {data_name}")
+        fig.savefig(f"vorticity_correlation_{data_name}_{batch}_loop.png",dpi=300,bbox_inches='tight')
+
+    return print("voritcity correlation extrapolation loop back plot done")
 import numpy as np 
 import matplotlib.pyplot as plt
 # plot_energy_specturm_overlay("DT")
@@ -281,4 +317,6 @@ import matplotlib.pyplot as plt
 # plot_vorticity_correlation("DT")
 # plot_vorticity_correlation("RBC")
 # plot_climate_comparision()
-plot_climate_comparision_normalized()
+# plot_climate_comparision_normalized()
+plot_vorticity_correlation_extrapolation("decay_turb")
+plot_vorticity_correlation_extrapolation("rbc")

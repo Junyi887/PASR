@@ -7,9 +7,9 @@ from PIL import Image
 
 from src.data_loader_nersc import getData
 
-DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
-                 "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
-                 "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01],
+DATA_INFO = {"decay_turb":['/pscratch/sd/j/junyi012/Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
+                 "burger2d": ["/pscratch/sd/j/junyi012/Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
+                 "rbc": ["/pscratch/sd/j/junyi012/RBC_small/test/RBC_small_33_s2.h5",0.01],
                  "climate_s4_sig1": ["/pscratch/sd/j/junyi012/climate_data/pre-processed_s4_sig1/",1]}
 
 
