@@ -749,7 +749,8 @@ if __name__ == '__main__':
     print('mean of hres is:',mean.tolist())
     print('stf of hres is:', std.tolist())
 
-
+    # get lr tensor shape
+    lr_shape = val1_loader.dataset[0][0].shape
     ######################### build model #############################
     # training parameters
     n_iters = 400 # 500 
@@ -777,7 +778,7 @@ if __name__ == '__main__':
     init_state = get_init_state(
         batch_size = [args.batch_size], 
         hidden_channels = [32], 
-        output_size = [[45, 90]], 
+        output_size = [[lr_shape[-2], lr_shape[-1]]], 
         mode = 'random')
 
     start = time.time()

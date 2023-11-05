@@ -25,3 +25,4 @@ src/analysis_tools/*
 /frames/*
 *.npy
 *.pyc
+bash_script/*.sbatch
