@@ -51,12 +51,12 @@ def initialize_field(x_range, y_range, grid_size, order=4, seed=0):
 # Parameters
 Lx, Lz = 1, 1
 Nx, Nz = 128, 128
-Rayleigh = 200
+Rayleigh = 100
 dealias = 3/2
-stop_sim_time = 4
+stop_sim_time = 2
 timestepper = d3.RK222
 max_timestep = 1e-4
-dtype = np.float64
+dtype = np.float32
 nu = 1/Rayleigh
 # Bases
 coords = d3.CartesianCoordinates('x', 'z')
@@ -88,7 +88,7 @@ u['g'] = uv0
 
 
 # Analysis
-snapshots = solver.evaluator.add_file_handler(f"Burger2D_diff_IC/Burger2D_{args.seed}", sim_dt=0.02, max_writes=1000)
+snapshots = solver.evaluator.add_file_handler(f"../burger2D_diff_IC/Burger2D_{args.seed}", sim_dt=0.001, max_writes=2000)
 snapshots.add_task(-d3.div(d3.skew(u)), name='vorticity')
 snapshots.add_task(u@ez, name='v')
 snapshots.add_task(u@ex, name='u')
@@ -102,7 +102,7 @@ flow = d3.GlobalFlowProperty(solver, cadence=10)
 flow.add_property(np.sqrt(u@u)/nu, name='Re')
 
 # Main loop
-startup_iter = 10
+startup_iter = 100
 try:
     logger.info('Starting main loop')
     while solver.proceed:
