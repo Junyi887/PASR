@@ -226,15 +226,15 @@ if __name__ == "__main__":
     if args.data =="Decay_turb_small" or args.data =="Decay_turb_FNO": 
         image = [128,128]
         target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-        ALL_DATA_PATH = "../Decay_Turbulence_small/*/*.h5"
+        ALL_DATA_PATH = "/pscratch/sd/j/junyi012/Decay_Turbulence_small/*/*.h5"
     elif args.data =="rbc_small" or args.data =="rbc_FNO":
         image = [256,64]
         target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
-        ALL_DATA_PATH = "../RBC_small/*/*.h5"
+        ALL_DATA_PATH = "/pscratch/sd/j/junyi012/RBC_small/*/*.h5"
     elif args.data =="Burger2D_small" or args.data =="Burger2D_FNO":
         image = [128,128]
         target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-        ALL_DATA_PATH = "../Burgers2D_small/*/*.h5"
+        ALL_DATA_PATH = "../burger2D_10/*/*.h5"
 
     def get_normalizer(args):
         if args.normalization == "True":

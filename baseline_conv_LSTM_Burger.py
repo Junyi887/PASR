@@ -716,13 +716,13 @@ def get_init_state(batch_size, hidden_channels, output_size, mode='coord'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='training parameters')
 
-    parser.add_argument('--data', type =str ,default= 'decay_turb_ConvLSTM')
-    parser.add_argument('--data_path',type = str,default = "pscratch/sd/j/junyi012/Decay_Turbulence_small")
+    parser.add_argument('--data', type =str ,default= 'burgers2D_ConvLSTM')
+    parser.add_argument('--data_path',type = str,default = "../burger2D_10")
     ## data processing arugments
     parser.add_argument('--in_channels',type = int, default= 3)
     parser.add_argument('--batch_size',type = int, default= 32)
     parser.add_argument('--scale_factor', type = int, default= 4)
-    parser.add_argument('--timescale_factor', type = int, default= 4)
+    parser.add_argument('--timescale_factor', type = int, default= 8)
     parser.add_argument('--n_snapshots',type =int, default= 20)
     parser.add_argument('--down_method', type = str, default= "bicubic")
     parser.add_argument('--noise_ratio', type = float, default= 0.0)
@@ -759,9 +759,9 @@ if __name__ == '__main__':
     effective_step = list(range(0, steps))
     
     beta = 0.0 # 0.025 # for physics loss        
-    save_path = 'ConvLSTM_Decay_Turb_' + str(ID)+"_"
-    fig_save_path = 'ConvLSTM_Decay_Turb_' +str(ID)+"_"
-    print('Super-Resolution for 2D DT equation...')
+    save_path = 'ConvLSTM_Burgers_' + str(ID)+"_"
+    fig_save_path = 'ConvLSTM_Burgers_' +str(ID)+"_"
+    print('Super-Resolution for 2D Burgers equation...')
 
     model = PhySR(
         n_feats = 32,

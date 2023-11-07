@@ -2,10 +2,9 @@ import argparse
 import os
 
 DATA_INFO = {
-    "s2_sig2": ["/pscratch/sd/j/junyi012/climate_data/s2_sig2", 1],
-    "s2_sig4": ["/pscratch/sd/j/junyi012/climate_data/s2_sig4", 1],
-    "s2_sig1": ["/pscratch/sd/j/junyi012/climate_data/s2_sig1", 1],
-    "s2_sig0": ["/pscratch/sd/j/junyi012/climate_data/s2_sig0", 1],
+    'burger_2D':["../burger2D_10",3],
+    'decay_turb':["/pscratch/sd/j/junyi012/Decay_Turbulence_small",3],
+    "rbc":["RBC_small",3],
 }
 
 
