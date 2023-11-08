@@ -231,7 +231,7 @@ if __name__ == "__main__":
         image = [256,64]
         target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
         ALL_DATA_PATH = "/pscratch/sd/j/junyi012/RBC_small/*/*.h5"
-    elif args.data =="Burger2D_small" or args.data =="Burger2D_FNO":
+    elif args.data =="burger2D_small" or args.data =="burger2D_FNO":
         image = [128,128]
         target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
         ALL_DATA_PATH = "../burger2D_10/*/*.h5"

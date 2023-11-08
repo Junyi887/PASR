@@ -271,7 +271,7 @@ if __name__ == "__main__":
         image = [128,128]
     elif args.data =="rbc_small":
         image = [256,64]
-    elif args.data =="Burger2D_small":
+    elif args.data =="burger2D":
         image = [128,128]
     model_list = {
             "PASR_ODE_small":PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t),
