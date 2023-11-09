@@ -138,6 +138,8 @@ class DataInfoLoader():
     self.mean_all_data = np.stack(self.mean_list)
     self.std_all_data = np.stack(self.std_list)
 
+  def get_shape(self):
+    return self.img_shape_x, self.img_shape_y
 
 if __name__ == "__main__":
   print("hello")

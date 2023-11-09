@@ -20,7 +20,7 @@ def get_normalization(data_name):
         mean,std = normalizer.get_mean_std()
         print('mean of hres is:',mean.tolist())
         print('stf of hres is:', std.tolist())
-    elif data_name == "climate_s4_sig1":
+    else:
         min = np.array([196.6398630794458])
         max = np.array([318.90588255242176])
         mean =np.array([278.35330263805355])
@@ -28,7 +28,7 @@ def get_normalization(data_name):
     return mean,std
 
 
-def eval_ConvLSTM(data_name,model_path,in_channels,lr_input_tensor,hr_target_tensor,mean,std,num_snapshots=20,climate_normalizaiton = False):
+def eval_ConvLSTM(data_name,model_path,in_channels,lr_input_tensor,hr_target_tensor,mean,std,num_snapshots=20,climate_normalization = False):
     steps = num_snapshots + 1 
     effective_step = list(range(0, steps))
     model = PhySR(
@@ -53,7 +53,9 @@ def eval_ConvLSTM(data_name,model_path,in_channels,lr_input_tensor,hr_target_ten
         lres, hres = lr_input_tensor.permute(2,0,1,3,4), hr_target_tensor.permute(2,0,1,3,4) # (b,c,t,h,w) -> (t,b,c,h,w)
         lres, hres = lres.float().cuda(), hres.float().cuda()
         pred = model(lres,init_state)
-        if climate_normalizaiton == True:
+        mean = torch.from_numpy(mean).float().cuda()
+        std = torch.from_numpy(std).float().cuda()
+        if climate_normalization == True:
             pred = (pred - mean)/std
             hres = (hres - mean)/std
         print(f"ConvLSTM pred shape {pred.shape}")
@@ -119,6 +121,11 @@ def eval_NODE_wrapper(data_name,model_path,in_channels,lr_input_tensor,hr_target
     model.eval()
     with torch.no_grad():
         pred = model(lr_input_tensor.float().cuda(),n_snapshots = num_snapshots,task_dt=task_dt)
+        if climate_normalization == True:
+            mean = torch.from_numpy(mean).float().cuda()
+            std = torch.from_numpy(std).float().cuda()
+            pred = (pred - mean)/std
+            hr_target_tensor = (hr_target_tensor.float().cuda() - mean)/std
         RFNE,MAE,MSE,IN = get_metric_RFNE(hr_target_tensor.float().cuda(),pred.float().cuda())
     PSNR = get_psnr(pred[:].float().cuda(),hr_target_tensor[:].float().cuda())
     SSIM = get_ssim(pred[:].float().cuda(),hr_target_tensor[:].float().cuda())
@@ -170,7 +177,9 @@ def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR):
     return print("dump json done")
 
 if __name__ == "__main__":
-    data_name_list = ["decay_turb","rbc","climate_s4_sig1"]
+    # data_name_list = ["decay_turb","rbc","climate_s4_sig1"]
+    data_name_list = ["climate_s4_sig1","climate_s4_sig0","climate_s4_sig2","climate_s4_sig4"]
+    # data_name_list = ["climate_s2_sig1","climate_s2_sig0","climate_s2_sig2","climate_s2_sig4"]
     # data_name_list = ["climate_s4_sig1"]
     # model_list = [ConvLSTM, FNO, NODE]
     model_info = {
@@ -188,33 +197,39 @@ if __name__ == "__main__":
         "NODE_rbc_euler_p0.02": "results/PASR_ODE_small_data_rbc_small_9862.pt",
         "NODE_rbc_rk4_p0.02": "results/PASR_ODE_small_data_rbc_small_8031.pt",
     }
-    # apdx = "euler"
-
-    # for data_name in data_name_list:
-    #     for apdx in ["euler","rk4"]:
-    #     if "climate" in data_name:
-    #         in_channel = 1
-    #     else:
-    #         in_channel = 3
-    #     batch = 5 
-    #     mean,std = get_normalization(data_name) # data name should be decay_turb, rbc, climate_s4_sig1
-    #     lr_input,hr_target,lr_input_tensor, hr_target_tensor = load_test_data_IC(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=20, upscale_factor=4)
-    #     print(f"hr_input_tensor shape {hr_target_tensor.shape}")
-    #     lr_input2, hr_target2, lr_input_tensor2, hr_target_tensor2 = load_test_data_sequence(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=20, upscale_factor=4)
-    #     pred_tri,RFNE_tri, MSE_tri, MAE_tri,IN_tri,SSIM_tri,PSNR_tri = trilinear_interpolation(lr_input_tensor2,hr_target_tensor2)
-    #     pred_conv,RFNE_conv, MSE_conv, MAE_conv,IN_conv,SSIM_conv,PSNR_conv = eval_ConvLSTM(data_name,model_info[f"ConvLSTM_{data_name}"],in_channel,lr_input_tensor2,hr_target_tensor2,mean,std)
-    #     pred_fno,RFNE_fno, MSE_fno, MAE_fno,IN_fno,SSIM_fno,PSNR_fno = eval_FNO(data_name,model_info[f"FNO_{data_name}"],in_channel,lr_input_tensor2,hr_target_tensor2,mean,std)
-    #     pred_node,RFNE_node, MSE_node, MAE_node,IN_node,SSIM_node,PSNR_node = eval_NODE_wrapper(data_name,model_info[f"NODE_{data_name}_{apdx}"],in_channel,lr_input_tensor,hr_target_tensor,mean,std,num_snapshots=20,task_dt=1)
-    #     dump_json(f"ConvLSTM_{data_name}", RFNE_conv.mean(), MAE_conv.mean(), MSE_conv.mean(), IN_conv.mean(), SSIM_conv.mean(), PSNR_conv.mean())
-    #     dump_json(f"FNO_{data_name}", RFNE_fno.mean(), MAE_fno.mean(), MSE_fno.mean(), IN_fno.mean(), SSIM_fno.mean(), PSNR_fno.mean())
-    #     dump_json(f"NODE_{data_name}_{apdx}", RFNE_node[batch:].mean(), MAE_node[batch:].mean(), MSE_node[batch:].mean(), IN_node[batch:].mean(), SSIM_node.mean(), PSNR_node.mean())
-    #     dump_json(f"Trilinear_{data_name}", RFNE_tri.mean(), MAE_tri.mean(), MSE_tri.mean(), IN_tri.mean(), SSIM_tri.mean(), PSNR_tri.mean())
-    #     np.save(f"pred_{data_name}_ConvLSTM.npy",pred_conv)
-    #     np.save(f"pred_{data_name}_FNO.npy",pred_fno)
-    #     np.save(f"pred_{data_name}_{apdx}_NODE.npy",pred_node)
-    #     np.save(f"pred_{data_name}_trilinear.npy",pred_tri)
-    #     np.save(f"lr_input_{data_name}.npy",lr_input) 
-    #     np.save(f"hr_target_{data_name}.npy",hr_target)
+    apdx = "euler"
+    norm_Flag = True
+    for data_name in data_name_list:
+        for apdx in ["rk4"]:
+            if "climate" in data_name:
+                in_channel = 1
+            else:
+                in_channel = 3
+            batch = 5 
+            mean,std = get_normalization(data_name) # data name should be decay_turb, rbc, climate_s4_sig1
+            lr_input,hr_target,lr_input_tensor, hr_target_tensor = load_test_data_IC(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=20, upscale_factor=4)
+            print(f"hr_input_tensor shape {hr_target_tensor.shape}")
+            lr_input2, hr_target2, lr_input_tensor2, hr_target_tensor2 = load_test_data_sequence(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=20, upscale_factor=4)
+            pred_tri,RFNE_tri, MSE_tri, MAE_tri,IN_tri,SSIM_tri,PSNR_tri = trilinear_interpolation(lr_input_tensor2,hr_target_tensor2,climate_normalization=norm_Flag)
+            pred_conv,RFNE_conv, MSE_conv, MAE_conv,IN_conv,SSIM_conv,PSNR_conv = eval_ConvLSTM(data_name,model_info["ConvLSTM_climate_s4_sig1"],in_channel,lr_input_tensor2,hr_target_tensor2,mean,std,climate_normalization=norm_Flag)
+            pred_fno,RFNE_fno, MSE_fno, MAE_fno,IN_fno,SSIM_fno,PSNR_fno = eval_FNO(data_name,model_info["FNO_climate_s4_sig1"],in_channel,lr_input_tensor2,hr_target_tensor2,mean,std,climate_normalization=norm_Flag)
+            pred_node,RFNE_node, MSE_node, MAE_node,IN_node,SSIM_node,PSNR_node = eval_NODE_wrapper(data_name,model_info["NODE_climate_s4_sig1_rk4"],in_channel,lr_input_tensor,hr_target_tensor,mean,std,num_snapshots=20,task_dt=1,climate_normalization=norm_Flag)
+            if norm_Flag == True:
+                dump_json(f"ConvLSTM_{data_name}_normalized", RFNE_conv.mean(), MAE_conv.mean(), MSE_conv.mean(), IN_conv.mean(), SSIM_conv.mean(), PSNR_conv.mean())
+                dump_json(f"FNO_{data_name}_normalized", RFNE_fno.mean(), MAE_fno.mean(), MSE_fno.mean(), IN_fno.mean(), SSIM_fno.mean(), PSNR_fno.mean())
+                dump_json(f"NODE_{data_name}_{apdx}_normalized", RFNE_node[batch:].mean(), MAE_node[batch:].mean(), MSE_node[batch:].mean(), IN_node[batch:].mean(), SSIM_node.mean(), PSNR_node.mean())
+                dump_json(f"Trilinear_{data_name}_normalized", RFNE_tri.mean(), MAE_tri.mean(), MSE_tri.mean(), IN_tri.mean(), SSIM_tri.mean(), PSNR_tri.mean())
+            else:
+                dump_json(f"ConvLSTM_{data_name}", RFNE_conv.mean(), MAE_conv.mean(), MSE_conv.mean(), IN_conv.mean(), SSIM_conv.mean(), PSNR_conv.mean())
+                dump_json(f"FNO_{data_name}", RFNE_fno.mean(), MAE_fno.mean(), MSE_fno.mean(), IN_fno.mean(), SSIM_fno.mean(), PSNR_fno.mean())
+                dump_json(f"NODE_{data_name}_{apdx}", RFNE_node[batch:].mean(), MAE_node[batch:].mean(), MSE_node[batch:].mean(), IN_node[batch:].mean(), SSIM_node.mean(), PSNR_node.mean())
+                dump_json(f"Trilinear_{data_name}", RFNE_tri.mean(), MAE_tri.mean(), MSE_tri.mean(), IN_tri.mean(), SSIM_tri.mean(), PSNR_tri.mean())
+            # np.save(f"pred_{data_name}_ConvLSTM.npy",pred_conv)
+            # np.save(f"pred_{data_name}_FNO.npy",pred_fno)
+            # np.save(f"pred_{data_name}_{apdx}_NODE.npy",pred_node)
+            # np.save(f"pred_{data_name}_trilinear.npy",pred_tri)
+            # np.save(f"lr_input_{data_name}.npy",lr_input) 
+            # np.save(f"hr_target_{data_name}.npy",hr_target)
 
 
     # for extrapolation
@@ -229,33 +244,33 @@ if __name__ == "__main__":
     #         np.save(f"Extrapolation_hr_target_80_{data_name}.npy",hr_target)
     #         print(f"Extrapolation_pred_{data_name}_{apdx}_NODE.npy saved")
 
-    for data_name in data_name_list:
-        for apdx in ["euler","rk4"]:
-            batch = 5 
-            mean,std = get_normalization(data_name) # data name should be decay_turb, rbc, climate_s4_sig1
-            in_channel =3 
-            if data_name =="rbc":
-                to_LR = transforms.Resize((int(256/4), int(64/4)), Image.BICUBIC, antialias=False)
-            elif data_name =="decay_turb":
-                to_LR = transforms.Resize((int(128/4), int(128/4)), Image.BICUBIC, antialias=False)
+    # for data_name in data_name_list:
+    #     for apdx in ["euler","rk4"]:
+    #         batch = 5 
+    #         mean,std = get_normalization(data_name) # data name should be decay_turb, rbc, climate_s4_sig1
+    #         in_channel =3 
+    #         if data_name =="rbc":
+    #             to_LR = transforms.Resize((int(256/4), int(64/4)), Image.BICUBIC, antialias=False)
+    #         elif data_name =="decay_turb":
+    #             to_LR = transforms.Resize((int(128/4), int(128/4)), Image.BICUBIC, antialias=False)
 
-            lr_input,hr_target,lr_input_tensor, hr_target_tensor = load_test_data_IC(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=80, upscale_factor=4)
-            has_pred = False
-            current_input = lr_input_tensor
-            for loopback in range(4):
-                pred_node,RFNE_node, MSE_node, MAE_node,IN_node,SSIM_node,PSNR_node = eval_NODE_wrapper(data_name,model_info[f"NODE_{data_name}_{apdx}"],in_channel,current_input,hr_target_tensor[:,0:21],mean,std,num_snapshots=20,task_dt=1)
-                if has_pred:
-                    predictions = np.concatenate((predictions[:, 0:-1], pred_node), axis=1)
-                else:
-                    predictions = pred_node
-                    has_pred = True
-                # Use the last time snapshot from prediction as the next input
+    #         lr_input,hr_target,lr_input_tensor, hr_target_tensor = load_test_data_IC(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=80, upscale_factor=4)
+    #         has_pred = False
+    #         current_input = lr_input_tensor
+    #         for loopback in range(4):
+    #             pred_node,RFNE_node, MSE_node, MAE_node,IN_node,SSIM_node,PSNR_node = eval_NODE_wrapper(data_name,model_info[f"NODE_{data_name}_{apdx}"],in_channel,current_input,hr_target_tensor[:,0:21],mean,std,num_snapshots=20,task_dt=1)
+    #             if has_pred:
+    #                 predictions = np.concatenate((predictions[:, 0:-1], pred_node), axis=1)
+    #             else:
+    #                 predictions = pred_node
+    #                 has_pred = True
+    #             # Use the last time snapshot from prediction as the next input
 
-                current_input = to_LR(torch.from_numpy(pred_node[:, -1, :, :, :]))
+    #             current_input = to_LR(torch.from_numpy(pred_node[:, -1, :, :, :]))
 
-            np.save(f"Extrapolation_loop_back_pred_{data_name}_{apdx}_NODE.npy",predictions)
-            np.save(f"Extrapolation_loop_back_hr_target_80_{data_name}.npy",hr_target)
-            print(f"Extrapolation_pred_{data_name}_{apdx}_NODE.npy saved")        
+    #         np.save(f"Extrapolation_loop_back_pred_{data_name}_{apdx}_NODE.npy",predictions)
+    #         np.save(f"Extrapolation_loop_back_hr_target_80_{data_name}.npy",hr_target)
+    #         print(f"Extrapolation_pred_{data_name}_{apdx}_NODE.npy saved")        
 
     # def forward_predictions(model, lr_input, n_steps=10):
     #     has_pred = False
