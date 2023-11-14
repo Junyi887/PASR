@@ -722,7 +722,7 @@ if __name__ == '__main__':
     parser.add_argument('--in_channels',type = int, default=  1)
     parser.add_argument('--batch_size',type = int, default= 32)
     parser.add_argument('--scale_factor', type = int, default= 4)
-    parser.add_argument('--timescale_factor', type = int, default= 4)
+    parser.add_argument('--timescale_factor', type = int, default= 1)
     parser.add_argument('--n_snapshots',type =int, default= 20)
     parser.add_argument('--down_method', type = str, default= "bicubic")
     parser.add_argument('--noise_ratio', type = float, default= 0.0)
