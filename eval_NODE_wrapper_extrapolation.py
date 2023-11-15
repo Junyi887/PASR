@@ -110,7 +110,7 @@ def get_ssim(true,pred):
     list = torch.stack(list,dim =-1) # return ssim in shape B,C
     return list
 
-DATA_INFO = {"decay_turb":['../Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
+DATA_INFO = {"decay_turb":['/pscratch/sd/j/junyi012/Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
                  "burger2d": ["../Burgers_2D_small/test/Burgers2D_128x128_79.h5",0.001],
                  "rbc": ["../RBC_small/test/RBC_small_33_s2.h5",0.01]}
 
@@ -145,7 +145,7 @@ def load_test_data(data_name,timescale_factor = 10,num_snapshot = 10,in_channel=
     return lr_input,hr_target,lr_input_tensor,hr_target_tensor
 
                  
-def get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor,in_channels,task_dt,n_snapshots,ode_step):
+def get_prediction(model,lr_input_tensor,hr_target_tensor,scale_factor,in_channels,task_dt,n_snapshots,ode_step=100):
     model.eval()
     with torch.no_grad():
         pred = model(lr_input_tensor.float().cuda(),n_snapshots = n_snapshots)
@@ -211,7 +211,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     def get_normalizer(args):
         if args.normalization == "True":
-            stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
+            stats_loader = DataInfoLoader("/pscratch/sd/j/junyi012/Decay_Turbulence_small"+"/*/*.h5")
             mean, std = stats_loader.get_mean_std()
             min,max = stats_loader.get_min_max()
             if args.in_channels==1:
@@ -258,8 +258,8 @@ if __name__ == "__main__":
     RFNE,MAE,MSE = get_metric_RFNE(pred,hr_target_tensor)
     RFNE2,MAE2,MSE2 = get_metric_RFNE(pred2,hr_target_tensor2)
     fig = plt.figure()
-    plt.plot(np.arange(0,20,1),RFNE[:],label = "RFNE")
-    plt.plot(np.arange(0,20,0.5),RFNE2[:],label = "RFNE2")
+    plt.plot(np.arange(0,20,1),RFNE[5,1:,0],label = "RFNE")
+    plt.plot(np.arange(0,20,0.5),RFNE2[5,1:,0],label = "RFNE2")
     fig.savefig("RFNE_interpolation.png",bbox_inches = "tight")
     # PSNR = get_psnr(pred[:].float().cuda(),hr_target_tensor[:].float().cuda())
     # SSIM = get_ssim(pred[:].float().cuda(),hr_target_tensor[:].float().cuda())

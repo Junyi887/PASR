@@ -181,7 +181,7 @@ def plot_energy_specturm_overlay(data_name):
         if data_name == "DT":
             x_bound = 30
             zoom_in_localtion = [0.2, 0.2, 0.4, 0.2]
-            x1, x2, y1, y2 = 5, 12, 6e-5, 3e-3  # subregion of the original image
+            x1, x2, y1, y2 = 11, 12, 6e-5, 8e-4  # subregion of the original image
             save_batch = 3
             xticks = [6,10]
             y_bound = [1e-9,0.99999]
@@ -423,11 +423,11 @@ def plot_vorticity_correlation_extrapolation(data_name):
     return print("voritcity correlation extrapolation loop back plot done")
 import numpy as np 
 import matplotlib.pyplot as plt
-# plot_energy_specturm_overlay("DT")
+plot_energy_specturm_overlay("DT")
 # plot_RBC_comparision()
 # plot_energy_specturm_overlay("RBC")
-plot_vorticity_correlation("DT")
-plot_vorticity_correlation("RBC")
+# plot_vorticity_correlation("DT")
+# plot_vorticity_correlation("RBC")
 # plot_climate_comparision()
 # plot_climate_comparision_normalized()
 # plot_vorticity_correlation_extrapolation("decay_turb")
