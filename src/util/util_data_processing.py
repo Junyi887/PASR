@@ -40,7 +40,7 @@ class DataInfoLoader():
   - get_mean_std(self): Returns the mean and standard deviation of all data.
   - _get_files_stats(self): Gets the statistics of all files.
   """
-  def __init__(self,data_path):
+  def __init__(self,data_path,data_name = "Decay_turb"):
     """
     Initializes the DataInfoLoader class.
 
@@ -48,6 +48,7 @@ class DataInfoLoader():
     - data_path: A string representing the path to the data.
     """
     self.data_path = data_path
+    self.data_name = data_name
     self._get_files_stats()
 
   def get_all_data(self):
@@ -79,7 +80,7 @@ class DataInfoLoader():
     mean_list = []
     std_list = []
 
-    for i in range(3):
+    for i in range(self.mean_all_data.shape[1]):
       means = self.mean_all_data[:,i]
       stds = self.std_all_data[:,i]
       total_count = sum(counts)
@@ -102,41 +103,64 @@ class DataInfoLoader():
     self.files_paths = glob.glob(self.data_path) #only take s9
     self.files_paths.sort()
     self.n_files = len(self.files_paths)
-    print("Found {} files".format(self.n_files))
-    for i in range(self.n_files):
-      with h5py.File(self.files_paths[i], 'r') as _f:
-        print("Getting file stats from {}".format(self.files_paths[i]))
-        u = _f['tasks']["u"][()]
-        v = _f['tasks']["v"][()]
-        w = _f['tasks']["vorticity"][()]
-        self.n_samples_per_file = _f['tasks']["u"].shape[0]
-        self.img_shape_x = _f['tasks']["u"].shape[1]
-        self.img_shape_y = _f['tasks']["u"].shape[2]
-        _f.close()
-      mean0 = w.mean()
-      std0 = w.std()
-      max0 = w.max()
-      min0 = w.min()
-      mean1 = u.mean()
-      std1 = u.std()
-      max1 = u.max()
-      min1 = u.min()
-      mean2 = v.mean()
-      std2 = v.std()
-      max2 = v.max()
-      min2 = v.min()
-      mean = np.stack((mean0,mean1,mean2)) #
-      max = np.stack((max0,max1,max2))
-      min = np.stack((min0,min1,min2)) 
-      std = np.stack((std0,std1,std2))
-      self.mean_list.append(mean)
-      self.std_list.append(std)
-      self.max_list.append(max)
-      self.min_list.append(min)
-    self.min_all_data = np.stack(self.min_list)
-    self.max_all_data = np.stack(self.max_list)    
-    self.mean_all_data = np.stack(self.mean_list)
-    self.std_all_data = np.stack(self.std_list)
+    if "climate" in self.data_name:
+      print("Found {} files".format(self.n_files))
+      for i in range(self.n_files):
+        with h5py.File(self.files_paths[i], 'r') as _f:
+          print("Getting file stats from {}".format(self.files_paths[i]))
+          w = _f['fields'][()]
+          self.n_samples_per_file = _f['fields'].shape[0]
+          self.img_shape_x = _f['fields'].shape[1]
+          self.img_shape_y = _f['fields'].shape[2]
+          _f.close()
+        mean0 = w.mean()
+        std0 = w.std()
+        max0 = w.max()
+        min0 = w.min()
+        self.mean_list.append(mean0)
+        self.std_list.append(std0)
+        self.max_list.append(max0)
+        self.min_list.append(min0)
+      self.min_all_data = np.stack(self.min_list)
+      self.max_all_data = np.stack(self.max_list)    
+      self.mean_all_data = np.stack(self.mean_list)
+      self.std_all_data = np.stack(self.std_list)
+    else: 
+      print("Found {} files".format(self.n_files))
+      for i in range(self.n_files):
+        with h5py.File(self.files_paths[i], 'r') as _f:
+          print("Getting file stats from {}".format(self.files_paths[i]))
+          u = _f['tasks']["u"][()]
+          v = _f['tasks']["v"][()]
+          w = _f['tasks']["vorticity"][()]
+          self.n_samples_per_file = _f['tasks']["u"].shape[0]
+          self.img_shape_x = _f['tasks']["u"].shape[1]
+          self.img_shape_y = _f['tasks']["u"].shape[2]
+          _f.close()
+        mean0 = w.mean()
+        std0 = w.std()
+        max0 = w.max()
+        min0 = w.min()
+        mean1 = u.mean()
+        std1 = u.std()
+        max1 = u.max()
+        min1 = u.min()
+        mean2 = v.mean()
+        std2 = v.std()
+        max2 = v.max()
+        min2 = v.min()
+        mean = np.stack((mean0,mean1,mean2)) #
+        max = np.stack((max0,max1,max2))
+        min = np.stack((min0,min1,min2)) 
+        std = np.stack((std0,std1,std2))
+        self.mean_list.append(mean)
+        self.std_list.append(std)
+        self.max_list.append(max)
+        self.min_list.append(min)
+      self.min_all_data = np.stack(self.min_list)
+      self.max_all_data = np.stack(self.max_list)    
+      self.mean_all_data = np.stack(self.mean_list)
+      self.std_all_data = np.stack(self.std_list)
 
   def get_shape(self):
     return self.img_shape_x, self.img_shape_y

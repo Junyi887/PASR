@@ -544,6 +544,7 @@ if __name__ == '__main__':
         upscale_factor = [args.n_snapshots, 4], # [t_up, s_up]
         shift_mean_paras = [mean.tolist(), std.tolist()],  
         step = steps,
+        in_channels=args.in_channels,
         effective_step = effective_step).cuda()
 
     # define the initial states and initial output for model

@@ -205,10 +205,10 @@ def plot_energy_specturm_overlay(data_name):
         ax.set_xscale('log')
         ax.set_yscale('log')
         ax.loglog(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], 'k',label="Truth")
-        ax.loglog(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], 'b', alpha=0.6,label="Trilinear")
-        ax.loglog(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL], 'g', alpha=0.6,label="ConvLSTM")
-        ax.loglog(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], 'y', alpha=0.6,label="FNO3D")
-        ax.loglog(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], 'r', alpha=0.6,label="Ours")
+        ax.loglog(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], 'b', alpha=1,label="Trilinear")
+        ax.loglog(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL], 'g', alpha=1,label="ConvLSTM")
+        ax.loglog(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], 'y', alpha=1,label="FNO3D")
+        ax.loglog(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], 'r', alpha=1,label="Ours")
         axins = ax.inset_axes(zoom_in_localtion, xlim=(x1, x2), ylim=(y1, y2)) # [x0, y0, width, height]
 
         # # Plot on the inset
@@ -256,17 +256,17 @@ def plot_vorticity_correlation(data_name):
         correlation_tri[t] = corr_tri
         correlation_convL[t] = corr_convL
         correlation_FNO[t] = corr_FNO
-
+    color_profile = ['#ffffcc','#a1dab4','#41b6c4','#2c7fb8','#253494'] # from light to dark
     fig,axs = plt.subplots(1,1,figsize=(5,5))
     axs.set_xticks(np.arange(0,pred.shape[1],1))
-    axs.plot(np.arange(0,pred.shape[1],1),correlations,color='r',label="Ours")
-    axs.plot(np.arange(0,pred.shape[1],1),correlation_tri,color = 'b',label="TriLinear",alpha=0.6)
-    axs.plot(np.arange(0,pred.shape[1],1),correlation_convL,color = 'g',label="ConvLSTM",alpha=0.6)
-    axs.plot(np.arange(0,pred.shape[1],1),correlation_FNO,color = 'y',label="FNO",alpha=0.6)
-    axs.scatter(np.arange(0,pred.shape[1],1),correlations,color='r')
-    axs.scatter(np.arange(0,pred.shape[1],1),correlation_tri,color = 'b')
-    axs.scatter(np.arange(0,pred.shape[1],1),correlation_convL,color = 'g')
-    axs.scatter(np.arange(0,pred.shape[1],1),correlation_FNO,color = 'y')
+    axs.plot(np.arange(0,pred.shape[1],1),correlations,color=color_profile[-1],label="Ours")
+    axs.plot(np.arange(0,pred.shape[1],1),correlation_convL,color = color_profile[-2],label="ConvLSTM",alpha=0.6)
+    axs.plot(np.arange(0,pred.shape[1],1),correlation_FNO,color = color_profile[-3],label="FNO",alpha=0.6)
+    axs.plot(np.arange(0,pred.shape[1],1),correlation_tri,color = color_profile[-4],label="TriLinear",alpha=0.6)
+    axs.scatter(np.arange(0,pred.shape[1],1),correlations,color=color_profile[-1])
+    axs.scatter(np.arange(0,pred.shape[1],1),correlation_convL,color = color_profile[-2])
+    axs.scatter(np.arange(0,pred.shape[1],1),correlation_FNO,color = color_profile[-3])
+    axs.scatter(np.arange(0,pred.shape[1],1),correlation_tri,color = color_profile[-4])
     axs.axhline(y = 0.95, color = 'k', linestyle = 'dashed',alpha=0.5,label="95% reference line") 
     axs.legend()
     axs.set_xticks(np.arange(0,pred.shape[1],5),[0,None,10,None,20])
@@ -419,11 +419,11 @@ def plot_vorticity_correlation_extrapolation(data_name):
         axs.set_xlabel("time")
         axs.set_title(f"vorticity correlation -- {data_name}")
         fig.savefig(f"vorticity_correlation_{data_name}_{batch}_loop.png",dpi=300,bbox_inches='tight')
-
     return print("voritcity correlation extrapolation loop back plot done")
+
 import numpy as np 
 import matplotlib.pyplot as plt
-plot_energy_specturm_overlay("DT")
+# plot_energy_specturm_overlay("DT")
 # plot_RBC_comparision()
 # plot_energy_specturm_overlay("RBC")
 # plot_vorticity_correlation("DT")
