@@ -79,18 +79,20 @@ class DataInfoLoader():
     counts = [1]*self.n_files
     mean_list = []
     std_list = []
+    if "climate" in self.data_name:
+      return self.mean_all_data.mean(axis = 0), self.std_all_data.mean(axis = 0)
+    else:
+      for i in range(self.mean_all_data.shape[1]):
+        means = self.mean_all_data[:,i]
+        stds = self.std_all_data[:,i]
+        total_count = sum(counts)
+        combined_mean = np.sum([m * n for m, n in zip(means, counts)]) / total_count
+        # Calculate the variance for the combined dataset
+        combined_variance = np.sum([(counts[i] * stds[i]**2 + counts[i] * (means[i] - combined_mean)**2) for i in range(len(counts))]) / total_count
+        mean_list.append(combined_mean)
+        std_list.append(np.sqrt(combined_variance))
+      return np.stack(mean_list), np.stack(std_list)
 
-    for i in range(self.mean_all_data.shape[1]):
-      means = self.mean_all_data[:,i]
-      stds = self.std_all_data[:,i]
-      total_count = sum(counts)
-      combined_mean = np.sum([m * n for m, n in zip(means, counts)]) / total_count
-
-      # Calculate the variance for the combined dataset
-      combined_variance = np.sum([(counts[i] * stds[i]**2 + counts[i] * (means[i] - combined_mean)**2) for i in range(len(counts))]) / total_count
-      mean_list.append(combined_mean)
-      std_list.append(np.sqrt(combined_variance))
-    return np.stack(mean_list), np.stack(std_list)
 
   def _get_files_stats(self):
     """
@@ -125,14 +127,15 @@ class DataInfoLoader():
       self.max_all_data = np.stack(self.max_list)    
       self.mean_all_data = np.stack(self.mean_list)
       self.std_all_data = np.stack(self.std_list)
+      print(f"mean shape {self.mean_all_data.shape}")
     else: 
       print("Found {} files".format(self.n_files))
       for i in range(self.n_files):
         with h5py.File(self.files_paths[i], 'r') as _f:
           print("Getting file stats from {}".format(self.files_paths[i]))
-          u = _f['tasks']["u"][()]
-          v = _f['tasks']["v"][()]
-          w = _f['tasks']["vorticity"][()]
+          u = _f['tasks']["u"][()].astype(np.float32)
+          v = _f['tasks']["v"][()].astype(np.float32)
+          w = _f['tasks']["vorticity"][()].astype(np.float32)
           self.n_samples_per_file = _f['tasks']["u"].shape[0]
           self.img_shape_x = _f['tasks']["u"].shape[1]
           self.img_shape_y = _f['tasks']["u"].shape[2]
@@ -167,6 +170,6 @@ class DataInfoLoader():
 
 if __name__ == "__main__":
   print("hello")
-  info = DataInfoLoader("../Decay_Turbulence_small/*/*.h5")
+  info = DataInfoLoader("/pscratch/sd/j/junyi012/burger2D_10/*/*.h5",data_name= "burger")
   print(info.get_mean_std())
   print(info.get_min_max())

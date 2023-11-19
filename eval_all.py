@@ -16,16 +16,10 @@ DATA_INFO2 = {"decay_turb":"/pscratch/sd/j/junyi012/Decay_Turbulence_small/*/*.h
                     "burger2D":"../burger2D_10/*/*.h5"}
 
 def get_normalization(data_name):
-    if "climate" not in data_name:
-        normalizer = DataInfoLoader(DATA_INFO2[data_name])
-        mean,std = normalizer.get_mean_std()
-        print('mean of hres is:',mean.tolist())
-        print('stf of hres is:', std.tolist())
-    else:
-        min = np.array([196.6398630794458])
-        max = np.array([318.90588255242176])
-        mean =np.array([278.35330263805355])
-        std = np.array([20.867389868976833])
+    normalizer = DataInfoLoader(DATA_INFO2[data_name])
+    mean,std = normalizer.get_mean_std()
+    print('mean of hres is:',mean.tolist())
+    print('stf of hres is:', std.tolist())
     return mean,std
 
 

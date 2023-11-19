@@ -3,12 +3,12 @@ import argparse
 
 DATA_INFO = {'decay_turbulence':["/pscratch/sd/j/junyi012/Decay_Turbulence_small/","3"],
              "rbc":["/pscratch/sd/j/junyi012/RBC_small/","3"],
-             "burgers2D":["/pscratch/sd/j/junyi012/Burgers_2D_small/","3"],
+             "burgers2D":["/pscratch/sd/j/junyi012/burger2D_10/","3"],
              }
 
 MODEL_INFO = {"PASR_ODE_small": {"lr": 1e-3,"batch_size": 32,"epochs": 800,"lr_step":80,"gamma":0.5},}
 
-def generate_bash_script(data_name, model_name, scale_factor,seed =1234,method ="rk4",lamb_p= 0):
+def generate_bash_script(data_name, model_name, scale_factor,seed=1234,method ="rk4",lamb_p= 0):
     job_name = f"{data_name}_{model_name}_{scale_factor}_{seed}_{method}_{lamb_p}"
     short_name = f"{data_name}_{lamb_p}"
     if "FNO" in model_name:

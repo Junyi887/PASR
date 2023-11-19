@@ -4,22 +4,25 @@ with open('eval.json', 'r') as file:
 
 categories = {
     'DT': {
-        'Ours': ['PASR_ODE_small_Decay_turb_small_rk4'],
-        'ConvLSTM': ['ConvLSTM_Decay_turb_small_None'],
-        'FNO3D': ['FNO_Decay_turb_small_None'],
         'Tri-linear': ['Tri_Decay_turb_small_None'],
+        'FNO3D': ['FNO_Decay_turb_small_None'],
+        'ConvLSTM': ['ConvLSTM_Decay_turb_small_None'],
+        'Ours (Euler)': ['PASR_ODE_small_Decay_turb_small_euler'],
+        'Ours (rk4)': ['PASR_ODE_small_Decay_turb_small_rk4'],
     },
     'RBC': {
-        'Ours': ['PASR_small_rbc_small_RK4'],
-        'ConvLSTM': ['ConvLSTM_RBC_small_None'],
-        'FNO3D': ['FNO_RBC_small_None'],
         'Tri-linear': ['Tri_RBC_small_None'],
+        'FNO3D': ['FNO_RBC_small_None'],
+        'ConvLSTM': ['ConvLSTM_RBC_small_None'],
+        'Ours (Euler)': ['PASR_small_rbc_small_euler'],
+        'Ours (RK4)': ['PASR_small_rbc_small_rk4'],
     },
     'Climate': {
-        'Ours': ['PASR_small_climate_Euler'],
-        'ConvLSTM': ['ConvLSTM_Climate_None'],
-        'FNO3D': ['FNO_Climate_None'],
         'Tri-linear': ['Tri_Climate_None'],
+        'FNO3D': ['FNO_Climate_None'],
+        'ConvLSTM': ['ConvLSTM_Climate_None'],
+        'Ours (Euler)': ['PASR_small_climate_euler'],
+        'Ours (RK4)': ['PASR_small_climate_rk4'],
     },
 }
 
@@ -47,7 +50,7 @@ for category, methods in categories.items():
     latex_code += "        \\hline\n"
 
 latex_code += "    \\end{tabular}\n"
-latex_code += "    \\caption{Table for standard interpolation results}\n"
+latex_code += "    \\caption{Table for standard interpolation results (Data driven)}\n"
 latex_code += "    \\label{tab:my_label}\n"
 latex_code += "\\end{table}"
 
