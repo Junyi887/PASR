@@ -433,15 +433,25 @@ class PASR_ODE(nn.Module):
             prediction = torch.stack(prediction_list,dim = 1) # B,T,C,H,W
             return prediction
         
-        elif self.upsampler == 'nearest+conv':
+        elif self.upsampler == 'nearest_conv':
             # for real-world SR
             x = self.conv_first(x)
-            x = self.conv_after_body(self.forward_features(x)) + x
-            x = self.conv_before_upsample(x)
-            x = self.lrelu(self.conv_up1(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-            if self.upscale == 4:
-                x = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(x, scale_factor=2, mode='nearest')))
-            x = self.conv_last(self.lrelu(self.conv_hr(x)))
+            z0 = self.conv_after_body(self.forward_features(x)) + x
+            # load initial condition
+            y_t = self.ODEBlock(z0,eval_times = t)
+            T,B,C_l,H_l,W_l= y_t.shape
+            y_t= y_t.permute(1,0,2,3,4) # to B,T,C,H,W
+            for i in range(T):
+                y = self.conv_before_upsample(y_t[:,i])                 #HQ Image Reconstruction
+                y = self.conv_last(self.upsample(y))  
+                y = self.lrelu(self.conv_up1(torch.nn.functional.interpolate(y, scale_factor=2, mode='nearest')))
+                if self.upscale == 4:
+                    y = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(y, scale_factor=2, mode='nearest')))
+                y = self.conv_last(self.lrelu(self.conv_hr(y)))
+                y = self.shiftMean_func(y,"add")
+                prediction_list.append(y)
+            prediction = torch.stack(prediction_list,dim = 1) # B,T,C,H,W
+            return prediction
             
         # elif self.upsampler == 'shallowdecoder':
         #     # for real-world SR
