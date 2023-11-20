@@ -26,3 +26,9 @@ src/analysis_tools/*
 *.npy
 *.pyc
 bash_script/*.sbatch
+*.h5
+figures/*.png
+data_gen/*.h5
+data_gen/*.npy
+data_gen/*.png
+data_gen/figures/*

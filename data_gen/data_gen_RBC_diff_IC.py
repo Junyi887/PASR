@@ -98,6 +98,7 @@ if args.flag == "hr":
 else:
     noise = np.load('rbc_' +str(args.ic)+"_"+str(args.res*4) +".npy")
     b.data[:] = noise[::4,::4]
+    
 # Generate your own random values
 b['g'] *= z * (Lz - z) # Damp noise at walls
 b['g'] += Lz - z # Add linear background
