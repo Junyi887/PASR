@@ -349,7 +349,7 @@ class PASR_ODE(nn.Module):
             # for lightweight SR (to save parameters)
             self.upsample = UpsampleOneStep(upscale, embed_dim+aug_dim_t, num_out_ch,
                                             (patches_resolution[0], patches_resolution[1]))
-        elif self.upsampler == 'nearest+conv':
+        elif self.upsampler == 'nearest_conv':
             # for real-world SR (less artifacts)
             self.conv_before_upsample = nn.Sequential(nn.Conv2d(embed_dim+aug_dim_t, num_feat, 3, 1, 1),
                                                       nn.LeakyReLU(inplace=True))
@@ -435,15 +435,12 @@ class PASR_ODE(nn.Module):
         
         elif self.upsampler == 'nearest_conv':
             # for real-world SR
-            x = self.conv_first(x)
-            z0 = self.conv_after_body(self.forward_features(x)) + x
             # load initial condition
             y_t = self.ODEBlock(z0,eval_times = t)
             T,B,C_l,H_l,W_l= y_t.shape
             y_t= y_t.permute(1,0,2,3,4) # to B,T,C,H,W
             for i in range(T):
                 y = self.conv_before_upsample(y_t[:,i])                 #HQ Image Reconstruction
-                y = self.conv_last(self.upsample(y))  
                 y = self.lrelu(self.conv_up1(torch.nn.functional.interpolate(y, scale_factor=2, mode='nearest')))
                 if self.upscale == 4:
                     y = self.lrelu(self.conv_up2(torch.nn.functional.interpolate(y, scale_factor=2, mode='nearest')))

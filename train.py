@@ -250,8 +250,8 @@ if __name__ == "__main__":
             mean, std = stats_loader.get_mean_std()
             min,max = stats_loader.get_min_max()
             if args.in_channels==1:
-                mean,std = mean[0:1].tolist(),std[0:1].tolist()
-                min,max = min[0:1].tolist(),max[0:1].tolist()
+                mean,std = mean[0].tolist(),std[0].tolist()
+                min,max = min[0].tolist(),max[0].tolist()
             elif args.in_channels==3:
                 mean,std = mean.tolist(),std.tolist()
                 min,max = min.tolist(),max.tolist()

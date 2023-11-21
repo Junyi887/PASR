@@ -11,16 +11,35 @@ import torch.nn.functional as F
 import h5py
 from src.util.eval_util import *
 from torchvision import transforms
-DATA_INFO2 = {"decay_turb":"/pscratch/sd/j/junyi012/Decay_Turbulence_small/*/*.h5",
-                    "rbc": "/pscratch/sd/j/junyi012/RBC_small/*/*.h5",
+DATA_INFO2 = {"decay_turb":"/pscratch/sd/j/junyi012/Decay_Turbulence_small",
+                    "rbc": "/pscratch/sd/j/junyi012/RBC_small",
                     "burger2D":"../burger2D_10/*/*.h5"}
 
-def get_normalization(data_name):
-    normalizer = DataInfoLoader(DATA_INFO2[data_name])
-    mean,std = normalizer.get_mean_std()
-    print('mean of hres is:',mean.tolist())
-    print('stf of hres is:', std.tolist())
-    return mean,std
+
+
+def get_normalizer(data_name,in_channels=3,normalization_method="meanstd",normalization="True"):
+    stats_loader = DataInfoLoader(DATA_INFO[data_name]+"/*/*.h5")
+    if normalization == "True":
+        mean, std = stats_loader.get_mean_std()
+        min,max = stats_loader.get_min_max()
+        if in_channels==1:
+            mean,std = mean[0].tolist(),std[0].tolist()
+            min,max = min[0].tolist(),max[0].tolist()
+        elif in_channels==3:
+            mean,std = mean.tolist(),std.tolist()
+            min,max = min.tolist(),max.tolist()
+        elif in_channels==2:
+            mean,std = mean[1:].tolist(),std[1:].tolist()
+            min,max = min[1:].tolist(),max[1:].tolist()
+        if normalization_method =="minmax":
+            return min,max
+        if normalization_method =="meanstd":
+            return mean,std
+    else:
+        mean, std = [0], [1]
+        mean, std = mean *in_channels, std *in_channels
+        return mean,std
+mean,std = get_normalizer()
 
 
 def eval_ConvLSTM(data_name,model_path,in_channels,lr_input_tensor,hr_target_tensor,mean,std,num_snapshots=20,climate_normalization = False):

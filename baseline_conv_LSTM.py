@@ -478,8 +478,8 @@ def get_init_state(batch_size, hidden_channels, output_size, mode='coord'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='training parameters')
 
-    parser.add_argument('--data', type =str ,default= 'rbc_ConvLSTM')
-    parser.add_argument('--data_path',type = str,default = "../RBC_small")
+    parser.add_argument('--data', type =str ,default= 'DT_sequenceLR')
+    parser.add_argument('--data_path',type = str,default = "../decay_turb_lrsim")
     ## data processing arugments
     parser.add_argument('--in_channels',type = int, default= 3)
     parser.add_argument('--batch_size',type = int, default= 64)
@@ -488,6 +488,8 @@ if __name__ == '__main__':
     parser.add_argument('--n_snapshots',type =int, default= 20)
     parser.add_argument('--down_method', type = str, default= "bicubic")
     parser.add_argument('--noise_ratio', type = float, default= 0.0)
+    parser.add_argument('--normalization', type = str, default= "True")
+    parser.add_argument('--normalization_method', type = str, default= "meanstd")
 
     args = parser.parse_args()
     run["config"] = vars(args) 
@@ -503,25 +505,30 @@ if __name__ == '__main__':
                                                       in_channels=args.in_channels,)
     # get mean and std
 
-    if args.data =="Decay_turb_small" or args.data =="Decay_turb_convLSTM": 
-        image = [128,128]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-        ALL_DATA_PATH = "/pscratch/sd/j/junyi012/Decay_Turbulence_small/*/*.h5"
-    elif args.data =="rbc_small" or args.data =="rbc_convLSTM":
-        image = [256,64]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
-        ALL_DATA_PATH = "/pscratch/sd/j/junyi012/RBC_small/*/*.h5"
-    elif args.data =="burger2D_small" or args.data =="burger2D_convLSTM":
-        image = [128,128]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-        ALL_DATA_PATH = "../burger2D_10/*/*.h5"
-
-    normalizer = DataInfoLoader(ALL_DATA_PATH[args.data])
-    mean,std = normalizer.get_mean_std()
-    shape_x,shape_y = normalizer.get_shape()
-    print('mean of hres is:',mean.tolist())
-    print('stf of hres is:', std.tolist())
-
+    stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
+    def get_normalizer(args,stats_loader=stats_loader):
+        if args.normalization == "True":
+            mean, std = stats_loader.get_mean_std()
+            min,max = stats_loader.get_min_max()
+            if args.in_channels==1:
+                mean,std = mean[0:1].tolist(),std[0:1].tolist()
+                min,max = min[0:1].tolist(),max[0:1].tolist()
+            elif args.in_channels==3:
+                mean,std = mean.tolist(),std.tolist()
+                min,max = min.tolist(),max.tolist()
+            elif args.in_channels==2:
+                mean,std = mean[1:].tolist(),std[1:].tolist()
+                min,max = min[1:].tolist(),max[1:].tolist()
+            if args.normalization_method =="minmax":
+                return min,max
+            if args.normalization_method =="meanstd":
+                return mean,std
+        else:
+            mean, std = [0], [1]
+            mean, std = mean * args.in_channels, std * args.in_channels
+            return mean,std
+    mean,std = get_normalizer(args)
+    shape_x,shape_y = stats_loader.get_shape()
 
     ######################### build model #############################
     # training parameters
@@ -542,7 +549,7 @@ if __name__ == '__main__':
         n_feats = 32,
         n_layers = [1, 2], # [n_convlstm, n_resblock]
         upscale_factor = [args.n_snapshots, 4], # [t_up, s_up]
-        shift_mean_paras = [mean.tolist(), std.tolist()],  
+        shift_mean_paras = [mean, std],  
         step = steps,
         in_channels=args.in_channels,
         effective_step = effective_step).cuda()

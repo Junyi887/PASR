@@ -6,3 +6,4 @@ from .FNO3D import FNO3D
 from .ConvLSTM import PhySR
 from .ConvLSTM import get_init_state
 from .PASR_ODE import PASR_ODE
+from .FNO3D_v2 import FNO3D_v2

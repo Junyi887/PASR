@@ -170,6 +170,8 @@ class DataInfoLoader():
 
 if __name__ == "__main__":
   print("hello")
-  info = DataInfoLoader("/pscratch/sd/j/junyi012/burger2D_10/*/*.h5",data_name= "burger")
+  info = DataInfoLoader("/pscratch/sd/j/junyi012/climate_data/s4_sig1/*/*.h5",data_name= "climate")
+  mean, std = info.get_mean_std()
   print(info.get_mean_std())
   print(info.get_min_max())
+  mean,std = mean[0:1].tolist(),std[0:1].tolist()
