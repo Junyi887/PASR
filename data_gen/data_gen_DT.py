@@ -95,6 +95,7 @@ step_fn_lr = cfd.funcutils.repeated(
 rollout_fn_lr = jax.jit(cfd.funcutils.trajectory(step_fn_lr, outer_steps))
 time,trajectory_lr = jax.device_get(rollout_fn_lr(v0_lr))
 
+dt = 0.001
 step_fn_hr = cfd.funcutils.repeated(
     cfd.equations.semi_implicit_navier_stokes(
         density=density, viscosity=viscosity, dt=dt, grid=grid_hr),
@@ -148,13 +149,13 @@ print(f"type of u_lr = {type(u_lr)}, type of v_lr = {type(v_lr)}, type of vortic
 print(f"type of u_hr = {type(u_hr)}, type of v_hr = {type(v_hr)}, type of vorticity_hr = {type(w_hr)}")
 with h5py.File(f'decay_turb_lres_sim_s{scale}_{seed}.h5', 'w') as f:
     tasks = f.create_group('tasks')
-    tasks.create_dataset('u', data=u_hr[400:])
-    tasks.create_dataset('v', data=v_hr[400:])
-    tasks.create_dataset('vorticity', data=w_hr[400:])
-    tasks.create_dataset('t', data=t[400:])
-    tasks.create_dataset('u_lr', data=u_lr[400:])
-    tasks.create_dataset('v_lr', data=v_lr[400:])
-    tasks.create_dataset('vorticity_lr', data=w_lr[400:])
+    tasks.create_dataset('u', data=u_hr[200:700])
+    tasks.create_dataset('v', data=v_hr[200:700])
+    tasks.create_dataset('vorticity', data=w_hr[200:700])
+    tasks.create_dataset('t', data=t[200:700])
+    tasks.create_dataset('u_lr', data=u_lr[200:700])
+    tasks.create_dataset('v_lr', data=v_lr[200:700])
+    tasks.create_dataset('vorticity_lr', data=w_lr[200:700])
 
 print(t)
 import matplotlib.pyplot as plt     
@@ -163,18 +164,18 @@ fig,axs = plt.subplots(4,4,figsize=(8,8))
 i = 0
 for ax in axs:
    for a in ax:
-        a.imshow(w_hr[i*100])
+        a.imshow(w_hr[i*20])
         i+=1
-        a.set_title(t[i*100])
-fig.savefig(f'data_gen/figures/vorticity_dynamics_hr_{seed}.png')
+        a.set_title(t[i*20])
+fig.savefig(f'data_gen/vorticity_dynamics_hr_{seed}.png')
 fig,axs = plt.subplots(4,4,figsize=(8,8))
 i = 0
 for ax in axs:
    for a in ax:
-        a.imshow(w_lr[i*100])
+        a.imshow(w_lr[i*20])
         i+=1
-        a.set_title(t[i*100])
-fig.savefig(f'data_gen/figures/vorticity_dynamics_lr_{seed}.png')
+        a.set_title(t[i*20])
+fig.savefig(f'data_gen/vorticity_dynamics_lr_{seed}.png')
 fig,axs = plt.subplots(4,4,figsize=(8,8))
 i = 0
 for ax in axs:

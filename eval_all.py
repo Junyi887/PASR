@@ -11,8 +11,9 @@ import torch.nn.functional as F
 import h5py
 from src.util.eval_util import *
 from torchvision import transforms
-DATA_INFO2 = {"decay_turb":"/pscratch/sd/j/junyi012/Decay_Turbulence_small",
-                    "rbc": "/pscratch/sd/j/junyi012/RBC_small",
+DATA_INFO = {"decay_turb":"/pscratch/sd/j/junyi012/Decay_Turbulence_small",
+              "decay_turb_lrsim_4":"../decay_turb_lrsim",
+                "rbc": "/pscratch/sd/j/junyi012/RBC_small",
                     "burger2D":"../burger2D_10/*/*.h5"}
 
 
@@ -23,8 +24,8 @@ def get_normalizer(data_name,in_channels=3,normalization_method="meanstd",normal
         mean, std = stats_loader.get_mean_std()
         min,max = stats_loader.get_min_max()
         if in_channels==1:
-            mean,std = mean[0].tolist(),std[0].tolist()
-            min,max = min[0].tolist(),max[0].tolist()
+            mean,std = mean[0:1].tolist(),std[0:1].tolist()
+            min,max = min[0:1].tolist(),max[0:1].tolist()
         elif in_channels==3:
             mean,std = mean.tolist(),std.tolist()
             min,max = min.tolist(),max.tolist()
@@ -39,7 +40,6 @@ def get_normalizer(data_name,in_channels=3,normalization_method="meanstd",normal
         mean, std = [0], [1]
         mean, std = mean *in_channels, std *in_channels
         return mean,std
-mean,std = get_normalizer()
 
 
 def eval_ConvLSTM(data_name,model_path,in_channels,lr_input_tensor,hr_target_tensor,mean,std,num_snapshots=20,climate_normalization = False):
@@ -117,19 +117,12 @@ def eval_NODE_wrapper(data_name,model_path,in_channels,lr_input_tensor,hr_target
     config = checkpoint['config']
     args = argparse.Namespace()
     args.__dict__.update(config)
-    if args.data =="Decay_turb_small": 
-        image = [128,128]
-        window_size = 8
-    elif args.data =="rbc_small":
-        image = [256,64]
-        window_size = 8
-    elif args.data =="burger2D":
-        image = [128,128]
-        window_size = 8
-    elif args.data =="climate":
-        image = [180,360]
-        window_size = 9
-    model = PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t)
+    window_size = args.window_size
+    stats_loader = DataInfoLoader(DATA_INFO[data_name]+"/*/*.h5")
+    img_x, img_y = stats_loader.get_shape()
+    height = (img_x // args.scale_factor // window_size + 1) * window_size
+    width = (img_y // args.scale_factor // window_size + 1) * window_size
+    model = PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=(height,width), window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t)
     model = torch.nn.DataParallel(model).to(device)
     model.load_state_dict(model_state)
     model.eval()
@@ -193,9 +186,10 @@ def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR):
 if __name__ == "__main__":
     # data_name_list = ["decay_turb","rbc","climate_s4_sig1"]
     # data_name_list = ["climate_s4_sig1","climate_s4_sig0","climate_s4_sig2","climate_s4_sig4"]
-    data_name_list = ["burger2D"]
+    # data_name_list = ["burger2D"]
     # data_name_list = ["climate_s2_sig1","climate_s2_sig0","climate_s2_sig2","climate_s2_sig4"]
     # data_name_list = ["climate_s4_sig1"]
+    data_name_list = ["decay_turb_lrsim_4"]
     # model_list = [ConvLSTM, FNO, NODE]
     model_info = {
         "ConvLSTM_rbc": "best_results/ConvLSTM_RBC_4458_checkpoint.pt",
@@ -214,34 +208,40 @@ if __name__ == "__main__":
         "Conv_burger2D": "ConvLSTM_Burgers_4822_checkpoint.pt",
         "FNO_burger2D": "results/FNO_data_burger2D_FNO_5379.pt",
         "NODE_burger2D": "results/PASR_ODE_small_data_burger2D_5353.pt",
+        "NODE_decay_turb_lrsim_4_euler": "results/PASR_ODE_small_data_decay_turbulence_lrsim_2038.pt",
+
     }
     apdx = "euler"
     norm_Flag = False
     for data_name in data_name_list:
-        for apdx in ["rk4"]:
+        for apdx in ["euler"]:
             if "climate" in data_name:
                 in_channel = 1
             else:
                 in_channel = 3
             batch = 5 
-            mean,std = get_normalization(data_name) # data name should be decay_turb, rbc, climate_s4_sig1
+            mean,std = get_normalizer(data_name) # data name should be decay_turb, rbc, climate_s4_sig1
             lr_input,hr_target,lr_input_tensor, hr_target_tensor = load_test_data_IC(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=20, upscale_factor=4)
             print(f"hr_input_tensor shape {hr_target_tensor.shape}")
             lr_input2, hr_target2, lr_input_tensor2, hr_target_tensor2 = load_test_data_sequence(data_name,in_channel=in_channel, timescale_factor=4, num_snapshot=20, upscale_factor=4)
             pred_tri,RFNE_tri, MSE_tri, MAE_tri,IN_tri,SSIM_tri,PSNR_tri = trilinear_interpolation(lr_input_tensor2,hr_target_tensor2,climate_normalization=norm_Flag)
-            pred_conv,RFNE_conv, MSE_conv, MAE_conv,IN_conv,SSIM_conv,PSNR_conv = eval_ConvLSTM(data_name,model_info[f"Conv_{data_name}"],in_channel,lr_input_tensor2,hr_target_tensor2,mean,std,climate_normalization=norm_Flag)
-            pred_fno,RFNE_fno, MSE_fno, MAE_fno,IN_fno,SSIM_fno,PSNR_fno = eval_FNO(data_name,model_info[f"FNO_{data_name}"],in_channel,lr_input_tensor2,hr_target_tensor2,mean,std,climate_normalization=norm_Flag)
-            pred_node,RFNE_node, MSE_node, MAE_node,IN_node,SSIM_node,PSNR_node = eval_NODE_wrapper(data_name,model_info[f"NODE_{data_name}"],in_channel,lr_input_tensor,hr_target_tensor,mean,std,num_snapshots=20,task_dt=1,climate_normalization=norm_Flag)
-            if norm_Flag == True:
-                dump_json(f"ConvLSTM_{data_name}_normalized", RFNE_conv.mean(), MAE_conv.mean(), MSE_conv.mean(), IN_conv.mean(), SSIM_conv.mean(), PSNR_conv.mean())
-                dump_json(f"FNO_{data_name}_normalized", RFNE_fno.mean(), MAE_fno.mean(), MSE_fno.mean(), IN_fno.mean(), SSIM_fno.mean(), PSNR_fno.mean())
-                dump_json(f"NODE_{data_name}_{apdx}_normalized", RFNE_node[batch:].mean(), MAE_node[batch:].mean(), MSE_node[batch:].mean(), IN_node[batch:].mean(), SSIM_node.mean(), PSNR_node.mean())
-                dump_json(f"Trilinear_{data_name}_normalized", RFNE_tri.mean(), MAE_tri.mean(), MSE_tri.mean(), IN_tri.mean(), SSIM_tri.mean(), PSNR_tri.mean())
-            else:
-                dump_json(f"ConvLSTM_{data_name}", RFNE_conv, MAE_conv, MSE_conv, IN_conv, SSIM_conv.mean(), PSNR_conv.mean())
-                dump_json(f"FNO_{data_name}", RFNE_fno, MAE_fno, MSE_fno, IN_fno, SSIM_fno.mean(), PSNR_fno.mean())
-                dump_json(f"NODE_{data_name}_{apdx}", RFNE_node[batch:], MAE_node[batch:], MSE_node[batch:], IN_node[batch:], SSIM_node.mean(), PSNR_node.mean())
-                dump_json(f"Trilinear_{data_name}", RFNE_tri, MAE_tri, MSE_tri, IN_tri, SSIM_tri.mean(), PSNR_tri.mean())
+            # pred_conv,RFNE_conv, MSE_conv, MAE_conv,IN_conv,SSIM_conv,PSNR_conv = eval_ConvLSTM(data_name,model_info[f"Conv_{data_name}"],in_channel,lr_input_tensor2,hr_target_tensor2,mean,std,climate_normalization=norm_Flag)
+            # pred_fno,RFNE_fno, MSE_fno, MAE_fno,IN_fno,SSIM_fno,PSNR_fno = eval_FNO(data_name,model_info[f"FNO_{data_name}"],in_channel,lr_input_tensor2,hr_target_tensor2,mean,std,climate_normalization=norm_Flag)
+            pred_node,RFNE_node, MSE_node, MAE_node,IN_node,SSIM_node,PSNR_node = eval_NODE_wrapper(data_name,model_info[f"NODE_{data_name}_{apdx}"],in_channel,lr_input_tensor,hr_target_tensor,mean,std,num_snapshots=20,task_dt=1,climate_normalization=norm_Flag)
+            print(RFNE_node.shape)
+            print(RFNE_node.mean())
+            # if norm_Flag == True:
+            print(RFNE_tri.shape)
+            print(RFNE_tri.mean())
+            #     dump_json(f"ConvLSTM_{data_name}_normalized", RFNE_conv.mean(), MAE_conv.mean(), MSE_conv.mean(), IN_conv.mean(), SSIM_conv.mean(), PSNR_conv.mean())
+            #     dump_json(f"FNO_{data_name}_normalized", RFNE_fno.mean(), MAE_fno.mean(), MSE_fno.mean(), IN_fno.mean(), SSIM_fno.mean(), PSNR_fno.mean())
+            #     dump_json(f"NODE_{data_name}_{apdx}_normalized", RFNE_node[batch:].mean(), MAE_node[batch:].mean(), MSE_node[batch:].mean(), IN_node[batch:].mean(), SSIM_node.mean(), PSNR_node.mean())
+            #     dump_json(f"Trilinear_{data_name}_normalized", RFNE_tri.mean(), MAE_tri.mean(), MSE_tri.mean(), IN_tri.mean(), SSIM_tri.mean(), PSNR_tri.mean())
+            # else:
+            #     dump_json(f"ConvLSTM_{data_name}", RFNE_conv, MAE_conv, MSE_conv, IN_conv, SSIM_conv.mean(), PSNR_conv.mean())
+            #     dump_json(f"FNO_{data_name}", RFNE_fno, MAE_fno, MSE_fno, IN_fno, SSIM_fno.mean(), PSNR_fno.mean())
+            #     dump_json(f"NODE_{data_name}_{apdx}", RFNE_node[batch:], MAE_node[batch:], MSE_node[batch:], IN_node[batch:], SSIM_node.mean(), PSNR_node.mean())
+            #     dump_json(f"Trilinear_{data_name}", RFNE_tri, MAE_tri, MSE_tri, IN_tri, SSIM_tri.mean(), PSNR_tri.mean())
             # np.save(f"pred_{data_name}_ConvLSTM.npy",pred_conv)
             # np.save(f"pred_{data_name}_FNO.npy",pred_fno)
             # np.save(f"pred_{data_name}_{apdx}_NODE.npy",pred_node)

@@ -10,6 +10,7 @@ from src.data_loader_nersc import getData
 DATA_INFO = {"decay_turb":['/pscratch/sd/j/junyi012/Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
                  "burger2D": ["../burger2D_10/test/Burger2D_716_s1.h5",0.001],
                  "rbc": ["/pscratch/sd/j/junyi012/RBC_small/test/RBC_small_33_s2.h5",0.01],
+                 "decay_turb_lrsim_4":["../decay_turb_lrsim/train/decay_turb_lres_sim_s4_162.h5",0.001],
                  "climate_s4_sig1": ["/pscratch/sd/j/junyi012/climate_data/s4_sig1/",1],
                 "climate_s4_sig0": ["/pscratch/sd/j/junyi012/climate_data/s4_sig0/",1],
                 "climate_s4_sig2": ["/pscratch/sd/j/junyi012/climate_data/s4_sig2/",1],
@@ -104,7 +105,6 @@ def energy_specturm(u,v):
 
 def get_psnr(true, pred,mean=0,std=1):
     # shape with B,T,C,H,W
-    print("adfadfadf",true.shape,pred.shape)
     with torch.no_grad():
         if mean != 0:
             true = (true-mean)/std

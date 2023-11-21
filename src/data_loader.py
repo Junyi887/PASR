@@ -103,7 +103,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
         return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     else:
         train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-        val1_loader = get_data_loader(data_name, data_path, '/val', "test", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
+        val1_loader = get_data_loader(data_name, data_path, '/val', "val", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
         val2_loader = get_data_loader(data_name, data_path, '/test', "no_roll_out", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
         test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
         test2_loader = get_data_loader(data_name, data_path, '/test', "no_roll_out", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
@@ -133,10 +133,13 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
     if state == "train":
         shuffle = True
         drop_last = True
+    elif state =="val":
+        shuffle = True
+        drop_last = False
     else:
         shuffle = False
         drop_last = False
-
+    
     dataloader = DataLoader(dataset,
                             batch_size = int(batch_size),
                             num_workers = 2, # TODO: make a param
@@ -548,7 +551,7 @@ if __name__ == "__main__":
     #         print(f"{name} target shape {target.shape}")
     for name in ["dcay_lrsim"]: #,"dy_sequenceLR"
         i =0 
-        train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= name,batch_size= 512,data_path="../decay_turb_lrsim",in_channels =3,timescale_factor= 20)
+        train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= name,batch_size= 512,data_path="../decay_turb_lrsim_short4",in_channels =1,timescale_factor= 4)
         for loader in [train_loader, val1_loader, val2_loader, test1_loader, test2_loader]:
             for idx, (input,target) in enumerate (loader):
                 input = input
@@ -558,11 +561,11 @@ if __name__ == "__main__":
             i +=1
             for j in range (5):
                 fig,ax = plt.subplots(1,3)
-                ax[0].imshow(input[0,0,:,:])
-                ax[1].imshow(target[0,0,0,:,:])
-                ax[2].imshow(target[0,j*4,0,:,:])
+                ax[0].imshow(input[-1,0,:,:])
+                ax[1].imshow(target[-1,0,0,:,:])
+                ax[2].imshow(target[-1,j*4,0,:,:])
                 fig.savefig(f"debug/decay_turb{i}_{j}.png")
-
+                plt.close()
     # for name in [ "climate","climate_sequence",]:
     #     train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= name,batch_size= 512,data_path="/pscratch/sd/j/junyi012/climate_data/s4_sig0/data",in_channels =3,timescale_factor= 20)
     #     for loader in [train_loader, val1_loader, val2_loader, test1_loader, test2_loader]:
