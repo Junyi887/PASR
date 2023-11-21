@@ -551,7 +551,7 @@ if __name__ == "__main__":
     #         print(f"{name} target shape {target.shape}")
     for name in ["dcay_lrsim"]: #,"dy_sequenceLR"
         i =0 
-        train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= name,batch_size= 512,data_path="../decay_turb_lrsim_short4",in_channels =1,timescale_factor= 4)
+        train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= name,batch_size= 512,data_path="../decay_turb_lrsim_short4",in_channels =1,timescale_factor= 10,num_snapshots=20)
         for loader in [train_loader, val1_loader, val2_loader, test1_loader, test2_loader]:
             for idx, (input,target) in enumerate (loader):
                 input = input

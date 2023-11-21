@@ -37,7 +37,7 @@ def generate_bash_script(data_name, model_name, scale_factor,seed=1234,method ="
 
 module load pytorch/2.0.1
 
-cmd1="srun train_fluid_ODE_wrapper_tune.py --data_path {DATA_INFO[data_name][0]} --data {data_name} --in_channels {DATA_INFO[data_name][1]} --model {model_name} --lr {MODEL_INFO[model_name]['lr']} --batch_size {MODEL_INFO[model_name]['batch_size']} --epochs {MODEL_INFO[model_name]['epochs']} --lr_step {MODEL_INFO[model_name]['lr_step']} --gamma {MODEL_INFO[model_name]['gamma']} --seed {seed} --ode_method {method} --lamb_p {lamb_p} --physics {phyiscs} --timescale_factor 5 --upsampler {upsampler} --n_snapshts {n_snapshots}"
+cmd1="srun python train_fluid_ODE_wrapper_tune.py --data_path {DATA_INFO[data_name][0]} --data {data_name} --in_channels {DATA_INFO[data_name][1]} --model {model_name} --lr {MODEL_INFO[model_name]['lr']} --batch_size {MODEL_INFO[model_name]['batch_size']} --epochs {MODEL_INFO[model_name]['epochs']} --lr_step {MODEL_INFO[model_name]['lr_step']} --gamma {MODEL_INFO[model_name]['gamma']} --seed {seed} --ode_method {method} --lamb_p {lamb_p} --physics {phyiscs} --timescale_factor 5 --upsampler {upsampler} --n_snapshots {n_snapshots}"
 
 set -x
 bash -c "$cmd1"
