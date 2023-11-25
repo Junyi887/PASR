@@ -72,9 +72,9 @@ def validation(args,model, val1_loader,val2_loader,device):
             RFNE_t = torch.norm(out_t-target,p=2,dim = (-1,-2))/torch.norm(target,p=2,dim = (-1,-2))
             target_loss1 += loss_t.item() 
             input_loss1 += 0
-            RFNE1_loss += RFNE_t.mean().item()
-            psnr1_loss += psnr(out_t, target).item()
-    result_loader1 = [input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE1_loss /len(val1_loader),psnr1_loss/len(val1_loader)]
+            RFNE1_loss = RFNE_t.mean().item()
+            psnr1_loss = psnr(out_t, target).mean().item()
+    result_loader1 = [input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE1_loss,psnr1_loss]
     target_loss2 = 0 
     input_loss2 = 0
     RFNE2_loss = 0
@@ -89,9 +89,9 @@ def validation(args,model, val1_loader,val2_loader,device):
             RFNE_t = torch.norm(out_t-target,p=2,dim = (-1,-2))/torch.norm(target,p=2,dim = (-1,-2))
             target_loss2 += loss_t.item() 
             input_loss2 += 0
-            RFNE2_loss += RFNE_t.mean().item()
-            psnr2_loss += psnr(out_t, target).item()
-    result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader),psnr2_loss/len(val2_loader)]
+            RFNE2_loss = RFNE_t.mean().item()
+            psnr2_loss = psnr(out_t, target).item()
+    result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss,psnr2_loss]
     return result_loader1,result_loader2
 
 def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath):
@@ -136,8 +136,6 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         val_list_x2.append(result_val2[2])
         run['train/train_loss'].log(avg_loss / len(trainloader))
         run['val/val_loss'].log(avg_val)
-        run['train/train_loss_x'].log(input_loss / len(trainloader))
-        run['train/train_loss_t'].log(target_loss / len(trainloader))
         run['val/val_loss_x1'].log(result_val1[0])
         run['val/val_loss_t1'].log(result_val1[1])
         run['test/test_loss_x1'].log(result_val2[0])
@@ -247,6 +245,10 @@ if __name__ == "__main__":
             mean, std = mean * args.in_channels, std * args.in_channels
             return mean,std
     mean,std = get_normalizer(args)
+    mean = mean +[0]*3
+    std = std + [1]*3
+    print("mean ",mean)
+    print("std  ", std)
     img_x,img_y = stats_loader.get_shape()
 
     layers = [64, 64, 64, 64, 64]

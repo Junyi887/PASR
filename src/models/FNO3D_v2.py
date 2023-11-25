@@ -16,7 +16,7 @@ class ShiftMean(nn.Module):
         if mode == 'sub':
             return (x - self.mean.cuda()) / self.std.cuda()
         elif mode == 'add':
-            return x * self.std.cuda() + self.mean.cuda()
+            return x * self.std[0:1,:3].cuda() + self.mean[0:1,:3].cuda()
         else:
             raise NotImplementedError
         
