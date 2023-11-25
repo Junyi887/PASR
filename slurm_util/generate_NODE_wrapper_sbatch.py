@@ -5,6 +5,7 @@ DATA_INFO = {'decay_turbulence':["/pscratch/sd/j/junyi012/Decay_Turbulence_small
              "rbc":["/pscratch/sd/j/junyi012/RBC_small/","3"],
              "burgers2D":["/pscratch/sd/j/junyi012/burger2D_10/","3"],
             "decay_turbulence_lrsim":["../decay_turb_lrsim_short4","3"],
+            "decay_turbulence_lrsim_v2":["../DT_shorter","3"],
              }
 
 MODEL_INFO = {"PASR_ODE_small": {"lr": 1e-3,"batch_size": 64,"epochs": 500,"lr_step":100,"gamma":0.5},}
@@ -49,14 +50,14 @@ bash -c "$cmd1"
     return  job_name
 # Run the function
 if __name__ == "__main__":
-    data_name = ['decay_turbulence_lrsim']
+    data_name = ['decay_turbulence_lrsim_v2']
     model_name =  "PASR_ODE_small"
     for name in data_name:
         for method in ["euler"]:
             for lamb_p in [0]:
                 for upsampler in ["nearest_conv","pixelshuffle"]:
-                    for n_snapshots in [20,10]:
-                        job_name = generate_bash_script(data_name=name,model_name=model_name,scale_factor=4,method=method,lamb_p=lamb_p,upsampler=upsampler,seed=3407,n_snapshots=n_snapshots)
+                    for n_snapshots in [20,30]:
+                        job_name = generate_bash_script(data_name=name,model_name=model_name,scale_factor=4,method=method,lamb_p=lamb_p,upsampler=upsampler,seed=2407,n_snapshots=n_snapshots)
                         with open("bash.sh","a") as f:
                             print(f"sbatch bash_script/{job_name}.sbatch",file=f)
                         f.close()

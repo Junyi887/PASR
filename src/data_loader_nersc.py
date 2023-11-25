@@ -30,7 +30,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
         train_loader = DataLoader(train_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
         val1_loader= DataLoader(val_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
         val2_loader = DataLoader(test_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
-        test1_loader = val2_loader
+        test1_loader = val1_loader
         test2_loader = val2_loader
         return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     elif data_name == "climate_sequence":
@@ -40,7 +40,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
         train_loader = DataLoader(train_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
         val1_loader= DataLoader(val_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
         val2_loader = DataLoader(test_set,batch_size=batch_size,shuffle=True,sampler = None,drop_last = True,pin_memory = False)
-        test1_loader = val2_loader
+        test1_loader = val1_loader
         test2_loader = val2_loader
         return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     else:

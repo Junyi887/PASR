@@ -15,6 +15,6 @@ export OMP_PROC_BIND=spread
 echo $1
 
 module load python
-#run the application:
-which python
-srun -n 1 -c 256 --cpu_bind=cores python data_gen/Burgers2D_dedalus.py --seed $1
+module load pytorch
+
+srun -n 1 -c 256 --cpu_bind=cores python data_gen/data_gen_DT_abalation.py --res 1024 --seed 0

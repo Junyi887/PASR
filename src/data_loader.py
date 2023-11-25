@@ -73,6 +73,18 @@ def random_split(dataset, lengths,
     indices = randperm(sum(lengths), generator=generator).tolist()  # type: ignore[call-overload]
     return [Subset(dataset, indices[offset - length : offset]) for offset, length in zip(_accumulate(lengths), lengths)]
 
+def getData_test(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
+             upscale_factor= 4,timescale_factor = 1, num_snapshots = 20,
+             noise_ratio = 0.0, crop_size = 128, method = "bicubic", 
+             batch_size = 1, std = [0.6703, 0.6344, 8.3615],in_channels = 1):
+    
+    test_dataset = GetDataset_lres_viz(data_path+"/test", "no_roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+    test_loader = DataLoader(test_dataset,batch_size=batch_size,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
+    test_dataset_viz = GetDataset_lres_viz(data_path+"/viz", "no_roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+    test_loader_viz = DataLoader(test_dataset_viz,batch_size=512,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
+    test_dataset_viz2 = GetDataset_lres_viz(data_path+"/viz", "roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+    test_loader_viz2 = DataLoader(test_dataset_viz2,batch_size=512,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
+    return test_loader,test_loader_viz,test_loader_viz2
 
 def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
              upscale_factor= 4,timescale_factor = 1, num_snapshots = 20,
@@ -405,7 +417,7 @@ class GetDataset_diffIC_LowRes_sequence(BaseDataset):
         y = torch.stack(y_samples, dim=1)
         X = torch.stack(X_samples, dim=1)
         return X, y
-    
+
 class GetDataset_diffIC_LowRes(BaseDataset):
     '''return B, T, C, H, W'''
     def __init__(self, *args, **kwargs):
@@ -438,9 +450,36 @@ class GetDataset_diffIC_LowRes(BaseDataset):
         y = torch.stack(y_samples, dim=0)
         return X, y
     
+class GetDataset_lres_viz(GetDataset_diffIC_LowRes):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    def _get_files_stats(self):
+        super()._get_files_stats()
 
+    def __getitem__(self, global_idx):
+        file_idx, local_idx = self.get_indices(global_idx)
+        self.ensure_correct_index(global_idx, local_idx)
+        if self.files[file_idx] is None:
+            self._open_file(file_idx)
+
+        channel_names = self.get_channel_names()
+        lr_names = self.get_LR_channel_names()
+        # Load the current sample
+        y_current = self.load_sample(file_idx, local_idx,channel_names)
+        X_current = self.load_sample(file_idx, local_idx,lr_names)
+        # Load future samples
+        X_future = self.load_future_samples(file_idx, local_idx,lr_names)
+        y_future = self.load_future_samples(file_idx, local_idx,channel_names)
+        # Combine current and future samples
+        X_samples = [X_current] + X_future
+        y_samples = [y_current] + y_future
+        y = torch.stack(y_samples, dim=0)
+        X = torch.stack(X_samples, dim=0)
+        return X, y
+    
 class GetClimateDatasets(BaseDataset):
     def __init__(self, *args, **kwargs):
+        self.files_paths = glob.glob(self.location + "/*.h5")
         super().__init__(*args, **kwargs)
         # Additional initialization specific to this dataset
     def _get_files_stats(self):

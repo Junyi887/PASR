@@ -28,7 +28,7 @@ density = 1.
 viscosity = 1e-3
 seed = args.seed
 inner_steps = 10
-outer_steps = 2000
+outer_steps = 1000
 #dt = 0.001
 max_velocity = 2.0
 cfl_safety_factor = 0.5
@@ -90,7 +90,7 @@ dt = 0.001
 # Define a step function and use it to compute a trajectory.
 step_fn_lr = cfd.funcutils.repeated(
     cfd.equations.semi_implicit_navier_stokes(
-        density=density, viscosity=viscosity, dt=dt, grid=grid_lr),
+        density=density, viscosity=viscosity, dt=dt_hr, grid=grid_lr),
     steps=inner_steps)
 rollout_fn_lr = jax.jit(cfd.funcutils.trajectory(step_fn_lr, outer_steps))
 time,trajectory_lr = jax.device_get(rollout_fn_lr(v0_lr))
@@ -98,7 +98,7 @@ time,trajectory_lr = jax.device_get(rollout_fn_lr(v0_lr))
 dt = 0.001
 step_fn_hr = cfd.funcutils.repeated(
     cfd.equations.semi_implicit_navier_stokes(
-        density=density, viscosity=viscosity, dt=dt, grid=grid_hr),
+        density=density, viscosity=viscosity, dt=dt_hr, grid=grid_hr),
     steps=inner_steps)
 rollout_fn_hr = jax.jit(cfd.funcutils.trajectory(step_fn_hr, outer_steps))
 time,trajectory_hr = jax.device_get(rollout_fn_hr(v0_hr))
@@ -147,15 +147,23 @@ print(f"u_lr.shape = {u_lr.shape}, v_lr.shape = {v_lr.shape}, vorticity_lr.shape
 print(f"u_hr.shape = {u_hr.shape}, v_hr.shape = {v_hr.shape}, vorticity_hr.shape = {w_hr.shape}")
 print(f"type of u_lr = {type(u_lr)}, type of v_lr = {type(v_lr)}, type of vorticity_lr = {type(w_lr)}")
 print(f"type of u_hr = {type(u_hr)}, type of v_hr = {type(v_hr)}, type of vorticity_hr = {type(w_hr)}")
+# trim data
+u_hr = u_hr[50:550]
+v_hr = v_hr[50:550]
+w_hr = w_hr[50:550]
+u_lr = u_lr[50:550]
+v_lr = v_lr[50:550]
+w_lr = w_lr[50:550]
+t = t[50:550]  
 with h5py.File(f'decay_turb_lres_sim_s{scale}_{seed}.h5', 'w') as f:
     tasks = f.create_group('tasks')
-    tasks.create_dataset('u', data=u_hr[200:700])
-    tasks.create_dataset('v', data=v_hr[200:700])
-    tasks.create_dataset('vorticity', data=w_hr[200:700])
-    tasks.create_dataset('t', data=t[200:700])
-    tasks.create_dataset('u_lr', data=u_lr[200:700])
-    tasks.create_dataset('v_lr', data=v_lr[200:700])
-    tasks.create_dataset('vorticity_lr', data=w_lr[200:700])
+    tasks.create_dataset('u', data=u_hr)
+    tasks.create_dataset('v', data=v_hr)
+    tasks.create_dataset('vorticity', data=w_hr)
+    tasks.create_dataset('t', data=t)
+    tasks.create_dataset('u_lr', data=u_lr)
+    tasks.create_dataset('v_lr', data=v_lr)
+    tasks.create_dataset('vorticity_lr', data=w_lr)
 
 print(t)
 import matplotlib.pyplot as plt     
@@ -164,17 +172,17 @@ fig,axs = plt.subplots(4,4,figsize=(8,8))
 i = 0
 for ax in axs:
    for a in ax:
-        a.imshow(w_hr[i*20])
+        a.imshow(w_hr[i*30])
         i+=1
-        a.set_title(t[i*20])
+        a.set_title(t[i*30])
 fig.savefig(f'data_gen/vorticity_dynamics_hr_{seed}.png')
 fig,axs = plt.subplots(4,4,figsize=(8,8))
 i = 0
 for ax in axs:
    for a in ax:
-        a.imshow(w_lr[i*20])
+        a.imshow(w_lr[i*30])
         i+=1
-        a.set_title(t[i*20])
+        a.set_title(t[i*30])
 fig.savefig(f'data_gen/vorticity_dynamics_lr_{seed}.png')
 fig,axs = plt.subplots(4,4,figsize=(8,8))
 i = 0
