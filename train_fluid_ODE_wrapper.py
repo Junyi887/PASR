@@ -243,14 +243,15 @@ if __name__ == "__main__":
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
-    def get_normalizer(args):
+    
+    stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
+    def get_normalizer(args,stats_loader=stats_loader):
         if args.normalization == "True":
-            stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
             mean, std = stats_loader.get_mean_std()
             min,max = stats_loader.get_min_max()
             if args.in_channels==1:
-                mean,std = mean[0].tolist(),std[0].tolist()
-                min,max = min[0].tolist(),max[0].tolist()
+                mean,std = mean[0:1].tolist(),std[0:1].tolist()
+                min,max = min[0:1].tolist(),max[0:1].tolist()
             elif args.in_channels==3:
                 mean,std = mean.tolist(),std.tolist()
                 min,max = min.tolist(),max.tolist()
@@ -266,13 +267,11 @@ if __name__ == "__main__":
             mean, std = mean * args.in_channels, std * args.in_channels
             return mean,std
     mean,std = get_normalizer(args)
+    img_x,img_y = stats_loader.get_shape()
+    window_size = args.window_size
+    height = (img_x // args.scale_factor // window_size + 1) * window_size
+    width = (img_y // args.scale_factor // window_size + 1) * window_size
 
-    if args.data =="Decay_turb_small": 
-        image = [128,128]
-    elif args.data =="rbc_small":
-        image = [256,64]
-    elif args.data =="burger2D":
-        image = [128,128]
     model_list = {
             "PASR_ODE_small":PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=image, window_size=8, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t),
     }
