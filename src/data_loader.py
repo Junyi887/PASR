@@ -272,7 +272,6 @@ class BaseDataset(Dataset):
             future_local_idx = current_local_idx + i * self.timescale_factor
             y_future = self.load_sample(file_idx, future_local_idx,channel_names)
             future_samples.append(y_future)
-
         return future_samples
 
     def get_channel_names(self):
@@ -579,6 +578,42 @@ class GetClimateDatasets_special(GetClimateDatasets):
         # t = torch.stack(t_list,dim = 0) 
         return X,y
 
+class GetDataset_diffIC_LowRes_crop(BaseDataset):
+    '''return B, T, C, H, W'''
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Additional initialization specific to this dataset
+    def _get_files_stats(self):
+        super()._get_files_stats()
+        with h5py.File(self.files_paths[0], 'r') as _f:
+            self.img_shape_x_lr = _f['tasks']["u_lr"].shape[1]
+            self.img_shape_y_lr = _f['tasks']["u_lr"].shape[2]
+            _f.close()
+        print(f"find {self.n_files} files at location {self.location}. Number of examples total: {self.n_samples_per_file}. To-use data per trajectory: {self.input_per_file} LR Image Shape: {self.img_shape_x_lr} x {self.img_shape_y_lr} x {self.n_in_channels}")
+        n_crop_x = (self.img_shape_x // self.crop_size[0]) # Crop size of HR image
+        n_crop_y = (self.img_shape_y // self.crop_size[1])
+        self.patches = n_crop_x if n_crop_x == n_crop_y else 1
+        print(f"number of patches: {self.patches}")
+    def __getitem__(self, global_idx):
+        file_idx, local_idx = self.get_indices(global_idx)
+        self.ensure_correct_index(global_idx, local_idx)
+
+        if self.files[file_idx] is None:
+            self._open_file(file_idx)
+
+        channel_names = self.get_channel_names()
+        lr_names = self.get_LR_channel_names()
+        # Load the current sample
+        y_current = self.load_sample(file_idx, local_idx,channel_names)
+        X = self.load_sample(file_idx, local_idx,lr_names)
+        # Load future samples
+        y_future = self.load_future_samples(file_idx, local_idx,channel_names)
+        # Combine current and future samples
+        y_samples = [y_current] + y_future
+        y = torch.stack(y_samples, dim=0)
+        return X, y
+
+    
 if __name__ == "__main__":
     # for name in ["decay_turb","DT_FNO","DT_coord"]:
     #     train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= name,batch_size= 512,data_path="/pscratch/sd/j/junyi012/Decay_Turbulence_small",in_channels =3,timescale_factor= 20)

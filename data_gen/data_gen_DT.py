@@ -28,7 +28,7 @@ density = 1.
 viscosity = 1e-3
 seed = args.seed
 inner_steps = 10
-outer_steps = 1000
+outer_steps = 2000
 #dt = 0.001
 max_velocity = 2.0
 cfl_safety_factor = 0.5
@@ -39,10 +39,21 @@ grid_lr = cfd.grids.Grid((size//scale, size//scale), domain=((0, 2 * jnp.pi), (0
 # Construct a random initial velocity. The `filtered_velocity_field` function
 # ensures that the initial velocity is divergence free and it filters out
 # high frequency fluctuations.
-v0_hr = cfd.initial_conditions.filtered_velocity_field(
-    jax.random.PRNGKey(seed), grid_hr, max_velocity)
-u_hr = v0_hr[0].data
-v_hr = v0_hr[1].data
+import os
+if os.path.exists(f'data_gen/DT_IC/initial_velocity_{seed}_u.npy') and os.path.exists(f'data_gen/DT_IC/initial_velocity_{seed}_v.npy'):
+    u_hr = np.load(f'data_gen/DT_IC/initial_velocity_{seed}_u.npy')
+    v_hr = np.load(f'data_gen/DT_IC/initial_velocity_{seed}_v.npy')
+    print("load initial velocity from file")
+else:
+    print(f"generate initial velocity for seed {seed}")
+    v0_hr = cfd.initial_conditions.filtered_velocity_field(
+        jax.random.PRNGKey(seed), grid_hr, max_velocity)
+    u_hr = v0_hr[0].data
+    v_hr = v0_hr[1].data
+    np.save(f'data_gen/DT_IC/initial_velocity_{seed}_u.npy',u_hr)
+    np.save(f'data_gen/DT_IC/initial_velocity_{seed}_v.npy',v_hr)
+
+
 u_lr = u_hr[::scale,::scale]
 v_lr = v_hr[::scale,::scale]
 
@@ -86,7 +97,7 @@ print("cfl dt lr = ", dt_lr)
 dt_hr = cfd.equations.stable_time_step(
     max_velocity, cfl_safety_factor, viscosity, grid_hr)
 print("cfl dt hr = ", dt_hr)
-dt = 0.001
+
 # Define a step function and use it to compute a trajectory.
 step_fn_lr = cfd.funcutils.repeated(
     cfd.equations.semi_implicit_navier_stokes(
@@ -148,14 +159,14 @@ print(f"u_hr.shape = {u_hr.shape}, v_hr.shape = {v_hr.shape}, vorticity_hr.shape
 print(f"type of u_lr = {type(u_lr)}, type of v_lr = {type(v_lr)}, type of vorticity_lr = {type(w_lr)}")
 print(f"type of u_hr = {type(u_hr)}, type of v_hr = {type(v_hr)}, type of vorticity_hr = {type(w_hr)}")
 # trim data
-u_hr = u_hr[50:550]
-v_hr = v_hr[50:550]
-w_hr = w_hr[50:550]
-u_lr = u_lr[50:550]
-v_lr = v_lr[50:550]
-w_lr = w_lr[50:550]
+u_hr = u_hr[50:550].astype(jnp.float32)
+v_hr = v_hr[50:550].astype(jnp.float32)
+w_hr = w_hr[50:550].astype(jnp.float32)
+u_lr = u_lr[50:550].astype(jnp.float32)
+v_lr = v_lr[50:550].astype(jnp.float32)
+w_lr = w_lr[50:550].astype(jnp.float32)
 t = t[50:550]  
-with h5py.File(f'decay_turb_lres_sim_s{scale}_{seed}.h5', 'w') as f:
+with h5py.File(f'decay_turb_lres_sim_res{size}_s{scale}_{seed}.h5', 'w') as f:
     tasks = f.create_group('tasks')
     tasks.create_dataset('u', data=u_hr)
     tasks.create_dataset('v', data=v_hr)
@@ -168,35 +179,6 @@ with h5py.File(f'decay_turb_lres_sim_s{scale}_{seed}.h5', 'w') as f:
 print(t)
 import matplotlib.pyplot as plt     
 
-fig,axs = plt.subplots(4,4,figsize=(8,8))
-i = 0
-for ax in axs:
-   for a in ax:
-        a.imshow(w_hr[i*30])
-        i+=1
-        a.set_title(t[i*30])
-fig.savefig(f'data_gen/vorticity_dynamics_hr_{seed}.png')
-fig,axs = plt.subplots(4,4,figsize=(8,8))
-i = 0
-for ax in axs:
-   for a in ax:
-        a.imshow(w_lr[i*30])
-        i+=1
-        a.set_title(t[i*30])
-fig.savefig(f'data_gen/vorticity_dynamics_lr_{seed}.png')
-fig,axs = plt.subplots(4,4,figsize=(8,8))
-i = 0
-for ax in axs:
-   for a in ax:
-        a.imshow(w_hr[400+i])
-        i+=1
-        a.set_title(t[i])
-fig.savefig(f'data_gen/figures/vorticity_local_dynamics_hr_{seed}.png')
-fig,axs = plt.subplots(4,4,figsize=(8,8))
-i = 0
-for ax in axs:
-   for a in ax:
-        a.imshow(w_lr[400+i])
-        i+=1
-        a.set_title(t[i])
-fig.savefig(f'data_gen/vorticity_local_dynamics_lr_{seed}.png')
+# corrlation 
+baseline_palette = seaborn.color_palette('YlGnBu', n_colors=7)[1:]
+correlation = summary.vorticity_correlation.sel(time=slice(20)).compute()

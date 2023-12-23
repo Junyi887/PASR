@@ -232,6 +232,7 @@ if __name__ == "__main__":
         data_type = torch.float64
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
+    np.random.seed(args.seed)
     torch.set_default_dtype(data_type)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(device)

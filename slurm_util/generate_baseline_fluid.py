@@ -8,7 +8,7 @@ DATA_INFO = {
     "decay_turbulence_coord":["/pscratch/sd/j/junyi012/Decay_Turbulence_small/","3"],
     "rbc_coord":["/pscratch/sd/j/junyi012/RBC_small/","3"],
     "burgers2D_coord":["/pscratch/sd/j/junyi012/burger2D_10/","3"],
-
+    "ns_lres_sim_s4":["/pscratch/sd/j/junyi012/NS_lrsim_s4","3"],
 }
 
 

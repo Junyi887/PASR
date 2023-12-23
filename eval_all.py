@@ -209,6 +209,7 @@ if __name__ == "__main__":
         "FNO_burger2D": "results/FNO_data_burger2D_FNO_5379.pt",
         "NODE_burger2D": "results/PASR_ODE_small_data_burger2D_5353.pt",
         "NODE_decay_turb_lrsim_4_euler": "results/PASR_ODE_small_data_decay_turbulence_lrsim_2038.pt",
+       "NODE_ns_lres_rk4":"results/PASR_ODE_small_data_ns_lres_sim_s4_2867.pt"
 
     }
     apdx = "euler"

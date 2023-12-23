@@ -9,7 +9,7 @@ DATA_INFO = {'decay_turbulence':["/pscratch/sd/j/junyi012/Decay_Turbulence_small
             "ns_lres_sim_s4":["/pscratch/sd/j/junyi012/NS_lrsim_s4","3"],
              }
 
-MODEL_INFO = {"PASR_ODE_small": {"lr": 1e-3,"batch_size": 16,"epochs": 500,"lr_step":100,"gamma":0.5},}
+MODEL_INFO = {"PASR_ODE_small": {"lr": 1e-3,"batch_size": 4,"epochs": 500,"lr_step":100,"gamma":0.5},}
 
 def generate_bash_script(data_name, model_name,seed=1234,method ="rk4",lamb_p= 0,upsampler="nearest_conv",n_snapshots=20,in_channels=1,timescale_factor=1):
     job_name = f"{data_name}_{model_name}_{timescale_factor}_{seed}_{method}_{lamb_p}_{upsampler}_{n_snapshots}"
@@ -27,7 +27,7 @@ def generate_bash_script(data_name, model_name,seed=1234,method ="rk4",lamb_p= 0
 #SBATCH --time=23:00:00
 #SBATCH --account=dasrepo_g
 #SBATCH --job-name={short_name}
-#SBATCH -C gpu&hbm80g
+#SBATCH -C gpu
 #SBATCH -q regular
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
