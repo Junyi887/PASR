@@ -25,7 +25,7 @@ from tqdm import tqdm
 import h5py
 from src.models import *
 from src.util import *
-from src.data_loader_nersc import getData
+from src.data_loader import getData
 import logging
 import argparse
  
@@ -223,27 +223,14 @@ if __name__ == "__main__":
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
-    if args.data =="Decay_turb_small" or args.data =="Decay_turb_FNO": 
-        image = [128,128]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-        ALL_DATA_PATH = "/pscratch/sd/j/junyi012/Decay_Turbulence_small/*/*.h5"
-    elif args.data =="rbc_small" or args.data =="rbc_FNO":
-        image = [256,64]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,256,64)
-        ALL_DATA_PATH = "/pscratch/sd/j/junyi012/RBC_small/*/*.h5"
-    elif args.data =="burger2D_small" or args.data =="burger2D_FNO":
-        image = [128,128]
-        target_shape = (args.batch_size,args.in_channels,args.n_snapshots+1,128,128)
-        ALL_DATA_PATH = "../burger2D_10/*/*.h5"
-
-    def get_normalizer(args):
+    stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
+    def get_normalizer(args,stats_loader=stats_loader):
         if args.normalization == "True":
-            stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
             mean, std = stats_loader.get_mean_std()
             min,max = stats_loader.get_min_max()
             if args.in_channels==1:
-                mean,std = mean[0].tolist(),std[0].tolist()
-                min,max = min[0].tolist(),max[0].tolist()
+                mean,std = mean[0:1].tolist(),std[0:1].tolist()
+                min,max = min[0:1].tolist(),max[0:1].tolist()
             elif args.in_channels==3:
                 mean,std = mean.tolist(),std.tolist()
                 min,max = min.tolist(),max.tolist()
@@ -259,6 +246,12 @@ if __name__ == "__main__":
             mean, std = mean * args.in_channels, std * args.in_channels
             return mean,std
     mean,std = get_normalizer(args)
+    mean = mean
+    std = std 
+    print("mean ",mean)
+    print("std  ", std)
+    img_x,img_y = stats_loader.get_shape()
+    mean,std = get_normalizer(args)
 
     layers = [64, 64, 64, 64, 64]
     modes1 = [8, 8, 8, 8]
@@ -266,8 +259,8 @@ if __name__ == "__main__":
     modes3 = [8, 8, 8, 8]
 
 
-    model = FNO3D(modes1, modes2, modes3,target_shape,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', mean=mean,std=std).to(device)
-    # model = torch.nn.DataParallel(model).to(device)
+    model = FNO3D(modes1, modes2, modes3,HR_shape=(args.batch_size,args.in_channels,args.n_snapshots+1,img_x,img_y),width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', mean=mean,std=std).to(device)
+    model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     savedpath = str(str(args.model) +
                 "_data_" + str(args.data) +"_"+ str(ID)

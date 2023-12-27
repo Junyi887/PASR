@@ -5,7 +5,9 @@ DATA_INFO = {
     'burger_2D':["../burger2D_10",3],
     'decay_turb':["/pscratch/sd/j/junyi012/Decay_Turbulence_small",3],
     "rbc":["RBC_small",3],
-    "NS_lres_sim_s4":["/pscratch/sd/j/junyi012/NS_lrsim_s4",3],
+    "DT_lrsim_256_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_256_s4_v0","3"],
+    "DT_lrsim_512_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_512_s4_v0","3"],
+    "DT_lrsim_1024_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0","3"],
 }
 
 

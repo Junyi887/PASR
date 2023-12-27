@@ -147,10 +147,10 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
         drop_last = True
     elif state =="val":
         shuffle = True
-        drop_last = False
+        drop_last =True
     else:
         shuffle = False
-        drop_last = False
+        drop_last = True
     
     dataloader = DataLoader(dataset,
                             batch_size = int(batch_size),

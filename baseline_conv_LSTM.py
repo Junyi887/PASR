@@ -28,7 +28,7 @@ from tqdm import tqdm
 import h5py
 from src.models import *
 from src.util import *
-from src.data_loader_nersc import getData
+from src.data_loader import getData
 import neptune
 import time
 # Set up logging configuration

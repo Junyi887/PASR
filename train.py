@@ -25,7 +25,7 @@ from tqdm import tqdm
 import h5py
 from src.models import *
 from src.util import *
-from src.data_loader_nersc import getData
+from src.data_loader import getData
 import logging
 import argparse
 import random
@@ -135,7 +135,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             optimizer.zero_grad()
             out_t = model(inputs,n_snapshots = args.n_snapshots)
             loss_t = criterion_Data(out_t,target)
-            div = fd_solver.get_div_loss(out_t)
+            div = fd_solver.get_div_loss(out_t) if args.in_channels >=2 else torch.zeros_like(out_t)
             phy_loss = criterion2(div,torch.zeros_like(div).to(device)) # DO NOT CHANGE THIS ONE. Phy loss has to be L2 norm 
             if args.physics == "True":
                 loss_t += args.lamb_p*phy_loss
