@@ -7,7 +7,7 @@ DATA_INFO = {
     "burgers2D":["/pscratch/sd/j/junyi012/burger2D_10/","3"],
     "decay_turbulence_coord":["/pscratch/sd/j/junyi012/Decay_Turbulence_small/","3"],
     "DT_lrsim_256_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_256_s4_v0","3","32"],
-    "DT_lrsim_512_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_512_s4_v0","3","32"],
+    "DT_lrsim_512_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_512_s4_v0","3","8"],
     "DT_lrsim_1024_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0","3","4"],
 }
 
@@ -45,8 +45,8 @@ srun {cmd_text}
 
 # Run the function
 if __name__ == "__main__":
-    raw_names = ["DT_lrsim_256_s4_v0","DT_lrsim_512_s4_v0","DT_lrsim_1024_s4_v0"]
-    data_names = ["DT_lrsim_256_s4_v0_FNO","DT_lrsim_512_s4_v0_FNO","DT_lrsim_1024_s4_v0_FNO"]
+    raw_names = ["DT_lrsim_512_s4_v0","DT_lrsim_1024_s4_v0"]
+    data_names = ["DT_512_s4_v0_sequenceLR","DT_1024_s4_v0_sequenceLR"]
     for i,(raw_name,data_name) in enumerate (zip(raw_names,data_names)):
         data_path, channel,batch = DATA_INFO[raw_name]
         for ic in [3]:
@@ -54,11 +54,11 @@ if __name__ == "__main__":
             jobname = generate_bash_script(data_name, "FNO", cmd_text=cmd_text)
             with open(f"run_FNO.sh", "a") as f:
                 f.write(f"sbatch bash_script/{jobname}.sbatch\n")
-    data_names2 = ["DT_lrsim_256_s4_v0_ConvLSTM","DT_lrsim_512_s4_v0_ConvLSTM","DT_lrsim_1024_s4_v0_ConvLSTM"]
+    data_names2 = ["DT_512_s4_v0_sequenceLR","DT_1024_s4_v0_sequenceLR"]
     for i,(raw_name,data_name) in enumerate (zip(raw_names,data_names2)):
         data_path, channel,batch = DATA_INFO[raw_name]
         for ic in [3]:
             cmd_text = f"python baseline_ConvLSTM.py --data_path {data_path} --in_channels {ic} --data {data_name} --batch_size {batch} --seed 3407 --n_snapshots 20 --timescale_factor 10"
-            jobname = generate_bash_script(data_name, "FNO", cmd_text=cmd_text)
+            jobname = generate_bash_script(data_name, "ConvLSTM", cmd_text=cmd_text)
             with open(f"run_ConvLSTM.sh", "a") as f:
                 f.write(f"sbatch bash_script/{jobname}.sbatch\n")

@@ -12,7 +12,7 @@ from torch.optim.lr_scheduler import LambdaLR, StepLR, MultiStepLR, ExponentialL
 from torch.nn.utils import weight_norm
 from src.util import *
 from src.models import *
-from src.data_loader_nersc import getData
+from legacy_scripts.data_loader_nersc import getData
 
 FLUID_DATA_INFO = {"climate_sequence":["/pscratch/sd/j/junyi012/climate_data/pre-processed_s4_sig1",1]}
 

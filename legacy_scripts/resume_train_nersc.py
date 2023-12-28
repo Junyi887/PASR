@@ -25,7 +25,7 @@ from tqdm import tqdm
 import h5py
 from src.models import *
 from src.util import *
-from src.data_loader_nersc import getData
+from legacy_scripts.data_loader_nersc import getData
 import logging
 import argparse
  

@@ -44,9 +44,6 @@ run = neptune.init_run(
     )  # your credentials
 # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
-torch.manual_seed(1)
-np.random.seed(1)
-torch.set_default_dtype(torch.float32)
 
 
 lapl_op = [[[[    0,   0, -1/12,   0,     0],
@@ -265,19 +262,19 @@ def LossGen(output, truth, beta, loss_func):
     L1_loss = nn.L1Loss()
     MSE_loss = nn.MSELoss()
 
-    # data loss
+    # data loss d
     data_loss = L1_loss(output, truth)
     
     # ic loss
-    ic_loss = L1_loss(output[0,...], truth[0,...])
+    ic_loss = 0
 
     # phy loss, output shape: [t,b,c,h,w]
-    output = torch.cat((output[:, :, :, :, -2:], output, output[:, :, :, :, 0:3]), dim=4)
-    output = torch.cat((output[:, :, :, -2:, :], output, output[:, :, :, 0:3, :]), dim=3)
+    # output = torch.cat((output[:, :, :, :, -2:], output, output[:, :, :, :, 0:3]), dim=4)
+    # output = torch.cat((output[:, :, :, -2:, :], output, output[:, :, :, 0:3, :]), dim=3)
     
     # divergence loss
-    div = loss_func.get_div_loss(output)
-    phy_loss = MSE_loss(div, torch.zeros_like(div).cuda())
+    div = 0
+    phy_loss = 0
     
     # f_u, f_v = loss_func.GetPhyLoss(output)
     #phy_loss = MSE_loss(f_u, torch.zeros_like(f_u).cuda()) + MSE_loss(
@@ -312,10 +309,9 @@ def train(model, train_loader, val_loader, init_state, n_iters, lr, print_every,
             
             optimizer.zero_grad()
 
-            lres, hres = lres.float().cuda(), hres.float().cuda()  
-            lres, hres = lres.permute(2,0,1,3,4), hres.permute(2,0,1,3,4) # (b,c,t,h,w) -> (t,b,c,h,w)
+            lres, hres = lres.float().to(device), hres.float().to(device) # B C T H W
+            # lres, hres = lres.permute(2,0,1,3,4), hres.permute(2,0,1,3,4) # (b,t,c,h,w) 
             outputs = model(lres, init_state)
-
             # compute loss 
             loss, data_loss, phy_loss = LossGen(outputs, hres, beta, loss_function)
             loss.backward(retain_graph=True)
@@ -338,9 +334,8 @@ def train(model, train_loader, val_loader, init_state, n_iters, lr, print_every,
                 (epoch+1)/n_iters*100, print_loss_mean))
 
             # for print training loss (details)
-            print('Epoch %d: data loss(%.8f), phy loss(%.8f)' %(
-                epoch+1, data_loss.item(), phy_loss.item()))
-            print("here")
+            # print('Epoch %d: data loss(%.8f), phy loss(%.8f)' %(
+            #     epoch+1, data_loss.item(), phy_loss.item()))
             # calculate the validation loss
             val_loss, val_error = validate(model, val_loader, init_state, loss_function, beta)
             run["train/val_loss"].log(val_loss)
@@ -375,7 +370,7 @@ def validate(model, val_loader, init_state, loss_function, beta):
     for idx, (lres, hres) in enumerate(val_loader):
 
         lres, hres = lres.float().cuda(), hres.float().cuda()  
-        lres, hres = lres.permute(2,0,1,3,4), hres.permute(2,0,1,3,4) # (b,c,t,h,w) -> (t,b,c,h,w)
+        # lres, hres = lres.permute(2,0,1,3,4), hres.permute(2,0,1,3,4) # (b,c,t,h,w) -> (t,b,c,h,w)
 
         outputs = model(lres, init_state)
  
@@ -439,42 +434,6 @@ def load_checkpoint(model, optimizer, scheduler, save_dir):
 
     return model, optimizer, scheduler
     
-    
-def get_init_state(batch_size, hidden_channels, output_size, mode='coord'):
-    '''initial hidden states for all convlstm layers'''
-    # (b, c, h, w)
-    num_layers = len(hidden_channels)
-    initial_state = []
-    if mode == 'coord':
-        for i in range(num_layers):
-            resolution = output_size[i][0]
-            x, y = [np.linspace(-6654, 64, resolution+1)] * 2
-            x, y = np.meshgrid(x[:-1], y[:-1])  # [32, 32]
-            xy = np.concatenate((x[None, :], y[None, :]), 0) # [2, 32, 32]
-            xy = np.repeat(xy, int(hidden_channels[i]/2), axis=0) # [c,h,w]
-            xy = np.repeat(xy[None, :], batch_size[i], 0) # [b,c,h,w]
-            xy = torch.tensor(xy, dtype=torch.float32)
-            initial_state.append((xy, xy))
-
-    elif mode == 'zero':
-        for i in range(num_layers):
-            (h0, c0) = (torch.zeros(batch_size[i], hidden_channels[i], output_size[i][0], 
-                output_size[i][1]), torch.zeros(batch_size[i], hidden_channels[i], output_size[i][0], 
-                output_size[i][1]))
-            initial_state.append((h0,c0))
-
-    elif mode == 'random':
-        for i in range(num_layers):
-            (h0, c0) = (torch.randn(batch_size[i], hidden_channels[i], output_size[i][0], 
-                output_size[i][1]), torch.randn(batch_size[i], hidden_channels[i], output_size[i][0], 
-                output_size[i][1]))
-            initial_state.append((h0,c0))
-    else:
-        raise NotImplementedError
-
-    return initial_state
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='training parameters')
 
@@ -490,9 +449,13 @@ if __name__ == '__main__':
     parser.add_argument('--noise_ratio', type = float, default= 0.0)
     parser.add_argument('--normalization', type = str, default= "True")
     parser.add_argument('--normalization_method', type = str, default= "meanstd")
-
+    parser.add_argument('--seed', type = int, default= 0)
     args = parser.parse_args()
     run["config"] = vars(args) 
+
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    torch.set_default_dtype(torch.float32)
     # define the data file path 
     trainloader,val1_loader,val2_loader,_,_ = getData(upscale_factor = args.scale_factor, 
                                                       timescale_factor= args.timescale_factor,
@@ -552,8 +515,10 @@ if __name__ == '__main__':
         shift_mean_paras = [mean, std],  
         step = steps,
         in_channels=args.in_channels,
-        effective_step = effective_step).cuda()
+        effective_step = effective_step)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    model = torch.nn.DataParallel(model).to(device)
     # define the initial states and initial output for model
     init_state = get_init_state(
         batch_size = [args.batch_size], 

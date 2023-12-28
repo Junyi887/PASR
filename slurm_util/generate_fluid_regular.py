@@ -44,7 +44,7 @@ srun {cmd_text}
 if __name__ == "__main__":
     data_names = ["s2_sig2", "s2_sig4", "s2_sig1", "s2_sig0"]
     methods = ["rk4", "euler",""]
-    models = ["train_climate_ODE_wrapper.py", "baseline_conv_LSTM_Climate.py", "baseline_FNO_climate.py"]
+    models = ["train_climate_ODE_wrapper.py", "baseline_convLSTM_Climate.py", "baseline_FNO_climate.py"]
     models2 = ["NODE", "LSTM", "FNO"]
     for data_name in data_names:
         data_path, scale_factor = DATA_INFO[data_name]
