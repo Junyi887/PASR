@@ -24,15 +24,16 @@ for i in [1024,512,256,128,64]:
     scale = scale *2
     print(scale)
 j = 1
+plt.figure(figsize=(3,3))
 baseline_palette = sns.color_palette('YlGnBu', n_colors=6)[1:]
 for correlation in correlations:
     plt.plot(t,correlation,color=baseline_palette[-j])
     j+=1
 
-plt.legend(["s=1024","s=512","s=256","s=128","s=64"])
+plt.legend([r"$1024^2$",r"$512^2$",r"$256^2$",r"$128^2$",r"$64^2$"],fontsize="11")
 plt.axhline(0.8,linestyle="--",color="grey",alpha=0.2)
-plt.xlabel("Time")
-plt.ylabel("Correlation")
+plt.xlabel("Time",fontsize="11")
+plt.ylabel("Correlation",fontsize="11")
 plt.ylim(0.6,1.01)
 ax = plt.gca()
 t2 = np.arange(0,2000,1)
@@ -43,5 +44,5 @@ def inverse(x):
 #Adding a secondary x-axis on top for displaying the index of 't'
 ax2 = ax.secondary_xaxis('top', functions=(forward, inverse))
 # Optionally, set labels and ticks for ax2
-ax2.set_xlabel("Iteration step")
-plt.savefig("correlation2.pdf",bbox_inches="tight")
+ax2.set_xlabel("Iteration step",fontsize="11")
+plt.savefig("PaperWrite/correlation_DNS.pdf",bbox_inches="tight")
