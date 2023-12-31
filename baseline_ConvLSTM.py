@@ -400,7 +400,6 @@ def test(model, test_loader, init_state, save_path, fig_save_path):
     for idx, (lres, hres) in enumerate(test_loader):
 
         lres, hres = lres.float().cuda(), hres.float().cuda()  
-        lres, hres = lres.permute(2,0,1,3,4), hres.permute(2,0,1,3,4) # (b,c,t,h,w) -> (t,b,c,h,w)
         outputs = model(lres, init_state)
 
         # calculate the error

@@ -67,7 +67,10 @@ class DataInfoLoader():
     Returns:
     - The minimum and maximum values of all data.
     """
-    return self.min_all_data.min(axis = 0), self.max_all_data.max(axis = 0)
+    if "climate" in self.data_name:
+      return np.array([self.min_all_data.min(axis = 0)]), np.array([self.min_all_data.min(axis = 0)])
+    else:
+      return self.min_all_data.min(axis = 0), self.min_all_data.min(axis = 0)
 
   def get_mean_std(self):
     """
@@ -80,7 +83,9 @@ class DataInfoLoader():
     mean_list = []
     std_list = []
     if "climate" in self.data_name:
-      return self.mean_all_data.mean(axis = 0), self.std_all_data.mean(axis = 0)
+      mean_list.append(self.mean_all_data.mean(axis = 0))
+      std_list.append(self.std_all_data.mean(axis = 0))
+      return np.stack(mean_list), np.stack(std_list)
     else:
       for i in range(self.mean_all_data.shape[1]):
         means = self.mean_all_data[:,i]
@@ -105,7 +110,7 @@ class DataInfoLoader():
     self.files_paths = glob.glob(self.data_path) #only take s9
     self.files_paths.sort()
     self.n_files = len(self.files_paths)
-    if "climate" in self.data_name:
+    if self.data_name.startswith("climate"):
       print("Found {} files".format(self.n_files))
       for i in range(self.n_files):
         with h5py.File(self.files_paths[i], 'r') as _f:
@@ -170,8 +175,9 @@ class DataInfoLoader():
 
 if __name__ == "__main__":
   print("hello")
-  info = DataInfoLoader("/pscratch/sd/j/junyi012/NS_lrsim_s4/*/*.h5",data_name= "decay")
+  info = DataInfoLoader("/pscratch/sd/j/junyi012/climate_data/s4_sig4/data/*.h5",data_name= "climate")
   mean, std = info.get_mean_std()
+  print()
   print(info.get_mean_std())
   print(info.get_min_max())
   mean,std = mean[0:1].tolist(),std[0:1].tolist()

@@ -223,7 +223,7 @@ if __name__ == "__main__":
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
-    stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
+    stats_loader = DataInfoLoader(args.data_path+"/*/*.h5",args.data)
     def get_normalizer(args,stats_loader=stats_loader):
         if args.normalization == "True":
             mean, std = stats_loader.get_mean_std()

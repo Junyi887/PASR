@@ -54,13 +54,13 @@ bash -c "$cmd1"
     return  job_name
 # Run the function
 if __name__ == "__main__":
-    data_name = ['DT_lrsim_1024_s4_v0']
+    data_name = ['DT_lrsim_256_s4_v0']
     model_name =  "PASR_ODE_small"
     for name in data_name:
         for method in ["rk4"]:
             for lamb_p in [0]:
                 for upsampler in ["pixelshuffle"]:
-                    for time in [1,4,10]:
+                    for time in [10]:
                         for n_snapshots in [10,20]:
                             job_name = generate_bash_script(data_name=name,model_name=model_name,method=method,lamb_p=lamb_p,upsampler=upsampler,seed=3407,n_snapshots=n_snapshots,timescale_factor=time,in_channels=3)
                             with open("run_NODE.sh","a") as f:

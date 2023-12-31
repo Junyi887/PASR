@@ -136,7 +136,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             out_t = model(inputs,n_snapshots = args.n_snapshots)
             loss_t = criterion_Data(out_t,target)
             div = fd_solver.get_div_loss(out_t) if args.in_channels >=2 else torch.zeros_like(out_t)
-            phy_loss = criterion2(div,torch.zeros_like(div).to(device)) # DO NOT CHANGE THIS ONE. Phy loss has to be L2 norm 
+            phy_loss = criterion2(div,torch.zeros_like(div).to(device))
             if args.physics == "True":
                 loss_t += args.lamb_p*phy_loss
             target_loss += loss_t.item() 
@@ -148,7 +148,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
         run['train/train_loss'].log(avg_loss / len(trainloader))
         scheduler.step()
         # for faster training
-        if epoch %10 == 0:
+        if epoch %1 == 0:
             result_val1,result_val2 = validation(args,model, val1_loader,val2_loader,device)
             avg_val = result_val1[1] + lamb*result_val1[0]
             val_list_x2.append(result_val2[2])

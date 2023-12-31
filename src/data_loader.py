@@ -310,9 +310,9 @@ class FNO_Special_Loader_Fluid(BaseDataset):
         file_idx, local_idx = self.get_indices(global_idx)
         self.ensure_correct_index(global_idx, local_idx)
         gridx,gridy,gridt = torch.tensor(np.linspace(0,1,self.img_shape_x+1)[:-1]),torch.tensor(np.linspace(0,1,self.img_shape_y+1)[:-1]),torch.tensor(np.linspace(0,1,self.num_snapshots+1))
-        gridx = gridx.reshape(1,1,self.img_shape_x,1).repeat([1,self.num_snapshots+1,1,self.img_shape_y])
-        gridy = gridy.reshape(1,1,1,self.img_shape_y).repeat([1,self.num_snapshots+1,self.img_shape_x,1])
-        gridt = gridt.reshape(1,self.num_snapshots+1,1,1).repeat([1,1,self.img_shape_x,self.img_shape_y])
+        # gridx = gridx.reshape(1,1,self.img_shape_x,1).repeat([1,self.num_snapshots+1,1,self.img_shape_y])
+        # gridy = gridy.reshape(1,1,1,self.img_shape_y).repeat([1,self.num_snapshots+1,self.img_shape_x,1])
+        # gridt = gridt.reshape(1,self.num_snapshots+1,1,1).repeat([1,1,self.img_shape_x,self.img_shape_y])
 
         if self.files[file_idx] is None:
             self._open_file(file_idx)
@@ -478,15 +478,11 @@ class GetDataset_lres_viz(GetDataset_diffIC_LowRes):
     
 class GetClimateDatasets(BaseDataset):
     def __init__(self, *args, **kwargs):
-        self.files_paths = glob.glob(self.location + "/*.h5")
         super().__init__(*args, **kwargs)
+        # self.files_paths = glob.glob(self.location + "/data/*.h5")
         # Additional initialization specific to this dataset
     def _get_files_stats(self):
-        # larger dt = 0.1
-        self.files_paths = glob.glob(self.location + "/*.h5") #only take s9
-        # /Burger2D_*
-        # /rbc_*_256/
-        # Decay_turb
+        self.files_paths = glob.glob(self.location + "/data/*.h5") #only take s9
         self.files_paths.sort()
         self.n_files = len(self.files_paths)
         print("Found {} files".format(self.n_files))
@@ -514,6 +510,10 @@ class GetClimateDatasets(BaseDataset):
         print("Found data at path {}. Number of examples total: {}. To-use data per trajectory: {}  Image Shape: {} x {} x {}".format(
             self.location, self.n_samples_per_file, self.input_per_file,self.img_shape_x, self.img_shape_y, self.n_in_channels))
         
+    def _open_file(self, file_idx):
+        if self.files[file_idx] is None:
+            self.files[file_idx] = h5py.File(self.files_paths[file_idx], 'r')['fields']
+   
     def __getitem__(self, global_idx):
         y_list = []
         t_list = []
@@ -613,7 +613,38 @@ class GetDataset_diffIC_LowRes_crop(BaseDataset):
         y = torch.stack(y_samples, dim=0)
         return X, y
 
-    
+
+class FNO_Special_Loader_Climate(GetClimateDatasets):
+    """return B, C, T,H, W"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Additional initialization specific to this dataset
+        self.upsample = transforms.Resize((self.img_shape_x,self.img_shape_y),Image.BICUBIC,antialias=False)
+    def __getitem__(self, global_idx):
+        file_idx, local_idx = self.get_indices(global_idx)
+        self.ensure_correct_index(global_idx, local_idx)
+        gridx,gridy,gridt = torch.tensor(np.linspace(0,1,self.img_shape_x+1)[:-1]),torch.tensor(np.linspace(0,1,self.img_shape_y+1)[:-1]),torch.tensor(np.linspace(0,1,self.num_snapshots+1))
+        gridx = gridx.reshape(1,1,self.img_shape_x,1).repeat([1,self.num_snapshots+1,1,self.img_shape_y])
+        gridy = gridy.reshape(1,1,1,self.img_shape_y).repeat([1,self.num_snapshots+1,self.img_shape_x,1])
+        gridt = gridt.reshape(1,self.num_snapshots+1,1,1).repeat([1,1,self.img_shape_x,self.img_shape_y])
+
+        if self.files[file_idx] is None:
+            self._open_file(file_idx)
+        channel_names = self.get_channel_names()
+        # Load the current sample
+        y_current = self.load_sample(file_idx, local_idx,channel_names)
+        X_lr = self.get_X(y_current)
+        X_interp = self.upsample(X_lr)
+        X_interp = X_interp.reshape(self.n_in_channels,1,self.img_shape_x,self.img_shape_y).repeat([1, self.num_snapshots+1, 1,1])
+        X = torch.cat([X_interp,gridx,gridy,gridt],dim=0)
+        # Load future samples
+        y_future = self.load_future_samples(file_idx, local_idx,channel_names)
+        # Combine current and future samples
+        y_samples = [y_current] + y_future
+        y = torch.stack(y_samples, dim=1)
+        return X, y
+
+   
 if __name__ == "__main__":
     # for name in ["decay_turb","DT_FNO","DT_coord"]:
     #     train_loader, val1_loader, val2_loader, test1_loader, test2_loader  = getData(data_name= name,batch_size= 512,data_path="/pscratch/sd/j/junyi012/Decay_Turbulence_small",in_channels =3,timescale_factor= 20)
