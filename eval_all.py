@@ -189,7 +189,7 @@ if __name__ == "__main__":
     # data_name_list = ["burger2D"]
     # data_name_list = ["climate_s2_sig1","climate_s2_sig0","climate_s2_sig2","climate_s2_sig4"]
     # data_name_list = ["climate_s4_sig1"]
-    data_name_list = ["decay_turb_lrsim_4"]
+    # data_name_list = ["decay_turb_lrsim_4"]
     # model_list = [ConvLSTM, FNO, NODE]
     model_info = {
         "ConvLSTM_rbc": "best_results/ConvLSTM_RBC_4458_checkpoint.pt",
@@ -205,12 +205,6 @@ if __name__ == "__main__":
         "NODE_decay_turb_rk4": "results/PASR_ODE_small_data_Decay_turb_small_6724.pt",
         "NODE_rbc_euler_p0.02": "results/PASR_ODE_small_data_rbc_small_9862.pt",
         "NODE_rbc_rk4_p0.02": "results/PASR_ODE_small_data_rbc_small_8031.pt",
-        "Conv_burger2D": "ConvLSTM_Burgers_4822_checkpoint.pt",
-        "FNO_burger2D": "results/FNO_data_burger2D_FNO_5379.pt",
-        "NODE_burger2D": "results/PASR_ODE_small_data_burger2D_5353.pt",
-        "NODE_decay_turb_lrsim_4_euler": "results/PASR_ODE_small_data_decay_turbulence_lrsim_2038.pt",
-       "NODE_ns_lres_rk4":"results/PASR_ODE_small_data_ns_lres_sim_s4_2867.pt"
-
     }
     apdx = "euler"
     norm_Flag = False

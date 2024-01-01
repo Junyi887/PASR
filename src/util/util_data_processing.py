@@ -12,7 +12,8 @@ def to_tensor(data):
 import numpy as np
 import h5py
 import glob
-
+import os
+import json
 class DataInfoLoader():
   """
   A class to load and process data statistical information from multiple datasets.
@@ -40,16 +41,51 @@ class DataInfoLoader():
   - get_mean_std(self): Returns the mean and standard deviation of all data.
   - _get_files_stats(self): Gets the statistics of all files.
   """
-  def __init__(self,data_path,data_name = "Decay_turb"):
+  def __init__(self, data_path, data_name="Decay_turb"):
+      self.data_path = data_path
+      self.data_name = data_name
+
+      npy_file_path = f"src/util/data_stats_{self.data_name}.npy"
+      # if file exists and is not empty
+      if os.path.exists(npy_file_path) and os.path.getsize(npy_file_path) > 0:
+          self._load_stats_from_json(npy_file_path)
+      else:
+          self._get_files_stats()
+          self._save_stats_to_npy()
+
+  def _save_stats_to_npy(self):
     """
-    Initializes the DataInfoLoader class.
+    Saves the calculated statistics to a JSON file.
+    """
+    stats = {
+        "mean": self.mean_all_data,
+        "std": self.std_all_data,
+        "min": self.min_all_data,
+        "max": self.max_all_data,
+        "img_shape_x": self.img_shape_x,
+        "img_shape_y": self.img_shape_y,
+        "n_files": self.n_files,
+        "n_samples_per_file": self.n_samples_per_file
+    }
+    np.save(f"src/util/data_stats_{self.data_name}.npy", stats)
+    
+
+  def _load_stats_from_npy(self, file_path):
+    """
+    Loads the statistics from a .npy file.
 
     Parameters:
-    - data_path: A string representing the path to the data.
+    - file_path: Path to the .npy file containing the statistics.
     """
-    self.data_path = data_path
-    self.data_name = data_name
-    self._get_files_stats()
+    stats =np.load(f"src/util/data_stats_{self.data_name}.npy", allow_pickle=True).item()
+    self.mean_list = stats["mean"]
+    self.std_list = stats["std"]
+    self.min_list = stats["min"]
+    self.max_list = stats["max"]
+    self.img_shape_x = stats["img_shape_x"]
+    self.img_shape_y = stats["img_shape_y"]
+    self.n_files = stats["n_files"]
+    self.n_samples_per_file = stats["n_samples_per_file"]
 
   def get_all_data(self):
     """
@@ -68,9 +104,9 @@ class DataInfoLoader():
     - The minimum and maximum values of all data.
     """
     if "climate" in self.data_name:
-      return np.array([self.min_all_data.min(axis = 0)]), np.array([self.min_all_data.min(axis = 0)])
+      return np.array([self.min_all_data.min(axis = 0)]), np.array([self.max_all_data.max(axis = 0)])
     else:
-      return self.min_all_data.min(axis = 0), self.min_all_data.min(axis = 0)
+      return self.min_all_data.min(axis = 0), self.max_all_data.max(axis = 0)
 
   def get_mean_std(self):
     """

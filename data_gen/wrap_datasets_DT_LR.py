@@ -10,8 +10,6 @@ def get_correlation(w_lr,w_hr):
 # Save the figure
 
 
-
-
 HR_res = 256
 scale = 4
 data_dir = "/pscratch/sd/j/junyi012/DT_multi_resolution_unpaired/"

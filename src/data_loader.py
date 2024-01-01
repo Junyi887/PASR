@@ -77,15 +77,20 @@ def getData_test(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10I
              upscale_factor= 4,timescale_factor = 1, num_snapshots = 20,
              noise_ratio = 0.0, crop_size = 128, method = "bicubic", 
              batch_size = 1, std = [0.6703, 0.6344, 8.3615],in_channels = 1):
+    if data_name == "lrsim":
+        test_dataset = GetDataset_lres_viz(data_path+"/test", "no_roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+        test_loader = DataLoader(test_dataset,batch_size=batch_size,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
+        test_dataset_viz = GetDataset_lres_viz(data_path+"/viz", "no_roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+        test_loader_viz = DataLoader(test_dataset_viz,batch_size=512,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
+        test_dataset_viz2 = GetDataset_lres_viz(data_path+"/viz", "roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+        test_loader_viz2 = DataLoader(test_dataset_viz2,batch_size=512,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
+        return test_loader,test_loader_viz,test_loader_viz2
+    else:
+        test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels,shuffle=False,drop_last=False)
+        test2_loader = get_data_loader(data_name, data_path, '/test', "no_roll_out", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels,shuffle=False,drop_last=False)
+        test3_loader = get_data_loader(data_name, data_path, '/viz', "no_roll_out", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels,shuffle=False,drop_last=False)
+        return test1_loader,test2_loader,test3_loader
     
-    test_dataset = GetDataset_lres_viz(data_path+"/test", "no_roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
-    test_loader = DataLoader(test_dataset,batch_size=batch_size,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
-    test_dataset_viz = GetDataset_lres_viz(data_path+"/viz", "no_roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
-    test_loader_viz = DataLoader(test_dataset_viz,batch_size=512,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
-    test_dataset_viz2 = GetDataset_lres_viz(data_path+"/viz", "roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
-    test_loader_viz2 = DataLoader(test_dataset_viz2,batch_size=512,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
-    return test_loader,test_loader_viz,test_loader_viz2
-
 def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
              upscale_factor= 4,timescale_factor = 1, num_snapshots = 20,
              noise_ratio = 0.0, crop_size = 128, method = "bicubic", 
@@ -122,7 +127,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
    
         return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     
-def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels=1):
+def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, timescale_factor, num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels=1,shuffle=True,drop_last=True):
     
     transform = torch.from_numpy
     print("Data Name: ", data_name)
@@ -147,10 +152,10 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
         drop_last = True
     elif state =="val":
         shuffle = True
-        drop_last =True
+        drop_last = drop_last
     else:
         shuffle = False
-        drop_last = True
+        drop_last = drop_last
     
     dataloader = DataLoader(dataset,
                             batch_size = int(batch_size),

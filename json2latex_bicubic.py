@@ -7,23 +7,25 @@ categories = {
         'Tri-linear': ['Tri_Decay_turb_small_None'],
         'FNO3D': ['FNO_Decay_turb_small_None'],
         'ConvLSTM': ['ConvLSTM_Decay_turb_small_None'],
-        'Ours (Euler)': ['PASR_ODE_small_Decay_turb_small_euler'],
-        'Ours (rk4)': ['PASR_ODE_small_Decay_turb_small_rk4'],
+        'Ours (Euler)': ['PASR_ODE_small_rbc_small_euler_physics_False'],
+        'Ours (rk4)': ['PASR_ODE_small_rbc_small_rk4_physics_False'],
+        'Ours (Physics)': ['PASR_ODE_small_Decay_turb_small_rk4_physics_True'],
     },
     'RBC': {
         'Tri-linear': ['Tri_RBC_small_None'],
         'FNO3D': ['FNO_RBC_small_None'],
         'ConvLSTM': ['ConvLSTM_RBC_small_None'],
-        'Ours (Euler)': ['PASR_small_rbc_small_euler'],
-        'Ours (RK4)': ['PASR_small_rbc_small_rk4'],
+        'Ours (Euler)': ['PASR_ODE_small_rbc_small_euler_physics_False'],
+        'Ours (rk4)': ['PASR_ODE_small_rbc_small_rk4_physics_False'],
+        'Ours (Physics)': ['PASR_ODE_small_rbc_small_rk4_physics_True']
     },
-    'Climate': {
-        'Tri-linear': ['Tri_Climate_None'],
-        'FNO3D': ['FNO_Climate_None'],
-        'ConvLSTM': ['ConvLSTM_Climate_None'],
-        'Ours (Euler)': ['PASR_small_climate_euler'],
-        'Ours (RK4)': ['PASR_small_climate_rk4'],
-    },
+    # 'Climate': {
+    #     'Tri-linear': ['Tri_Climate_None'],
+    #     'FNO3D': ['FNO_Climate_None'],
+    #     'ConvLSTM': ['ConvLSTM_Climate_None'],
+    #     'Ours (Euler)': ['PASR_small_climate_euler'],
+    #     'Ours (RK4)': ['PASR_small_climate_rk4'],
+    # },
 }
 
 latex_code = "\\begin{table}[h!]\n"

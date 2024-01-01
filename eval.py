@@ -27,7 +27,7 @@ from src.util import *
 from src.data_loader import getData_test
 import logging
 import random
-def get_metric_RFNE(truth,pred,mean=0,std=1):
+def get_metric_stats_metric(truth,pred,mean=0,std=1):
     """
     Computes the Relative Frame-wise Norm Error (RFNE), Mean Absolute Error (MAE), Mean Squared Error (MSE),
     and Infinity Norm (IN) between the predicted and ground truth tensors.
@@ -56,7 +56,36 @@ def get_metric_RFNE(truth,pred,mean=0,std=1):
     print(f"shape is {RFNE.shape}")
     return RFNE.detach().cpu().numpy(), MAE.detach().cpu().numpy(), MSE.detach().cpu().numpy(), IN.detach().cpu().numpy()
 
-def eval_NODE_wrapper(model_path,num_snapshots=20,task_dt=1,result_normalization=False):
+
+def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR):
+    import json
+    magic_batch = 5
+    json_file = "eval_v3.json"
+    # Check if the results file already exists and load it, otherwise initialize an empty list
+    try:
+        with open(json_file, "r") as f:
+            all_results = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        all_results = {}
+        print("No results file found, initializing a new one.")
+    # Create a unique key based on your parameters
+    # Check if the key already exists in the dictionary
+    if key not in all_results:
+        all_results[key] = {
+        }
+    # Store the results
+    all_results[key]["RFNE"] = RFNE[...,:].mean().item()
+    all_results[key]["MAE"] = MAE[...,:].mean().item()
+    all_results[key]["MSE"] = MSE[...,:].mean().item()
+    all_results[key]["IN"] = IN[...,:].mean().item()
+    all_results[key]["SSIM"] = SSIM.mean().item()
+    all_results[key]["PSNR"] = PSNR.mean().item()
+    with open(json_file, "w") as f:
+        json.dump(all_results, f, indent=4)
+        f.close()
+    return print("dump json done")
+
+def eval_NODE(model_path,num_snapshots=20,task_dt=1,result_normalization=False):
     checkpoint = torch.load(model_path)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     import argparse
@@ -65,7 +94,7 @@ def eval_NODE_wrapper(model_path,num_snapshots=20,task_dt=1,result_normalization
     args = argparse.Namespace()
     args.__dict__.update(config)
     window_size = args.window_size
-    stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
+    stats_loader = DataInfoLoader(args.data_path+"/*/*.h5",args.data)
     def get_normalizer(args,stats_loader=stats_loader):
         if args.normalization == "True":
             mean, std = stats_loader.get_mean_std()
@@ -106,70 +135,90 @@ def eval_NODE_wrapper(model_path,num_snapshots=20,task_dt=1,result_normalization
     for batch in test1_loader: # better be the val loader, need to modify datasets, but we are good for now.
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
-            inputs = inputs[:,0,...]
+            # inputs = inputs[:,0,...]
             model.eval()
             out = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots) 
-            RFNE1,MAE1,MSE1,IN1 = get_metric_RFNE(target,out)
+            RFNE1,MAE1,MSE1,IN1 = get_metric_stats_metric(target,out)
     PSNR1 = get_psnr(out,target)
     SSIM1 = get_ssim(out,target)
-    for batch in test3_loader:
+    for batch in test2_loader:
         with torch.no_grad():
             lr, target = batch[0].float().to(device), batch[1].float().to(device)
-            inputs = lr[:,0,...]
+            # inputs = lr[:,0,...]
             model.eval()
             out = model(inputs,task_dt = args.task_dt,n_snapshots = args.n_snapshots) 
-            RFNE2,MAE2,MSE2,IN2 = get_metric_RFNE(target,out)
+            RFNE2,MAE2,MSE2,IN2 = get_metric_stats_metric(target,out)
     PSNR2 = get_psnr(out,target)
     SSIM2 = get_ssim(out,target)
     return lr.cpu().numpy(),target.cpu().numpy(),out.cpu().numpy(), (RFNE1,RFNE2), (MSE1,MSE2), (MAE1,MAE2),(IN1,IN2),(SSIM1,SSIM2),(PSNR1,PSNR2)
-path = {"nearestconv_20":"results/PASR_ODE_small_data_decay_turbulence_lrsim_v2_4098.pt",
-        "pixelshuffle_20":"results/PASR_ODE_small_data_decay_turbulence_lrsim_v2_982.pt",
-        "pixelshuffle_30":"results/PASR_ODE_small_data_decay_turbulence_lrsim_v2_5111.pt"
+# path = {"nearestconv_20":"results/PASR_ODE_small_data_decay_turbulence_lrsim_v2_4098.pt",
+#         "pixelshuffle_20":"results/PASR_ODE_small_data_decay_turbulence_lrsim_v2_982.pt",
+#         "pixelshuffle_30":"results/PASR_ODE_small_data_decay_turbulence_lrsim_v2_5111.pt"
+# }
+# name1 = "nearestconv_20"
+# name2 = "pixelshuffle_20"
+path_lr_sim = {
+    # "PASR_DT_LR_SIM_1024_s4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
+    # "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
+    "PASR_DT_LR_SIM_256_s4":"results/PASR_ODE_small_data_DT_lrsim_256_s4_v0_2557.pt",
+    # "ConvLSTM_DT_LR_SIM_1024_s4":"ConvLSTM_DT_1024_s4_v0_sequenceLR3785_checkpoint.pt",
+    # "ConvLSTM_DT_LR_SIM_512_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR3895_checkpoint.pt",
+    # # "ConvLSTM_DT_LR_SIM_256_s4":"ConvLSTM_DT_256_s4_v0_sequenceLR3895_checkpoint.pt",
+    # "FNO_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_1.pt",
+    # "FNO_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
+    # "FNO_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_1.pt",
 }
+for name,model_path in path_lr_sim.items():
+    if name.startswith("PASR"):
+        input,target,pred,rfne,mse,mae,inf,ssim,psnr= eval_NODE(model_path)
+    # elif name.startswith("FNO"):
+    #     input,target,pred,rfne,mse,mae,inf,ssim,psnr= eval_FNO(model_path)
+    # elif name.startswith("ConvLSTM"):
+    #     input,target,pred,rfne,mse,mae,inf,ssim,psnr= eval_ConvLSTM(model_path)
+    # elif name.startswith("Tri-Linear"):
+    #     input,target,pred,rfne,mse,mae,inf,ssim,psnr= eval_TriLinear(model_path)
 
-name1 = "nearestconv_20"
-name2 = "pixelshuffle_20"
-name_ls = [name1,name2]
-for name in name_ls:
-    input,target,pred,rfne,mse,mae,inf,ssim,psnr= eval_NODE_wrapper(path[name])
-    print(f"RFNE(no-roll-out) {rfne[0][:].mean()}; single trajectory: {rfne[1][:].mean()}")
+    print(f"RFNE (with-roll-out) {rfne[0][:].mean()}; RFNE(No-roll-out) {rfne[1][:].mean()}; RFNE (single trajectory): {rfne[2][:].mean()}")
 
-    import seaborn
-    fig,ax = plt.subplots(3,5,figsize=(5,3))
-    for i in range(10):
-        for j in range(5):
-            ax[0,j].imshow(input[i*5,j*4,0,...],cmap=seaborn.cm.icefire)
-            ax[0,j].axis("off")
-            ax[1,j].imshow(target[i*5,j*4,0,...],cmap=seaborn.cm.icefire)
-            ax[1,j].axis("off")
-            ax[2,j].imshow(pred[i*5,j*4,0,...],cmap=seaborn.cm.icefire)
-            ax[2,j].axis("off")
-        fig.savefig(f"result_{name}_{i}.png",bbox_inches='tight')
 
-    import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].plot(rfne[0].mean(axis=1)[..., 0], label="RFNE_w")
-    ax[0].plot(rfne[0].mean(axis=1)[..., 1], label="RFNE_u")
-    ax[0].plot(rfne[0].mean(axis=1)[..., 2], label="RFNE_v")
-    ax[1].plot(rfne[1].mean(axis=1)[..., 0], label="RFNE_w")
-    ax[1].plot(rfne[1].mean(axis=1)[..., 1], label="RFNE_u")
-    ax[1].plot(rfne[1].mean(axis=1)[..., 2], label="RFNE_v")
-    ax[0].legend()
-    ax[1].legend()
-    ax[1].set_ylim([0, 0.7])
-    ax[1].set_xlabel("Time")  # Fixed typo: set_xaxis -> set_xlabel
-    fig.savefig(f"rfne_{name}.png")
-    plt.figure()
-    plt.plot(mse[1].mean(axis=1)[...,0],label="MSE_vorticity")
-    plt.plot(mse[1].mean(axis=1)[...,1],label="MSE_u")
-    plt.plot(mse[1].mean(axis=1)[...,2],label="MSE_v")
-    plt.legend()
-    plt.xlabel("time")
-    plt.ylabel("MSE")
-    plt.ylim(0,1.4)
-    plt.title("averaged MSE in time with IC at differnt time")
-    plt.savefig(f"mse_{name}.png")
+    # import seaborn
+    # fig,ax = plt.subplots(3,5,figsize=(5,3))
+    # for i in range(10):
+    #     for j in range(5):
+    #         ax[0,j].imshow(input[i*5,j*4,0,...],cmap=seaborn.cm.icefire)
+    #         ax[0,j].axis("off")
+    #         ax[1,j].imshow(target[i*5,j*4,0,...],cmap=seaborn.cm.icefire)
+    #         ax[1,j].axis("off")
+    #         ax[2,j].imshow(pred[i*5,j*4,0,...],cmap=seaborn.cm.icefire)
+    #         ax[2,j].axis("off")
+    #     fig.savefig(f"result_{name}_{i}.png",bbox_inches='tight')
+
+    # import matplotlib.pyplot as plt
+
+    # fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    # ax[0].plot(rfne[0].mean(axis=1)[..., 0], label="RFNE_w")
+    # ax[0].plot(rfne[0].mean(axis=1)[..., 1], label="RFNE_u")
+    # ax[0].plot(rfne[0].mean(axis=1)[..., 2], label="RFNE_v")
+    # ax[1].plot(rfne[1].mean(axis=1)[..., 0], label="RFNE_w")
+    # ax[1].plot(rfne[1].mean(axis=1)[..., 1], label="RFNE_u")
+    # ax[1].plot(rfne[1].mean(axis=1)[..., 2], label="RFNE_v")
+    # ax[0].legend()
+    # ax[1].legend()
+    # ax[1].set_ylim([0, 0.7])
+    # ax[1].set_xlabel("Time")  # Fixed typo: set_xaxis -> set_xlabel
+    # fig.savefig(f"rfne_{name}.png")
+    # plt.figure()
+    # plt.plot(mse[1].mean(axis=1)[...,0],label="MSE_vorticity")
+    # plt.plot(mse[1].mean(axis=1)[...,1],label="MSE_u")
+    # plt.plot(mse[1].mean(axis=1)[...,2],label="MSE_v")
+    # plt.legend()
+    # plt.xlabel("time")
+    # plt.ylabel("MSE")
+    # plt.ylim(0,1.4)
+    # plt.title("averaged MSE in time with IC at differnt time")
+    # plt.savefig(f"mse_{name}.png")
+
 # fig,ax = plt.subplots(1,2,figsize=(10,5))
 # ax[0].plot(mae[0].mean(axis=0)[...,0],label="RFNE_w")
 # ax[0].plot(mae[0].mean(axis=0)[...,1],label="RFNE_u")
