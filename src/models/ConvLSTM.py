@@ -239,7 +239,7 @@ class PhySR(nn.Module):
         # shiftmean
         self.shift_mean = ShiftMean(self.mean, self.std)    
 
-    def forward(self, x):
+    def forward(self, x,initial_state=None):
         # input: [t,b,c,h,w] 
         x = self.shift_mean(x, mode='sub')
         x = x.permute(2,0,1,3,4) # [b,c,t,h,w] --> [t,b,c,h,w]

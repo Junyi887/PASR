@@ -171,7 +171,7 @@ def eval_NODE(model_path,num_snapshots=20,task_dt=1,result_normalization=False):
     
     test1_loader,test2_loader,test3_loader = getData_test(upscale_factor = args.scale_factor, 
                                                       timescale_factor= args.timescale_factor,
-                                                      batch_size = 32, 
+                                                      batch_size = 16, 
                                                       data_path = args.data_path,
                                                       num_snapshots = 20,
                                                       noise_ratio = args.noise_ratio,
@@ -186,11 +186,7 @@ def eval_NODE(model_path,num_snapshots=20,task_dt=1,result_normalization=False):
     return [RFNE1,RFNE2,RFNE3], [MSE1,MSE2,MSE3], [MAE1,MAE2,MAE3], [IN1,IN2,IN3], [SSIM1,SSIM2,SSIM3], [PSNR1,PSNR2,PSNR3],[cum_RFNE1,cum_RFNE2,cum_RFNE3]
 
 def eval_FNO(model_path,in_channels=3,batch_size=4):
-    fc_dim = 64 # or 40 for climate
-    layers = [64, 64, 64, 64, 64]
-    modes1 = [8, 8, 8, 8]
-    modes2 = [8, 8, 8, 8]
-    modes3 = [8, 8, 8, 8]
+
     checkpoint = torch.load(model_path)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     import argparse
@@ -198,10 +194,19 @@ def eval_FNO(model_path,in_channels=3,batch_size=4):
     config = checkpoint['config']
     args = argparse.Namespace()
     args.__dict__.update(config)
+    if hasattr(args, "width"):
+        width = args.width
+    else:
+        width = 64
+    fc_dim = 64 # or 40 for climate
+    layers = [width, width, width, width, width]
+    modes1 = [8, 8, 8, 8]
+    modes2 = [8, 8, 8, 8]
+    modes3 = [8, 8, 8, 8]
     stats_loader = DataInfoLoader(args.data_path+"/*/*.h5",args.data)
     mean,std = get_normalizer(args,stats_loader)
     img_x, img_y = stats_loader.get_shape()
-    model = FNO3D(modes1, modes2, modes3,(args.batch_size,args.in_channels,args.n_snapshots+1,img_x,img_y),width=16, fc_dim=fc_dim,layers=layers,in_dim=in_channels, out_dim=in_channels, act='gelu',mean=mean,std=std )
+    model = FNO3D(modes1, modes2, modes3,(args.batch_size,args.in_channels,args.n_snapshots+1,img_x,img_y),width=16, fc_dim=fc_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu',mean=mean,std=std )
     model = torch.nn.DataParallel(model).to(device)
     model.load_state_dict(model_state)
     test1_loader,test2_loader,test3_loader = getData_test(upscale_factor = args.scale_factor, 
@@ -221,11 +226,17 @@ def eval_ConvLSTM(model_path,in_channels=3):
     checkpoint = torch.load(model_path)
     checkpoint512 =  torch.load("results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt")
     checkpoint256 = torch.load("results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt")
-    checkpoint1024 = torch.load("results/FNO_data_DT_1024_s4_v0_sequenceLR_1.pt")
+    checkpoint1024 = torch.load("results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt")
+    if model_path.split("_")[2]=="512":
+        checkpoint_data = checkpoint512
+    elif model_path.split("_")[2]=="256":
+        checkpoint_data = checkpoint256
+    elif model_path.split("_")[2]=="1024":
+        checkpoint_data = checkpoint1024
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     import argparse
     model_state = checkpoint['model_state_dict']
-    config = checkpoint512['config']
+    config = checkpoint_data['config']
     args = argparse.Namespace()
     args.__dict__.update(config)
     num_snapshots = 20
@@ -248,18 +259,18 @@ def eval_ConvLSTM(model_path,in_channels=3):
     model.load_state_dict(model_state)
     test1_loader,test2_loader,test3_loader = getData_test(upscale_factor = args.scale_factor, 
                                                       timescale_factor= args.timescale_factor,
-                                                      batch_size = 4, 
+                                                      batch_size =16, 
                                                       data_path = args.data_path,
                                                       num_snapshots = 20,
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
-                                                      in_channels=args.in_channels,)
+                                                      in_channels=3,)
     RFNE1, MAE1, MSE1, IN1, cum_RFNE1, PSNR1, SSIM1 = process_loader_baselines(test1_loader, model, device, args)
     RFNE2, MAE2, MSE2, IN2, cum_RFNE2, PSNR2, SSIM2 = process_loader_baselines(test2_loader, model, device, args)
     RFNE3, MAE3, MSE3, IN3, cum_RFNE3, PSNR3, SSIM3 = process_loader_baselines(test3_loader, model, device, args)
     return [RFNE1,RFNE2,RFNE3], [MSE1,MSE2,MSE3], [MAE1,MAE2,MAE3], [IN1,IN2,IN3], [SSIM1,SSIM2,SSIM3], [PSNR1,PSNR2,PSNR3],[cum_RFNE1,cum_RFNE2,cum_RFNE3]
 
-def eval_TriLinear(model_path,in_channels=3,batch_size=32,n_snapshots=20):
+def eval_TriLinear(model_path,in_channels=3,batch_size=16,n_snapshots=20):
     checkpoint = torch.load(model_path)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     import argparse
@@ -277,7 +288,7 @@ def eval_TriLinear(model_path,in_channels=3,batch_size=32,n_snapshots=20):
                                                       num_snapshots = n_snapshots,
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
-                                                      in_channels=args.in_channels,)
+                                                      in_channels=in_channels,)
     RFNE1, MAE1, MSE1, IN1, cum_RFNE1, PSNR1, SSIM1 = process_loader_baselines(test1_loader, model, device, args)
     RFNE2, MAE2, MSE2, IN2, cum_RFNE2, PSNR2, SSIM2 = process_loader_baselines(test2_loader, model, device, args)
     RFNE3, MAE3, MSE3, IN3, cum_RFNE3, PSNR3, SSIM3 = process_loader_baselines(test3_loader, model, device, args)
@@ -287,10 +298,10 @@ path_lr_sim = {
     # "PASR_DT_LR_SIM_1024_s4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
     # "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
     # "PASR_DT_LR_SIM_256_s4":"results/PASR_ODE_small_data_DT_lrsim_256_s4_v0_2557.pt",
-    "ConvLSTM_DT_LR_SIM_1024_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR1995_checkpoint.pt",
+    # "ConvLSTM_DT_LR_SIM_1024_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR1995_checkpoint.pt",
     # "ConvLSTM_DT_LR_SIM_512_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR3895_checkpoint.pt",
-    # # "ConvLSTM_DT_LR_SIM_256_s4":"ConvLSTM_DT_256_s4_v0_sequenceLR3895_checkpoint.pt",
-    # "FNO_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_1.pt",
+    # "ConvLSTM_DT_LR_SIM_256_s4":"ConvLSTM_DT_256_s4_v0_sequenceLR865_checkpoint.pt",
+    # "FNO_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
     # "FNO_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
     # "FNO_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
     "TriLinear_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",

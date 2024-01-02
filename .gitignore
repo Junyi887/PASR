@@ -33,3 +33,4 @@ data_gen/*.npy
 data_gen/*.png
 data_gen/figures/*
 debug/*.png
+*.pth

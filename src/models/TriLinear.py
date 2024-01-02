@@ -33,6 +33,6 @@ class TriLinear(nn.Module):
         """
         B,C,T,H,W = x.shape
         
-        x = F.interpolate(x, size=(self.num_snapshots,H*self.scale_factor,W*self.scale_factor), mode='trilinear', align_corners=False)
+        x = F.interpolate(x, size=(self.num_snapshots+1,H*self.upsacle_factor,W*self.upsacle_factor), mode='trilinear', align_corners=False)
         # bicubic upsampling
         return x
