@@ -113,7 +113,7 @@ def get_psnr(true, pred,mean=0,std=1):
         if mse.min() <= 1e-16:
             return float('inf')
         B,T,C = mse.shape
-        print(f"MSE shape in get_psnr: {mse.shape}")
+        # print(f"MSE shape in get_psnr: {mse.shape}")
         list = []
         for i in range(T):
             max_value = torch.max(true)

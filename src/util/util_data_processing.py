@@ -48,7 +48,7 @@ class DataInfoLoader():
       npy_file_path = f"src/util/data_stats_{self.data_name}.npy"
       # if file exists and is not empty
       if os.path.exists(npy_file_path) and os.path.getsize(npy_file_path) > 0:
-          self._load_stats_from_json(npy_file_path)
+          self._load_stats_from_npy(npy_file_path)
       else:
           self._get_files_stats()
           self._save_stats_to_npy()
@@ -78,10 +78,10 @@ class DataInfoLoader():
     - file_path: Path to the .npy file containing the statistics.
     """
     stats =np.load(f"src/util/data_stats_{self.data_name}.npy", allow_pickle=True).item()
-    self.mean_list = stats["mean"]
-    self.std_list = stats["std"]
-    self.min_list = stats["min"]
-    self.max_list = stats["max"]
+    self.mean_all_data = stats["mean"]
+    self.std_all_data = stats["std"]
+    self.min_all_data = stats["min"]
+    self.max_all_data = stats["max"]
     self.img_shape_x = stats["img_shape_x"]
     self.img_shape_y = stats["img_shape_y"]
     self.n_files = stats["n_files"]

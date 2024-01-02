@@ -91,7 +91,10 @@ def validation(args,model, val1_loader,val2_loader,device):
             input_loss2 += 0
             RFNE2_loss += RFNE_t.mean().item()
             psnr2_loss += psnr(out_t, target).item()
-    result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader),psnr2_loss/len(val2_loader)]
+    if len(val2_loader)==0:
+        result_loader2 = [input_loss2, target_loss2, RFNE2_loss,psnr2_loss]
+    else:
+        result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader),psnr2_loss/len(val2_loader)]
     return result_loader1,result_loader2
 
 def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,savedpath):
@@ -177,7 +180,7 @@ parser.add_argument('--noise_ratio', type = float, default= 0.0)
 parser.add_argument('--crop_size', type = int, default= 256)
 ## model parameters 
 parser.add_argument('--model', type = str, default= "FNO")
-parser.add_argument('--modes', type = int, default= 12)
+parser.add_argument('--modes', type = int, default= 8)
 parser.add_argument('--width', type = int, default= 16)
 parser.add_argument('--hidden_dim', type = int, default= 64) # euler
 ## training (optimization) parameters
@@ -253,10 +256,11 @@ if __name__ == "__main__":
     img_x,img_y = stats_loader.get_shape()
     mean,std = get_normalizer(args)
 
-    layers = [64, 64, 64, 64, 64]
-    modes1 = [8, 8, 8, 8]
-    modes2 = [8, 8, 8, 8]
-    modes3 = [8, 8, 8, 8]
+    #layers = [64, 64, 64, 64, 64]
+    layers = [args.width, args.width, args.width, args.width, args.width]
+    modes1 = [args.modes, args.modes, args.modes, args.modes]
+    modes2 = [args.modes, args.modes, args.modes, args.modes]
+    modes3 = [args.modes, args.modes, args.modes, args.modes]
 
 
     model = FNO3D(modes1, modes2, modes3,HR_shape=(args.batch_size,args.in_channels,args.n_snapshots+1,img_x,img_y),width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu', mean=mean,std=std).to(device)

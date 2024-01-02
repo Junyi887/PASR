@@ -86,7 +86,7 @@ def getData_test(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10I
         test_loader_viz2 = DataLoader(test_dataset_viz2,batch_size=512,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
         return test_loader,test_loader_viz,test_loader_viz2
     else:
-        test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels,shuffle=False,drop_last=False)
+        test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels,shuffle=False,drop_last=True)
         test2_loader = get_data_loader(data_name, data_path, '/test', "no_roll_out", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels,shuffle=False,drop_last=False)
         test3_loader = get_data_loader(data_name, data_path, '/viz', "no_roll_out", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels,shuffle=False,drop_last=False)
         return test1_loader,test2_loader,test3_loader

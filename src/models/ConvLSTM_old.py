@@ -87,7 +87,7 @@ class ShiftMean(nn.Module):
         super(ShiftMean, self).__init__()
         c = len(mean)
         self.mean = torch.Tensor(mean).view(1, c,1, 1, 1)
-        self.std = torch.Tensor(std).view(1, c, 1, 1, 1)
+        self.std = torch.Tensor(std).view(1,c , 1, 1, 1)
 
     def forward(self, x, mode):
         if mode == 'sub':
@@ -190,10 +190,10 @@ class temporal_sr(nn.Module):
         return x
 
 
-class PhySR(nn.Module):
+class PhySR_old(nn.Module):
     def __init__(self, n_feats, n_layers, upscale_factor, shift_mean_paras, step=1, effective_step=[1],in_channels=3):
 
-        super(PhySR, self).__init__()
+        super(PhySR_old, self).__init__()
         # n_layers: [n_convlstm, n_resblock]
 
         self.n_convlstm, self.n_resblock = n_layers
@@ -239,7 +239,7 @@ class PhySR(nn.Module):
         # shiftmean
         self.shift_mean = ShiftMean(self.mean, self.std)    
 
-    def forward(self, x):
+    def forward(self, x, initial_state):
         # input: [t,b,c,h,w] 
         x = self.shift_mean(x, mode='sub')
         x = x.permute(2,0,1,3,4) # [b,c,t,h,w] --> [t,b,c,h,w]
@@ -279,7 +279,8 @@ class PhySR(nn.Module):
             if step in self.effective_step:
                 outputs.append(xt)    
         # outputs = torch.cat(tuple(outputs), dim=1)
-        out = torch.stack(outputs, dim=2)
+        out = torch.stack(outputs, dim=2) # [b,c,t,h,w]
         out = self.shift_mean(out, mode='add')
+        out = out.permute(2,0,1,3,4)
         return out
 

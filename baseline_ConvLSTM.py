@@ -351,7 +351,7 @@ def train(model, train_loader, val_loader, init_state, n_iters, lr, print_every,
             print('')
             # save model
             if val_error < best_error:
-                save_checkpoint(model, optimizer, scheduler, model_save_path)
+                save_checkpoint(model, optimizer, scheduler, model_save_path,args)
                 best_error = val_error
         if (epoch+1) % 100 == 0:
             pred_error = test(model, val2_loader, init_state, save_path, fig_save_path)
@@ -411,12 +411,13 @@ def test(model, test_loader, init_state, save_path, fig_save_path):
     return pred_error
 
 
-def save_checkpoint(model, optimizer, scheduler, save_dir):
+def save_checkpoint(model, optimizer, scheduler, save_dir,args):
     '''save model and optimizer'''
     torch.save({
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
-        'scheduler_state_dict': scheduler.state_dict()
+        'scheduler_state_dict': scheduler.state_dict(),
+        'config': vars(args) 
         }, save_dir)
 
 
