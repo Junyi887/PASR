@@ -82,8 +82,9 @@ def get_metric_stats_metric(truth,pred,mean=0,std=1):
 
 def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR,cum_RFNE):
     import json
-    magic_batch = 3
-    json_file = "eval_v3.json"
+    magic_batch = 0
+    magic_batch_end = -1
+    json_file = "eval_v4.json"
     # Check if the results file already exists and load it, otherwise initialize an empty list
     try:
         with open(json_file, "r") as f:
@@ -101,13 +102,13 @@ def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR,cum_RFNE):
     print(f"RFNE cumRFNE {cum_RFNE.mean(axis=0)}")
     print(f"RFNE {RFNE[0,:,0]}")
     print(f"RFNE {RFNE.mean(axis=(0,-1))}")
-    all_results[key]["RFNE"] = RFNE[magic_batch:,...].mean().item()
-    all_results[key]["MAE"] = MAE[magic_batch:,...].mean().item()
-    all_results[key]["MSE"] = MSE[magic_batch:,...,:].mean().item()
-    all_results[key]["IN"] = IN[magic_batch:,...,:].mean().item()
-    all_results[key]["RFNE_v2"] = cum_RFNE[magic_batch:].mean().item()
-    all_results[key]["SSIM"] = SSIM.mean().item()
-    all_results[key]["PSNR"] = PSNR.mean().item()
+    all_results[key]["RFNE"] = RFNE[magic_batch:magic_batch_end,:,0].mean().item()
+    all_results[key]["MAE"] = MAE[magic_batch:magic_batch_end,:,0].mean().item()
+    all_results[key]["MSE"] = MSE[magic_batch:magic_batch_end,:,0].mean().item()
+    all_results[key]["IN"] = IN[magic_batch:magic_batch_end,:,0].mean().item()
+    all_results[key]["RFNE_v2"] = cum_RFNE[magic_batch:magic_batch_end,0].mean().item()
+    all_results[key]["SSIM"] = SSIM[:magic_batch_end].mean().item()
+    all_results[key]["PSNR"] = PSNR[:magic_batch_end].mean().item()
     with open(json_file, "w") as f:
         json.dump(all_results, f, indent=4)
         f.close()
@@ -194,7 +195,7 @@ def eval_FNO(model_path,in_channels=3,batch_size=4):
     config = checkpoint['config']
     args = argparse.Namespace()
     args.__dict__.update(config)
-    if hasattr(args, "width"):
+    if hasattr(args, "width") and args.data.startswith("DT_512") == False:
         width = args.width
     else:
         width = 64
@@ -206,7 +207,7 @@ def eval_FNO(model_path,in_channels=3,batch_size=4):
     stats_loader = DataInfoLoader(args.data_path+"/*/*.h5",args.data)
     mean,std = get_normalizer(args,stats_loader)
     img_x, img_y = stats_loader.get_shape()
-    model = FNO3D(modes1, modes2, modes3,(args.batch_size,args.in_channels,args.n_snapshots+1,img_x,img_y),width=16, fc_dim=fc_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu',mean=mean,std=std )
+    model = FNO3D(modes1, modes2, modes3,(args.batch_size,args.in_channels,args.n_snapshots+1,img_x,img_y),width=width, fc_dim=fc_dim,layers=layers,in_dim=args.in_channels, out_dim=args.in_channels, act='gelu',mean=mean,std=std )
     model = torch.nn.DataParallel(model).to(device)
     model.load_state_dict(model_state)
     test1_loader,test2_loader,test3_loader = getData_test(upscale_factor = args.scale_factor, 
@@ -296,7 +297,7 @@ def eval_TriLinear(model_path,in_channels=3,batch_size=16,n_snapshots=20):
 
 path_lr_sim = {
     # "PASR_DT_LR_SIM_1024_s4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
-    # "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
+    "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
     # "PASR_DT_LR_SIM_256_s4":"results/PASR_ODE_small_data_DT_lrsim_256_s4_v0_2557.pt",
     # "ConvLSTM_DT_LR_SIM_1024_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR1995_checkpoint.pt",
     # "ConvLSTM_DT_LR_SIM_512_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR3895_checkpoint.pt",
@@ -304,9 +305,9 @@ path_lr_sim = {
     # "FNO_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
     # "FNO_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
     # "FNO_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
-    "TriLinear_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
-    "TriLinear_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
-    "TriLinear_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
+    # "TriLinear_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
+    # "TriLinear_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
+    # "TriLinear_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
 }
 
 
