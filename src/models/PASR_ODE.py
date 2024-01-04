@@ -240,7 +240,7 @@ class PASR_ODE(nn.Module):
                  norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
                  use_checkpoint=False, upscale=2, upsampler='', resi_connection='1conv'
                  ,mean = [0],std = [1],  
-                 ode_method = "euler",num_ode_layers = 4,time_update = "NODE",ode_kernel_size = 3,ode_padding = 1,aug_dim_t = None, **kwargs):
+                 ode_method = "euler",num_ode_layers = 4,time_update = "NODE",ode_kernel_size = 3,ode_padding = 1,final_tanh =False,aug_dim_t = None, **kwargs):
         super(PASR_ODE, self).__init__()
         
         self.time_update = time_update
@@ -335,7 +335,7 @@ class PASR_ODE(nn.Module):
         #####################################################################################################
         ################################### 3, Neural ODE time interpolation ################################
         if aug_dim_t is not None: 
-            self.ode_func = ConvODEFunc(embed_dim,embed_dim*2,aug_dim_t=aug_dim_t)
+            self.ode_func = ConvODEFunc(embed_dim,embed_dim*2,aug_dim_t=aug_dim_t,num_ode_layers = num_ode_layers,final_tanh= final_tanh)
             self.ODEBlock = ODEBlock(self.ode_func,ode_method=ode_method)
         self.ode_method = ode_method
         self.aug_dim_t = aug_dim_t
