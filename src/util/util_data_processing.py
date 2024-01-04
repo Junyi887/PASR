@@ -208,7 +208,59 @@ class DataInfoLoader():
 
   def get_shape(self):
     return self.img_shape_x, self.img_shape_y
+  
+def get_normalizer(args, stats_loader):
+  """
+  Get the normalizer based on the given arguments and statistics loader.
 
+  Args:
+    args (Namespace): The command line arguments.
+    stats_loader (StatsLoader): The statistics loader object.
+
+  Returns:
+    A list containing the normalizer values based on the normalization method.
+  """
+  if args.normalization == "True":
+    mean, std = stats_loader.get_mean_std()
+    min, max = stats_loader.get_min_max()
+    if args.in_channels == 1:
+      mean, std = mean[0:1].tolist(), std[0:1].tolist()
+      min, max = min[0:1].tolist(), max[0:1].tolist()
+    elif args.in_channels == 3:
+      mean, std = mean.tolist(), std.tolist()
+      min, max = min.tolist(), max.tolist()
+    elif args.in_channels == 2:
+      mean, std = mean[1:].tolist(), std[1:].tolist()
+      min, max = min[1:].tolist(), max[1:].tolist()
+    if args.normalization_method == "minmax":
+      return min, max
+    if args.normalization_method == "meanstd":
+      return mean, std
+  else:
+    mean, std = [0], [1]
+    mean, std = mean * args.in_channels, std * args.in_channels
+    return mean, std
+def get_normalizer(args,stats_loader):
+    if args.normalization == "True":
+        mean, std = stats_loader.get_mean_std()
+        min,max = stats_loader.get_min_max()
+        if args.in_channels==1:
+            mean,std = mean[0:1].tolist(),std[0:1].tolist()
+            min,max = min[0:1].tolist(),max[0:1].tolist()
+        elif args.in_channels==3:
+            mean,std = mean.tolist(),std.tolist()
+            min,max = min.tolist(),max.tolist()
+        elif args.in_channels==2:
+            mean,std = mean[1:].tolist(),std[1:].tolist()
+            min,max = min[1:].tolist(),max[1:].tolist()
+        if args.normalization_method =="minmax":
+            return min,max
+        if args.normalization_method =="meanstd":
+            return mean,std
+    else:
+        mean, std = [0], [1]
+        mean, std = mean * args.in_channels, std * args.in_channels
+        return mean,std
 if __name__ == "__main__":
   print("hello")
   info = DataInfoLoader("/pscratch/sd/j/junyi012/climate_data/s4_sig4/data/*.h5",data_name= "climate")

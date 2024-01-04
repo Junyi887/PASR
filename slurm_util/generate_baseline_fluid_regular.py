@@ -9,6 +9,7 @@ DATA_INFO = {
     "DT_lrsim_256_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_256_s4_v0","3","32"],
     "DT_lrsim_512_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_512_s4_v0","3","8"],
     "DT_lrsim_1024_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0","3","4"],
+    "DT_lrsim_1024_s8_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s8_v0","3","4"],
 }
 
 
@@ -18,7 +19,7 @@ def generate_bash_script(data_name, model, cmd_text=None):
 #SBATCH --time=23:00:00
 #SBATCH --account=dasrepo_g
 #SBATCH --job-name={job_name}
-#SBATCH -C gpu
+#SBATCH -C gpu&hbm80g
 #SBATCH -q regular
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -45,8 +46,8 @@ srun {cmd_text}
 
 # Run the function
 if __name__ == "__main__":
-    raw_names = ["DT_lrsim_512_s4_v0","DT_lrsim_1024_s4_v0"]
-    data_names = ["DT_512_s4_v0_sequenceLR","DT_1024_s4_v0_sequenceLR"]
+    raw_names = ["DT_lrsim_1024_s8_v0"]
+    data_names = ["DT_1024_s8_v0_sequenceLR"]
     for i,(raw_name,data_name) in enumerate (zip(raw_names,data_names)):
         data_path, channel,batch = DATA_INFO[raw_name]
         for ic in [3]:
@@ -54,7 +55,7 @@ if __name__ == "__main__":
             jobname = generate_bash_script(data_name, "FNO", cmd_text=cmd_text)
             with open(f"run_FNO.sh", "a") as f:
                 f.write(f"sbatch bash_script/{jobname}.sbatch\n")
-    data_names2 = ["DT_512_s4_v0_sequenceLR","DT_1024_s4_v0_sequenceLR"]
+    data_names2 = ["DT_1024_s8_v0_sequenceLR"]
     for i,(raw_name,data_name) in enumerate (zip(raw_names,data_names2)):
         data_path, channel,batch = DATA_INFO[raw_name]
         for ic in [3]:

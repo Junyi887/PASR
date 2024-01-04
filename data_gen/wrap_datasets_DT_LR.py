@@ -10,8 +10,8 @@ def get_correlation(w_lr,w_hr):
 # Save the figure
 
 
-HR_res = 256
-scale = 4
+HR_res = 1024
+scale = 8
 data_dir = "/pscratch/sd/j/junyi012/DT_multi_resolution_unpaired/"
 saved_dir = f"/pscratch/sd/j/junyi012/DT_lrsim_{HR_res}_s{scale}_v0"
 if not os.path.exists(saved_dir):

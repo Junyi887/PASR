@@ -36,6 +36,7 @@ from .SwinIR_basics import PatchEmbed
 from .SwinIR_basics import RSTB
 from .SwinIR_basics import Upsample
 from .SwinIR_basics import UpsampleOneStep
+
 class ConvODEFunc(nn.Module):
     """Convolutional block modeling the derivative of ODE system.
 
@@ -65,7 +66,7 @@ class ConvODEFunc(nn.Module):
         self.channels += aug_dim_t
         self.num_filters = num_filters
         self.num_layers = num_ode_layers
-
+        self.final_tanh = final_tanh
         if aug_dim_t > 0:
             self.conv_0 = Conv2dTime(self.channels, self.num_filters,
                                     kernel_size=1, stride=1, padding=0)
@@ -114,6 +115,8 @@ class ConvODEFunc(nn.Module):
                 out = self.non_linearity(out)
             out = self.non_linearity(out)
             out = self.conv_last(out)
+        if self.final_tanh:
+            out = nn.Tanh()(out)
         return out
 
 

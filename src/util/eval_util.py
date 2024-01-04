@@ -5,20 +5,19 @@ import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
 
-from legacy_scripts.data_loader_nersc import getData
 
-DATA_INFO = {"decay_turb":['/pscratch/sd/j/junyi012/Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
-                 "burger2D": ["../burger2D_10/test/Burger2D_716_s1.h5",0.001],
-                 "rbc": ["/pscratch/sd/j/junyi012/RBC_small/test/RBC_small_33_s2.h5",0.01],
-                 "decay_turb_lrsim_4":["../decay_turb_lrsim/train/decay_turb_lres_sim_s4_162.h5",0.001],
-                 "climate_s4_sig1": ["/pscratch/sd/j/junyi012/climate_data/s4_sig1/",1],
-                "climate_s4_sig0": ["/pscratch/sd/j/junyi012/climate_data/s4_sig0/",1],
-                "climate_s4_sig2": ["/pscratch/sd/j/junyi012/climate_data/s4_sig2/",1],
-                "climate_s4_sig4": ["/pscratch/sd/j/junyi012/climate_data/s4_sig4/",1],
-                 "climate_s2_sig0": ["/pscratch/sd/j/junyi012/climate_data/s2_sig0/",1],
-                  "climate_s2_sig1": ["/pscratch/sd/j/junyi012/climate_data/s2_sig1/",1],
-                   "climate_s2_sig2": ["/pscratch/sd/j/junyi012/climate_data/s2_sig2/",1],
-                    "climate_s2_sig4": ["/pscratch/sd/j/junyi012/climate_data/s2_sig4/",1]}
+# DATA_INFO = {"decay_turb":['/pscratch/sd/j/junyi012/Decay_Turbulence_small/test/Decay_turb_small_128x128_79.h5', 0.02],
+#                  "burger2D": ["../burger2D_10/test/Burger2D_716_s1.h5",0.001],
+#                  "rbc": ["/pscratch/sd/j/junyi012/RBC_small/test/RBC_small_33_s2.h5",0.01],
+#                  "decay_turb_lrsim_4":["../decay_turb_lrsim/train/decay_turb_lres_sim_s4_162.h5",0.001],
+#                  "climate_s4_sig1": ["/pscratch/sd/j/junyi012/climate_data/s4_sig1/",1],
+#                 "climate_s4_sig0": ["/pscratch/sd/j/junyi012/climate_data/s4_sig0/",1],
+#                 "climate_s4_sig2": ["/pscratch/sd/j/junyi012/climate_data/s4_sig2/",1],
+#                 "climate_s4_sig4": ["/pscratch/sd/j/junyi012/climate_data/s4_sig4/",1],
+#                  "climate_s2_sig0": ["/pscratch/sd/j/junyi012/climate_data/s2_sig0/",1],
+#                   "climate_s2_sig1": ["/pscratch/sd/j/junyi012/climate_data/s2_sig1/",1],
+#                    "climate_s2_sig2": ["/pscratch/sd/j/junyi012/climate_data/s2_sig2/",1],
+#                     "climate_s2_sig4": ["/pscratch/sd/j/junyi012/climate_data/s2_sig4/",1]}
 
 
 def energy_specturm(u,v):
@@ -300,3 +299,103 @@ def generate_test_matrix(cols:int, final_index:int) -> np.ndarray:
                 current_value += 1
         current_value -= 1  # Repeat the last element in the next row
     return matrix[:-1,:]
+
+
+def process_loader_NODE_viz(loader, model, device,task_dt=1, n_snapshots=20):
+    for batch in loader:
+        with torch.no_grad():
+            inputs, target = batch[0].float().to(device), batch[1].float().to(device)
+            model.eval()
+            out = model(inputs, task_dt=task_dt, n_snapshots=n_snapshots) # Return B,C,T,H,W
+    return inputs.cpu().numpy(),target.cpu().numpy(),out.cpu().numpy()
+
+def process_loader_baseline_viz(loader, model, device,task_dt=1, n_snapshots=20):
+    for batch in loader:
+        with torch.no_grad():
+            inputs, target = batch[0].float().to(device), batch[1].float().to(device)
+            model.eval()
+            out = model(inputs) # Return B,C,T,H,W
+            target = target.permute(0,2,1,3,4)
+            out = out.permute(0,2,1,3,4) # Change shape to match required shape for metric calculation
+    return inputs.cpu().numpy(),target.cpu().numpy(),out.cpu().numpy()
+
+def process_loader_NODE_viz(loader, model, device,task_dt=1, n_snapshots=20):
+    for batch in loader:
+        with torch.no_grad():
+            inputs, target = batch[0].float().to(device), batch[1].float().to(device)
+            model.eval()
+            out = model(inputs, task_dt=task_dt, n_snapshots=n_snapshots) # Return B,C,T,H,W
+    return inputs.cpu().numpy(),target.cpu().numpy(),out.cpu().numpy()
+
+def process_loader_baseline_viz(loader, model, device,task_dt=1, n_snapshots=20):
+    for batch in loader:
+        with torch.no_grad():
+            inputs, target = batch[0].float().to(device), batch[1].float().to(device)
+            model.eval()
+            out = model(inputs) # Return B,C,T,H,W
+            target = target.permute(0,2,1,3,4)
+            out = out.permute(0,2,1,3,4) # Change shape to match required shape for metric calculation
+    return inputs.cpu().numpy(),target.cpu().numpy(),out.cpu().numpy()
+
+def get_metric_stats_metric(truth,pred,mean=0,std=1):
+    """
+    Computes the Relative Frame-wise Norm Error (RFNE), Mean Absolute Error (MAE), Mean Squared Error (MSE),
+    and Infinity Norm (IN) between the predicted and ground truth tensors.
+
+    Args:
+        truth (torch.Tensor): The ground truth tensor with shape B,T,C,H,W.
+        pred (torch.Tensor): The predicted tensor with shape B,T,C,H,W.
+        mean (float): The mean value used for normalization. Default is 0.
+        std (float): The standard deviation value used for normalization. Default is 1.
+
+    Returns:
+        Tuple of numpy arrays containing the RFNE, MAE, MSE, and IN values.
+    """
+    # input should be tensor with shape B,T,C,H,W
+    if mean != 0:
+        pred = (pred-mean)/std
+        truth = (truth-mean)/std
+    RFNE = torch.norm(pred - truth, p=2, dim=(-1, -2)) / torch.norm(truth, p=2, dim=(-1, -2))
+    MAE = torch.mean(torch.abs(pred - truth), dim=(-1, -2))
+    MSE = torch.mean((pred - truth)**2, dim=(-1, -2))
+    IN = torch.norm(pred - truth, p=np.inf, dim=(-1, -2))
+    avg_RFNE = RFNE.mean().item()
+    cum_RFNE = torch.norm(pred - truth, p=2, dim=(1,-1,-2)) / torch.norm(truth, p=2, dim=(1,-1,-2))
+    # print(f"averaged RFNE {avg_RFNE}")
+    # print(f"cumulative in time RFNE {cum_RFNE}")
+    # print(f"shape is {RFNE.shape}")
+    return RFNE.detach().cpu().numpy(), MAE.detach().cpu().numpy(), MSE.detach().cpu().numpy(), IN.detach().cpu().numpy(),cum_RFNE.detach().cpu().numpy()
+
+def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR,cum_RFNE,start_batch=0,end_batch=-1,channel =0,savefile = "eval_v4.json"):
+    import json
+    magic_batch = start_batch
+    magic_batch_end = end_batch
+    json_file = savefile
+    # Check if the results file already exists and load it, otherwise initialize an empty list
+    try:
+        with open(json_file, "r") as f:
+            all_results = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        all_results = {}
+        print("No results file found, initializing a new one.")
+    # Create a unique key based on your parameters
+    # Check if the key already exists in the dictionary
+    if key not in all_results:
+        all_results[key] = {
+        }
+    # Store the results
+    print(f"RFNE shape is {RFNE.shape}")
+    print(f"RFNE cumRFNE {cum_RFNE.mean(axis=0)}")
+    print(f"RFNE {RFNE[0,:,0]}")
+    print(f"RFNE {RFNE.mean(axis=(0,-1))}")
+    all_results[key]["RFNE"] = RFNE[magic_batch:magic_batch_end,:,channel].mean().item()
+    all_results[key]["MAE"] = MAE[magic_batch:magic_batch_end,:,channel].mean().item()
+    all_results[key]["MSE"] = MSE[magic_batch:magic_batch_end,:,channel].mean().item()
+    all_results[key]["IN"] = IN[magic_batch:magic_batch_end,:,channel].mean().item()
+    all_results[key]["RFNE_v2"] = cum_RFNE[magic_batch:magic_batch_end,channel].mean().item()
+    all_results[key]["SSIM"] = SSIM[:magic_batch_end].mean().item()
+    all_results[key]["PSNR"] = PSNR[:magic_batch_end].mean().item()
+    with open(json_file, "w") as f:
+        json.dump(all_results, f, indent=4)
+        f.close()
+    return print("dump json done")

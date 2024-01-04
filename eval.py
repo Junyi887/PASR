@@ -28,27 +28,11 @@ from src.util import *
 from src.data_loader import getData_test
 import logging
 import random
-def get_normalizer(args,stats_loader):
-    if args.normalization == "True":
-        mean, std = stats_loader.get_mean_std()
-        min,max = stats_loader.get_min_max()
-        if args.in_channels==1:
-            mean,std = mean[0:1].tolist(),std[0:1].tolist()
-            min,max = min[0:1].tolist(),max[0:1].tolist()
-        elif args.in_channels==3:
-            mean,std = mean.tolist(),std.tolist()
-            min,max = min.tolist(),max.tolist()
-        elif args.in_channels==2:
-            mean,std = mean[1:].tolist(),std[1:].tolist()
-            min,max = min[1:].tolist(),max[1:].tolist()
-        if args.normalization_method =="minmax":
-            return min,max
-        if args.normalization_method =="meanstd":
-            return mean,std
-    else:
-        mean, std = [0], [1]
-        mean, std = mean * args.in_channels, std * args.in_channels
-        return mean,std
+from src.util.eval_util import get_psnr,get_ssim
+from src.util.util_data_processing import get_normalizer
+
+
+
     
 def get_metric_stats_metric(truth,pred,mean=0,std=1):
     """
@@ -113,6 +97,8 @@ def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR,cum_RFNE):
         json.dump(all_results, f, indent=4)
         f.close()
     return print("dump json done")
+
+
 
 def process_loader_NODE(loader, model, device,task_dt=1, n_snapshots=20):
     RFNE, MAE, MSE, IN, cum_RFNE = [], [], [], [], []
@@ -271,6 +257,7 @@ def eval_ConvLSTM(model_path,in_channels=3):
     RFNE3, MAE3, MSE3, IN3, cum_RFNE3, PSNR3, SSIM3 = process_loader_baselines(test3_loader, model, device, args)
     return [RFNE1,RFNE2,RFNE3], [MSE1,MSE2,MSE3], [MAE1,MAE2,MAE3], [IN1,IN2,IN3], [SSIM1,SSIM2,SSIM3], [PSNR1,PSNR2,PSNR3],[cum_RFNE1,cum_RFNE2,cum_RFNE3]
 
+
 def eval_TriLinear(model_path,in_channels=3,batch_size=16,n_snapshots=20):
     checkpoint = torch.load(model_path)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -295,22 +282,22 @@ def eval_TriLinear(model_path,in_channels=3,batch_size=16,n_snapshots=20):
     RFNE3, MAE3, MSE3, IN3, cum_RFNE3, PSNR3, SSIM3 = process_loader_baselines(test3_loader, model, device, args)
     return [RFNE1,RFNE2,RFNE3], [MSE1,MSE2,MSE3], [MAE1,MAE2,MAE3], [IN1,IN2,IN3], [SSIM1,SSIM2,SSIM3], [PSNR1,PSNR2,PSNR3],[cum_RFNE1,cum_RFNE2,cum_RFNE3]
 
-path_lr_sim = {
-    # "PASR_DT_LR_SIM_1024_s4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
-    "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
-    # "PASR_DT_LR_SIM_256_s4":"results/PASR_ODE_small_data_DT_lrsim_256_s4_v0_2557.pt",
-    # "ConvLSTM_DT_LR_SIM_1024_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR1995_checkpoint.pt",
-    # "ConvLSTM_DT_LR_SIM_512_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR3895_checkpoint.pt",
-    # "ConvLSTM_DT_LR_SIM_256_s4":"ConvLSTM_DT_256_s4_v0_sequenceLR865_checkpoint.pt",
-    # "FNO_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
-    # "FNO_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
-    # "FNO_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
-    # "TriLinear_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
-    # "TriLinear_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
-    # "TriLinear_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
-}
 
-
+if __name__ == "__main__":
+    path_lr_sim = {
+        "PASR_DT_LR_SIM_1024_s4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
+        # "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
+        # "PASR_DT_LR_SIM_256_s4":"results/PASR_ODE_small_data_DT_lrsim_256_s4_v0_2557.pt",
+        "ConvLSTM_DT_LR_SIM_1024_s4":"results/ConvLSTM_DT_1024_s4_v0_sequenceLR5733_checkpoint.pt",
+        # "ConvLSTM_DT_LR_SIM_512_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR3895_checkpoint.pt",
+        # "ConvLSTM_DT_LR_SIM_256_s4":"ConvLSTM_DT_256_s4_v0_sequenceLR865_checkpoint.pt",
+        # "FNO_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
+        # "FNO_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
+        # "FNO_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
+        # "TriLinear_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
+        # "TriLinear_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
+        # "TriLinear_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
+    }
 
 for name,model_path in path_lr_sim.items():
     if name.startswith("PASR"):
@@ -327,15 +314,6 @@ for name,model_path in path_lr_sim.items():
         print(f"RFNE (with-roll-out) {rfne[0][:].mean()}; RFNE(No-roll-out) {rfne[1][:].mean()}; RFNE (single trajectory): {rfne[2][:].mean()},cumulative RFNE {cumRFNE[1][:].mean()}")
     dump_factor = 1
     dump_json(name,rfne[dump_factor],mae[dump_factor],mse[dump_factor],inf[dump_factor],ssim[dump_factor],psnr[dump_factor],cumRFNE[dump_factor])
-    # elif name.startswith("FNO"):
-    #     input,target,pred,rfne,mse,mae,inf,ssim,psnr= eval_FNO(model_path)
-    # elif name.startswith("ConvLSTM"):
-    #     input,target,pred,rfne,mse,mae,inf,ssim,psnr= eval_ConvLSTM(model_path)
-    # elif name.startswith("Tri-Linear"):
-    #     input,target,pred,rfne,mse,mae,inf,ssim,psnr= eval_TriLinear(model_path)
-
-
-
 
 
     # import seaborn

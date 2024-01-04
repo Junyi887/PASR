@@ -274,7 +274,7 @@ class PhySR(nn.Module):
             xt = self.tail(xt)
             # residual connection
             xt += s # [b,c,h,w]
-            xt = xt.view(bb, cc, hh*4, ww*4) 
+            xt = xt.view(bb, cc, hh*self.s_up_factor, ww*self.s_up_factor) 
             
             if step in self.effective_step:
                 outputs.append(xt)    

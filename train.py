@@ -208,7 +208,7 @@ parser.add_argument('--window_size',type =int, default= 8)
 ## training (optimization) parameters
 parser.add_argument('--epochs', type = int, default= 200)
 parser.add_argument('--lr', type = float, default= 1e-4)
-parser.add_argument('--lamb', type = float, default= 0.3)
+parser.add_argument('--lamb', type = float, default= 1)
 parser.add_argument('--lamb_p', type = float, default= 1)
 parser.add_argument('--dtype', type = str, default= "float32")
 parser.add_argument('--seed',type =int, default= 3407)

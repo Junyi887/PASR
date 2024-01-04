@@ -511,7 +511,7 @@ if __name__ == '__main__':
     model = PhySR(
         n_feats = 32,
         n_layers = [1, 2], # [n_convlstm, n_resblock]
-        upscale_factor = [args.n_snapshots, 4], # [t_up, s_up]
+        upscale_factor = [args.n_snapshots, args.scale_factor], # [t_up, s_up]
         shift_mean_paras = [mean, std],  
         step = steps,
         in_channels=args.in_channels,
