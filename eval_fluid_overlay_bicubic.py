@@ -204,19 +204,25 @@ def plot_energy_specturm_overlay(data_name):
         ax.set_ylim(bottom=y_bound[0], top=y_bound[1])
         ax.set_xscale('log')
         ax.set_yscale('log')
-        ax.loglog(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], 'k',label="Truth")
-        ax.loglog(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], 'b', alpha=1,label="Trilinear")
-        ax.loglog(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL], 'g', alpha=1,label="ConvLSTM")
-        ax.loglog(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], 'y', alpha=1,label="FNO3D")
-        ax.loglog(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], 'r', alpha=1,label="Ours")
+        import seaborn as sns
+        color_platte = sns.color_palette("rocket", 11)
+        ax.loglog(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c = color_platte[0],label="Truth")
+        ax.loglog(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], c=color_platte[2], alpha=0.6,label="Ours")
+        ax.loglog(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL], c=color_platte[4], alpha=0.6,label="ConvLSTM")
+        ax.loglog(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], c=color_platte[6], alpha=0.6,label="FNO3D")
+        ax.loglog(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], c = color_platte[8], alpha=0.6,label="Trilinear")
+
+
+
         axins = ax.inset_axes(zoom_in_localtion, xlim=(x1, x2), ylim=(y1, y2)) # [x0, y0, width, height]
 
         # # Plot on the inset
-        axins.plot(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], 'k')
-        axins.plot(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], 'b', alpha=0.6)
-        axins.plot(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL], 'g', alpha=0.6)
-        axins.plot(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], 'y', alpha=0.6)
-        axins.plot(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], 'r', alpha=0.6)
+        axins.plot(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c=color_platte[0])
+        axins.plot(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred],  c=color_platte[2], alpha=0.6)
+        axins.plot(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL],  c=color_platte[4], alpha=0.6)
+        axins.plot(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], c=color_platte[6], alpha=0.6)
+        axins.plot(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], c=color_platte[8], alpha=0.6)
+        
 
         axins.set_yscale('log')
         axins.set_xticks(xticks,xticks_label)
@@ -226,7 +232,7 @@ def plot_energy_specturm_overlay(data_name):
         # Save the figure using fig.savefig instead of plt.savefig to avoid context issues
         fig.savefig(f"{data_name}_energy_specturm_{batch}.png", dpi =300,bbox_inches='tight')
         if batch ==save_batch:
-            fig.savefig(f"{data_name}_energy_specturm_{batch}.pdf", bbox_inches='tight')
+            fig.savefig(f"PaperWrite/paper_figures/{data_name}_energy_specturm_{batch}.pdf", bbox_inches='tight')
         plt.close(fig)  # Close the figure to free memory
 
     return print("energy specturm plot done")
@@ -423,9 +429,9 @@ def plot_vorticity_correlation_extrapolation(data_name):
 
 import numpy as np 
 import matplotlib.pyplot as plt
-# plot_energy_specturm_overlay("DT")
+plot_energy_specturm_overlay("DT")
 # plot_RBC_comparision()
-# plot_energy_specturm_overlay("RBC")
+plot_energy_specturm_overlay("RBC")
 # plot_vorticity_correlation("DT")
 # plot_vorticity_correlation("RBC")
 # plot_climate_comparision()
