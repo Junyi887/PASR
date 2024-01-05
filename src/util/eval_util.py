@@ -324,7 +324,11 @@ def process_loader_NODE_viz(loader, model, device,task_dt=1, n_snapshots=20):
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)
             model.eval()
+            import time
+            start_time = time.time()
             out = model(inputs, task_dt=task_dt, n_snapshots=n_snapshots) # Return B,C,T,H,W
+            end_time = time.time()
+            print(f"model inference time = {end_time-start_time}s")
     return inputs.cpu().numpy(),target.cpu().numpy(),out.cpu().numpy()
 
 def process_loader_baseline_viz(loader, model, device,task_dt=1, n_snapshots=20):

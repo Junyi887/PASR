@@ -44,7 +44,7 @@ v_hr_array = v0_hr[1].data
 
 def vorticity(ds):
     return (ds.v.differentiate('x') - ds.u.differentiate('y')).rename('vorticity')
-
+import time
 
 dt_hr = cfd.equations.stable_time_step(
         max_velocity, cfl_safety_factor, viscosity, grid_hr)

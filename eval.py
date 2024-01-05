@@ -103,6 +103,7 @@ def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR,cum_RFNE):
 def process_loader_NODE(loader, model, device,task_dt=1, n_snapshots=20):
     RFNE, MAE, MSE, IN, cum_RFNE = [], [], [], [], []
     PSNR, SSIM = [], []
+    import time 
     for batch in loader:
         with torch.no_grad():
             inputs, target = batch[0].float().to(device), batch[1].float().to(device)

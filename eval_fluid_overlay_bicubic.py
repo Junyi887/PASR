@@ -179,7 +179,7 @@ def plot_energy_specturm_overlay(data_name,folder_name ="4090_results/"):
         realsize_pred_convL, EK_avsphr_pred_convL,result_dict_pred_convL = energy_specturm(u_pred_convL,v_pred_convL)
         realsize_pred_FNO, EK_avsphr_pred_FNO,result_dict_pred_FNO = energy_specturm(u_pred_FNO,v_pred_FNO)
         if data_name == "DT":
-            x_bound = 30
+            x_bound = 25
             zoom_in_localtion = [0.2, 0.2, 0.4, 0.2]
             x1, x2, y1, y2 = 11, 12, 6e-5, 6.5e-4  # subregion of the original image
             save_batch = 3
@@ -187,12 +187,12 @@ def plot_energy_specturm_overlay(data_name,folder_name ="4090_results/"):
             y_bound = [1e-9,0.99999]
             xticks_label = [r'$6 \times 10^0$' ,r'$10^1$']
         if data_name =="RBC":
-            x_bound = 50
+            x_bound = 25
             zoom_in_localtion = [0.13, 0.25, 0.49, 0.2]
-            x1, x2, y1, y2 = 4, 8, 1e-4, 2e-3  # subregion of the original image
+            x1, x2, y1, y2 = 5, 6, 4e-4, 1e-3  # subregion of the original image
             save_batch = 9
             y_bound = [1e-9,1e-1]
-            xticks = [5,10]
+            xticks = [8,10]
             xticks_label = [r'$5 \times 10^0$' ,r'$10^1$']
         fig, ax = plt.subplots(figsize=(3.3,3.6))
         # ax.set_title(f"Kinetic Energy Spectrum -- {data_name}")
@@ -205,7 +205,7 @@ def plot_energy_specturm_overlay(data_name,folder_name ="4090_results/"):
         ax.set_xscale('log')
         ax.set_yscale('log')
         import seaborn as sns
-        color_platte = sns.color_palette("YlOrBr_r", 5)
+        color_platte = sns.color_palette("YlGnBu_r", 5)
         alpha = 1
         ax.loglog(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c = color_platte[0],label="Truth")
         ax.loglog(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], c=color_platte[1], alpha=alpha,label="Ours")

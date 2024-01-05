@@ -11,7 +11,7 @@ def get_correlation(w_lr,w_hr):
 
 
 HR_res = 1024
-scale = 8
+scale = 16
 data_dir = "/pscratch/sd/j/junyi012/DT_multi_resolution_unpaired/"
 saved_dir = f"/pscratch/sd/j/junyi012/DT_lrsim_{HR_res}_s{scale}_v0"
 if not os.path.exists(saved_dir):

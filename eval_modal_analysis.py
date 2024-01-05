@@ -119,7 +119,7 @@ def eval_NODE_POD(model_path,num_snapshots=20,task_dt=1,result_normalization=Fal
     if hasattr(args, "final_tanh"):
         model = PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=(height,width), window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t,final_tanh=args.final_tanh)
     else:
-        model = PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=(height,width), window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t,final_tanh=args.final_tanh)
+        model = PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=(height,width), window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t)
     model = torch.nn.DataParallel(model).to(device)
     model.load_state_dict(model_state)
     
@@ -139,9 +139,9 @@ def eval_NODE_POD(model_path,num_snapshots=20,task_dt=1,result_normalization=Fal
 if __name__ == "__main__":
     path_lr_sim = {
         "PASR_DT_LR_SIM_1024_s4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
-        # "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
-        # "PASR_DT_LR_SIM_256_s4":"results/PASR_ODE_small_data_DT_lrsim_256_s4_v0_2557.pt",
-        "ConvLSTM_DT_LR_SIM_1024_s4":"results/ConvLSTM_DT_1024_s4_v0_sequenceLR5733_checkpoint.pt",
+        "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
+        "PASR_DT_LR_SIM_256_s4":"results/PASR_ODE_small_data_DT_lrsim_256_s4_v0_2557.pt",
+        # "ConvLSTM_DT_LR_SIM_1024_s4":"results/ConvLSTM_DT_1024_s4_v0_sequenceLR5733_checkpoint.pt",
         # "ConvLSTM_DT_LR_SIM_512_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR3895_checkpoint.pt",
         # "ConvLSTM_DT_LR_SIM_256_s4":"ConvLSTM_DT_256_s4_v0_sequenceLR865_checkpoint.pt",
         # "FNO_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
@@ -159,27 +159,28 @@ if __name__ == "__main__":
         data = data.reshape(data.shape[0]*data.shape[1],-1) # flatten the spatial dimension
         pca.fit(data)
         return pca
+    for name,model_path in path_lr_sim.items():
+        inputs,targets,preds = eval_NODE_POD(model_path)
+    # inputs,targets,preds = eval_NODE_POD(path_lr_sim["PASR_DT_LR_SIM_1024_s4"])
+    # # print(inputs.shape)
+    # _,_,pred_convLSTM = eval_ConvLSTM_POD(path_lr_sim["ConvLSTM_DT_LR_SIM_1024_s4"])
     
-    inputs,targets,preds = eval_NODE_POD(path_lr_sim["PASR_DT_LR_SIM_1024_s4"])
-    # print(inputs.shape)
-    _,_,pred_convLSTM = eval_ConvLSTM_POD(path_lr_sim["ConvLSTM_DT_LR_SIM_1024_s4"])
-    
-    pca1 = get_POD(targets[:7,:-1,0,:,:])
-    pca2 = get_POD(preds[:7,:-1,0,:,:])
-    pca3 = get_POD(pred_convLSTM[:7,0,:-1,:,:])
-    mode1 = []
-    mode2 = []
-    mode3 = []
-    import seaborn
-    colormap = seaborn.cm.icefire
-    fig,ax = plt.subplots(3,3,figsize=(6,6))
-    for i in range (3):
-        mode1.append(pca1.components_[i].reshape(1024,1024))
-        mode2.append(pca2.components_[i].reshape(1024,1024))
-        mode3.append(pca3.components_[i].reshape(1024,1024))
-        ax[i,0].imshow(mode1[i],cmap=colormap)
-        ax[i,1].imshow(mode2[i],cmap=colormap)
-        ax[i,2].imshow(mode3[i],cmap=colormap)
+    # pca1 = get_POD(targets[:7,:-1,0,:,:])
+    # pca2 = get_POD(preds[:7,:-1,0,:,:])
+    # pca3 = get_POD(pred_convLSTM[:7,0,:-1,:,:])
+    # mode1 = []
+    # mode2 = []
+    # mode3 = []
+    # import seaborn
+    # colormap = seaborn.cm.icefire
+    # fig,ax = plt.subplots(3,3,figsize=(6,6))
+    # for i in range (3):
+    #     mode1.append(pca1.components_[i].reshape(1024,1024))
+    #     mode2.append(pca2.components_[i].reshape(1024,1024))
+    #     mode3.append(pca3.components_[i].reshape(1024,1024))
+    #     ax[i,0].imshow(mode1[i],cmap=colormap)
+    #     ax[i,1].imshow(mode2[i],cmap=colormap)
+    #     ax[i,2].imshow(mode3[i],cmap=colormap)
     # ax[0,0].set_title("First Mode Target",fontsize = 12)
     # ax[0,1].set_title("First Mode  Pred")
     # ax[1,0].set_title("Second Mode Target")

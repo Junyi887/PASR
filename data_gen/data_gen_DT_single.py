@@ -28,105 +28,51 @@ scale = args.scale
 density = 1.
 viscosity = 1e-3
 seed = args.seed
-outer_steps = 200
-final_time = 10 
+
 #dt = 0.001
 max_velocity = 2.0
 cfl_safety_factor = 0.5
 
 # Define the physical dimensions of the simulation.
 grid_hr = cfd.grids.Grid((size, size), domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
-grid_lr = cfd.grids.Grid((size//scale, size//scale), domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
+grid_ref = cfd.grids.Grid((1024, 1024), domain=((0, 2 * jnp.pi), (0, 2 * jnp.pi)))
 # Construct a random initial velocity. The `filtered_velocity_field` function
 # ensures that the initial velocity is divergence free and it filters out
 # high frequency fluctuations.
-import os
-if os.path.exists(f'data_gen/DT_IC/initial_velocity_{seed}_u.npy') and os.path.exists(f'data_gen/DT_IC/initial_velocity_{seed}_v.npy'):
-    u_hr = np.load(f'data_gen/DT_IC/initial_velocity_{seed}_u.npy')
-    v_hr = np.load(f'data_gen/DT_IC/initial_velocity_{seed}_v.npy')
-    print("load initial velocity from file")
-else:
-    print(f"generate initial velocity for seed {seed}")
-    v0_hr = cfd.initial_conditions.filtered_velocity_field(
-        jax.random.PRNGKey(seed), grid_hr, max_velocity)
-    u_hr = v0_hr[0].data
-    v_hr = v0_hr[1].data
-    np.save(f'data_gen/DT_IC/initial_velocity_{seed}_u.npy',u_hr)
-    np.save(f'data_gen/DT_IC/initial_velocity_{seed}_v.npy',v_hr)
+print(f"generate initial velocity for seed {seed}")
+v0_hr = cfd.initial_conditions.filtered_velocity_field(
+    jax.random.PRNGKey(seed), grid_hr, max_velocity)
+u_hr = v0_hr[0].data
+v_hr = v0_hr[1].data
 
-
-u_lr = u_hr[::scale,::scale]
-v_lr = v_hr[::scale,::scale]
-
-
-def load_lr_IC(u_lr,v_lr,iterations: int = 3, maximum_velocity: float = max_velocity):
-    GridVariable = grids.GridVariable
-    GridVariableVector = grids.GridVariableVector
-    def _max_speed(v):
-        return jnp.linalg.norm(jnp.array([u.data for u in v]), axis=0).max()
-    boundary_conditions = []
-    velocity_components = []
-    velocity_components.append(u_lr)
-    velocity_components.append(v_lr)
-    boundary_conditions.append(boundaries.periodic_boundary_conditions(grid_lr.ndim))
-    boundary_conditions.append(boundaries.periodic_boundary_conditions(grid_lr.ndim))
-    velocity= cfd.initial_conditions.wrap_variables(velocity_components, grid_lr, boundary_conditions)
-    def project_and_normalize(v: GridVariableVector):
-        v = pressure.projection(v)
-        vmax = _max_speed(v)
-        v = tuple(
-            grids.GridVariable(maximum_velocity * u.array / vmax, u.bc) for u in v)
-        return v
-  # Due to numerical precision issues, we repeatedly normalize and project the
-  # velocity field. This ensures that it is divergence-free and achieves the
-  # specified maximum velocity.
-    return funcutils.repeated(project_and_normalize, iterations)(velocity)
-
-v0_lr = load_lr_IC(u_lr,v_lr)
-
-fig,ax = plt.subplots(2,2,figsize=(5,5))
-ax[0,0].imshow(v0_hr[0].data)
-ax[0,1].imshow(v0_lr[0].data)
-ax[1,0].imshow(v0_hr[1].data)
-ax[1,1].imshow(v0_lr[1].data)
-fig.savefig(f'data_gen/initial_velocity_{seed}.png')
 
 # Choose a time step
-dt_lr = cfd.equations.stable_time_step(
-    max_velocity, cfl_safety_factor, viscosity, grid_lr)
-print("cfl dt lr = ", dt_lr)
+dt_ref = cfd.equations.stable_time_step(
+    max_velocity, cfl_safety_factor, viscosity, grid_ref)
+print("cfl dt lr = ", dt_ref)
 dt_hr = cfd.equations.stable_time_step(
     max_velocity, cfl_safety_factor, viscosity, grid_hr)
 print("cfl dt hr = ", dt_hr)
 
+final_time = 10
+outer_steps = 200
+dt = dt_ref
+inner_steps = (final_time // dt) // outer_steps
+import time
 # Define a step function and use it to compute a trajectory.
-step_fn_lr = cfd.funcutils.repeated(
-    cfd.equations.semi_implicit_navier_stokes(
-        density=density, viscosity=viscosity, dt=dt_hr, grid=grid_lr),
-    steps=inner_steps)
-rollout_fn_lr = jax.jit(cfd.funcutils.trajectory(step_fn_lr, outer_steps))
-time,trajectory_lr = jax.device_get(rollout_fn_lr(v0_lr))
-print(f"*******{time} in lr")
-dt = 0.001
+ 
+
+start_time = time.time()
 step_fn_hr = cfd.funcutils.repeated(
     cfd.equations.semi_implicit_navier_stokes(
-        density=density, viscosity=viscosity, dt=dt_hr, grid=grid_hr),
+        density=density, viscosity=viscosity, dt=dt, grid=grid_hr),
     steps=inner_steps)
 rollout_fn_hr = jax.jit(cfd.funcutils.trajectory(step_fn_hr, outer_steps))
-time,trajectory_hr = jax.device_get(rollout_fn_hr(v0_hr))
-print(f"*******{time} in hr")
+time2,trajectory_hr = jax.device_get(rollout_fn_hr(v0_hr))
+end_time = time.time()
+
+print(f"simulation time = {end_time-start_time}s at args.res = {size}")
 # load into xarray for visualization and analysis
-ds_lr = xarray.Dataset(
-    {
-        'u': (('time', 'x', 'y'), trajectory_lr[0].data),
-        'v': (('time', 'x', 'y'), trajectory_lr[1].data),
-    },
-    coords={
-        'x': grid_lr.axes()[0],
-        'y': grid_lr.axes()[1],
-        'time': dt * inner_steps * np.arange(outer_steps)
-    }
-)    
 ds_hr = xarray.Dataset(
     {
         'u': (('time', 'x', 'y'), trajectory_hr[0].data),
