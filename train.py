@@ -137,6 +137,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             loss_t = criterion_Data(out_t,target)
             div = fd_solver.get_div_loss(out_t) if args.in_channels >=2 else torch.zeros_like(out_t)
             phy_loss = criterion2(div,torch.zeros_like(div).to(device))
+            
             if args.physics == "True":
                 loss_t += args.lamb_p*phy_loss
             target_loss += loss_t.item() 
@@ -274,8 +275,12 @@ if __name__ == "__main__":
     window_size = args.window_size
     height = (img_x // args.scale_factor // window_size + 1) * window_size
     width = (img_y // args.scale_factor // window_size + 1) * window_size
+    if args.final_tanh.lower() in ["true","t","yes","y","1","on"]:
+        final_tanh = True
+    else:
+        final_tanh = False
     model_list = {
-            "PASR_ODE_small":PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=(height,width), window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t,final_tanh=args.final_tanh),
+            "PASR_ODE_small":PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=(height,width), window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t,final_tanh=final_tanh),
     }
     model = torch.nn.DataParallel(model_list[args.model]).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)

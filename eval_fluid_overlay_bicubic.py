@@ -189,11 +189,11 @@ def plot_energy_specturm_overlay(data_name,folder_name ="4090_results/"):
         if data_name =="RBC":
             x_bound = 25
             zoom_in_localtion = [0.13, 0.25, 0.49, 0.2]
-            x1, x2, y1, y2 = 5, 6, 4e-4, 1e-3  # subregion of the original image
+            x1, x2, y1, y2 = 9, 11, 5e-5, 1e-4  # subregion of the original image
             save_batch = 9
             y_bound = [1e-9,1e-1]
-            xticks = [8,10]
-            xticks_label = [r'$5 \times 10^0$' ,r'$10^1$']
+            xticks = [9,11]
+            xticks_label = [r'$9 \times 10^0$' ,r'$10^1$']
         fig, ax = plt.subplots(figsize=(3.3,3.6))
         # ax.set_title(f"Kinetic Energy Spectrum -- {data_name}")
         ax.set_xlabel(r"k",fontsize=11)
@@ -206,21 +206,21 @@ def plot_energy_specturm_overlay(data_name,folder_name ="4090_results/"):
         ax.set_yscale('log')
         import seaborn as sns
         color_platte = sns.color_palette("YlGnBu_r", 5)
-        alpha = 1
-        ax.loglog(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c = color_platte[0],label="Truth")
-        ax.loglog(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], c=color_platte[1], alpha=alpha,label="Ours")
-        ax.loglog(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL], c=color_platte[2], alpha=alpha,label="ConvLSTM")
-        ax.loglog(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], c = color_platte[3], alpha=alpha,label="Trilinear")
-        ax.loglog(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], c=color_platte[4], alpha=alpha,label="FNO3D")
+        alpha = 0.8
+        ax.loglog(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c = 'k',label="Truth",alpha=1)
+        ax.loglog(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], c=color_platte[0], alpha=alpha,label="Ours")
+        ax.loglog(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL], c=color_platte[1], alpha=alpha,label="ConvLSTM")
+        ax.loglog(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], c = color_platte[2], alpha=alpha,label="Trilinear")
+        ax.loglog(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], c=color_platte[3], alpha=alpha,label="FNO3D")
 
         axins = ax.inset_axes(zoom_in_localtion, xlim=(x1, x2), ylim=(y1, y2)) # [x0, y0, width, height]
 
         # # Plot on the inset
-        axins.plot(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c=color_platte[0])
-        axins.plot(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred],  c=color_platte[1], alpha=0.6)
-        axins.plot(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL],  c=color_platte[2], alpha=alpha)
-        axins.plot(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], c=color_platte[3], alpha=alpha)
-        axins.plot(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], c=color_platte[4], alpha=alpha)
+        axins.plot(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c='k', alpha=1)
+        axins.plot(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred],  c=color_platte[0], alpha=alpha)
+        axins.plot(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL],  c=color_platte[1], alpha=alpha)
+        axins.plot(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], c=color_platte[2], alpha=alpha)
+        axins.plot(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], c=color_platte[3], alpha=alpha)
 
 
         axins.set_yscale('log')
@@ -231,17 +231,18 @@ def plot_energy_specturm_overlay(data_name,folder_name ="4090_results/"):
         # Save the figure using fig.savefig instead of plt.savefig to avoid context issues
         fig.savefig(f"{data_name}_energy_specturm_{batch}.png", dpi =300,bbox_inches='tight')
         if batch ==save_batch:
-            fig.savefig(f"PaperWrite/paper_figures/{data_name}_energy_specturm_{batch}.pdf", bbox_inches='tight')
+            fig.savefig(f"PaperWrite/{data_name}_energy_specturm_{batch}.pdf", bbox_inches='tight')
         plt.close(fig)  # Close the figure to free memory
 
     return print("energy specturm plot done")
 
-def plot_vorticity_correlation(data_name):
-    data_truth = np.load(f"hr_target_{data_name}.npy")
-    pred_tri = np.load(f"pred_tri_{data_name}.npy")
-    pred_convL = np.load(f"pred_conv_{data_name}.npy")
-    pred_FNO = np.load(f"pred_FNO_{data_name}.npy")
-    pred = np.load(f"pred_NODE_{data_name}.npy")
+
+def plot_vorticity_correlation(data_name,folder_name ="4090_results/"):
+    data_truth = np.load(f"{folder_name}hr_target_{data_name}.npy")
+    pred_tri = np.load(f"{folder_name}pred_tri_{data_name}.npy")
+    pred_convL = np.load(f"{folder_name}pred_conv_{data_name}.npy")
+    pred_FNO = np.load(f"{folder_name}pred_FNO_{data_name}.npy")
+    pred = np.load(f"{folder_name}NODE_pred_{data_name}.npy")
     correlations = np.zeros(pred.shape[1])
     correlation_tri = np.zeros(pred.shape[1])
     correlation_convL = np.zeros(pred.shape[1])
@@ -274,12 +275,15 @@ def plot_vorticity_correlation(data_name):
     axs.scatter(np.arange(0,pred.shape[1],1),correlation_tri,color = color_profile[-4])
     axs.axhline(y = 0.95, color = 'k', linestyle = 'dashed',alpha=0.5,label="95% reference line") 
     axs.legend(fontsize=12)
-    axs.set_xticks(np.arange(0,pred.shape[1],5),[0,None,10,None,20])
-    axs.set_yticks(np.arange(0.75,1,0.1))
-    axs.set_ylabel("vorticity correlation",fontsize=12)
+    axs.set_xticks(np.arange(0,pred.shape[1],5),[0,None,0.5,None,1])
+    if data_name =="RBC":
+        axs.set_yticks(np.arange(0.8,1,0.1))
+    else:
+        axs.set_yticks(np.arange(0.75,1,0.1))
+    axs.set_ylabel("Vorticity correlation",fontsize=12)
     axs.set_xlabel("time",fontsize=12)
     # axs.set_title(f"vorticity correlation -- {data_name}")
-    fig.savefig(f"vorticity_correlation_{data_name}.png",dpi=300,bbox_inches='tight')
+    # fig.savefig(f"vorticity_correlation_{data_name}.png",dpi=300,bbox_inches='tight')
 
     fig.savefig(f"vorticity_correlation_{data_name}.pdf",bbox_inches='tight')
 
@@ -391,13 +395,13 @@ def plot_climate_comparision_normalized():
             # ax[4,i].set_axis_off()
         fig.savefig(f"n_Climate_baseline_{batch}.png",bbox_inches='tight')
 
-def plot_vorticity_correlation_extrapolation(data_name):
+def plot_vorticity_correlation_extrapolation(data_name,folder_name ="4090_results/"):
     # data_truth = np.load(f"Extrapolation_hr_target_80_{data_name}.npy")
     # pred_rk4 = np.load(f"Extrapolation_pred_{data_name}_rk4_NODE.npy")
     # pred_euler = np.load(f"Extrapolation_pred_{data_name}_euler_NODE.npy")
-    data_truth = np.load(f"Extrapolation_loop_back_hr_target_80_{data_name}.npy")
-    pred_rk4 = np.load(f"Extrapolation_loop_back_pred_{data_name}_rk4_NODE.npy")
-    pred_euler = np.load(f"Extrapolation_loop_back_pred_{data_name}_euler_NODE.npy")
+    data_truth = np.load(f"{folder_name}Extrapolation_loop_back_hr_target_80_{data_name}.npy")
+    pred_rk4 = np.load(f"{folder_name}Extrapolation_loop_back_pred_{data_name}_rk4_NODE.npy")
+    pred_euler = np.load(f"{folder_name}Extrapolation_loop_back_pred_{data_name}_euler_NODE.npy")
     print(pred_rk4.shape)
     print(data_truth.shape)
     print(pred_euler.shape)
@@ -415,25 +419,111 @@ def plot_vorticity_correlation_extrapolation(data_name):
             correlation_euler[t] = corr_euler
             correlation_rk4[t] = corr_rk4
 
-        fig,axs = plt.subplots(1,1,figsize=(5,5))
-        axs.set_xticks(np.arange(0,pred_rk4.shape[1],5))
-        axs.scatter(np.arange(0,pred_rk4.shape[1],1),correlation_euler,color = 'b',label="Euler")
-        axs.scatter(np.arange(0,pred_rk4.shape[1],1),correlation_rk4,color = 'g',label="RK4")
-        axs.legend()
-        axs.set_ylabel("vorticity correlation")
-        axs.set_xlabel("time")
-        axs.set_title(f"vorticity correlation -- {data_name}")
-        fig.savefig(f"vorticity_correlation_{data_name}_{batch}_loop.png",dpi=300,bbox_inches='tight')
+        fig,axs = plt.subplots(1,1,figsize=(3,3))
+        axs.plot(np.arange(0,pred_rk4.shape[1],1),correlation_rk4,label="RK4")
+        axs.plot(np.arange(0,pred_rk4.shape[1],1),correlation_euler,label="Euler")
+        axs.legend(fontsize=12)
+        axs.set_ylabel("vorticity correlation",fontsize=12)
+        axs.set_xlabel("time",fontsize=12)
+        # axs.set_title(f"{data_name}")
+        axs.set_xticks(np.arange(0,pred_rk4.shape[1],20),[0,1,2,3,4])
+        axs.set_yticks(np.arange(0.8,1.05,0.1),[0.8,0.9,1])
+        axs.set_ylim(0.8,1.01) if data_name =="decay_turb" else axs.set_ylim(0.9,1.01)
+        fig.savefig(f"vorticity_correlation_{data_name}_{batch}_loop.pdf",bbox_inches='tight')
     return print("voritcity correlation extrapolation loop back plot done")
+
+
+
+def plot_energy_specturm_overlay2(data_name,folder_name ="4090_results/"):
+    data_truth = np.load(f"{folder_name}hr_target_{data_name}.npy")
+    pred_tri = np.load(f"{folder_name}pred_tri_{data_name}.npy")
+    pred_convL = np.load(f"{folder_name}pred_conv_{data_name}.npy")
+    pred_FNO = np.load(f"{folder_name}pred_FNO_{data_name}.npy")
+    pred = np.load(f"{folder_name}NODE_pred_{data_name}.npy")
+    print(pred.shape)
+    
+    for batch in range(12):
+        u_truth,v_truth = data_truth[batch,:,1]-data_truth.mean(),data_truth[batch,:,2]-data_truth.mean()
+        u_pred,v_pred = pred[batch,:,1]-pred.mean(),pred[batch,:,2]-pred.mean()
+        u_pred_tri,v_pred_tri = pred_tri[batch,:,1]-pred_tri.mean(),pred_tri[batch,:,2]-pred_tri.mean()
+        u_pred_convL,v_pred_convL = pred_convL[batch,:,1]-pred_convL.mean(),pred_convL[batch,:,2]-pred_convL.mean()
+        u_pred_FNO,v_pred_FNO = pred_FNO[batch,:,1]-pred_FNO.mean(),pred_FNO[batch,:,2]-pred_FNO.mean()
+        realsize_truth, EK_avsphr_truth,result_dict_truth = energy_specturm(u_truth,v_truth)
+        realsize_pred, EK_avsphr_pred,result_dict_pred = energy_specturm(u_pred,v_pred)
+        realsize_pred_tri, EK_avsphr_pred_tri,result_dict_pred_tri = energy_specturm(u_pred_tri,v_pred_tri)
+        realsize_pred_convL, EK_avsphr_pred_convL,result_dict_pred_convL = energy_specturm(u_pred_convL,v_pred_convL)
+        realsize_pred_FNO, EK_avsphr_pred_FNO,result_dict_pred_FNO = energy_specturm(u_pred_FNO,v_pred_FNO)
+        if data_name == "DT":
+            x_bound = 25
+            zoom_in_localtion = [0.2, 0.2, 0.4, 0.2]
+            x1, x2, y1, y2 = 11, 12, 6e-5, 6.5e-4  # subregion of the original image
+            save_batch = 3
+            xticks = [8,10]
+            y_bound = [1e-9,0.99999]
+            xticks_label = [r'$6 \times 10^0$' ,r'$10^1$']
+
+        if data_name =="RBC":
+            x_bound = 25
+            zoom_in_localtion = [0.17, 0.29, 0.49, 0.2]
+            x1, x2, y1, y2 = 8.8, 10.5, 6e-5, 1.5e-4   # subregion of the original image 
+            save_batch = 9
+            y_bound = [1e-9,1e-1]
+            xticks = [9,10]
+            xticks_label = [r'$9 \times 10^0$' ,r'$10^1$']
+            yticks = [1e-5,1e-4]
+            yticks_label = [r'$10^{-5}$' ,r'$10^{-4}$']
+        fig, ax = plt.subplots(figsize=(3.3,3.6))
+        # ax.set_title(f"Kinetic Energy Spectrum -- {data_name}")
+        ax.set_xlabel(r"k",fontsize=11)
+        ax.set_ylabel(r"TKE of the k$^{th}$ wavenumber",fontsize=11)
+        # Use ax.set_xlim to avoid issues with plt when having multiple axes
+        # Replace 0 with a small positive number (e.g., 1)
+        ax.set_xlim(left=1, right=x_bound)
+        ax.set_ylim(bottom=y_bound[0], top=y_bound[1])
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        import seaborn as sns
+        color_platte = sns.color_palette("YlGnBu_r", 5)
+        alpha = 0.8
+        ax.loglog(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c = 'k',label="Truth",alpha=1)
+        ax.loglog(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], c=color_platte[0], alpha=alpha,label="Ours")
+        ax.loglog(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL], c=color_platte[1], alpha=alpha,label="ConvLSTM")
+        ax.loglog(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], c = color_platte[2], alpha=alpha,label="Trilinear")
+        ax.loglog(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], c=color_platte[3], alpha=alpha,label="FNO3D")
+
+        axins = ax.inset_axes(zoom_in_localtion, xlim=(x1, x2), ylim=(y1, y2)) # [x0, y0, width, height]
+
+        # # Plot on the inset
+        axins.plot(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c='k', alpha=1)
+        axins.plot(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred],  c=color_platte[0], alpha=alpha)
+        axins.plot(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL],  c=color_platte[1], alpha=alpha)
+        axins.plot(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], c=color_platte[2], alpha=alpha)
+        axins.plot(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], c=color_platte[3], alpha=alpha)
+
+
+        axins.set_yscale('log')
+        axins.set_xticks(xticks,xticks_label)
+        axins.set_yticks(yticks,yticks_label)
+        # axins.set_xscale('log')
+        ax.indicate_inset_zoom(axins, edgecolor="black")
+        ax.legend(loc='upper right',fontsize=9)
+        # Save the figure using fig.savefig instead of plt.savefig to avoid context issues
+        fig.savefig(f"{data_name}_energy_specturm_{batch}.png", dpi =300,bbox_inches='tight')
+        if batch ==save_batch:
+            fig.savefig(f"PaperWrite/{data_name}_energy_specturm_{batch}.pdf", bbox_inches='tight')
+        plt.close(fig)  # Close the figure to free memory
+
+    return print("energy specturm plot done")
+
 
 import numpy as np 
 import matplotlib.pyplot as plt
-plot_energy_specturm_overlay("DT")
+# plot_energy_specturm_overlay("DT")
 # plot_RBC_comparision()
-plot_energy_specturm_overlay("RBC")
+# plot_energy_specturm_overlay2("RBC")
 # plot_vorticity_correlation("DT")
 # plot_vorticity_correlation("RBC")
 # plot_climate_comparision()
 # plot_climate_comparision_normalized()
-# plot_vorticity_correlation_extrapolation("decay_turb")
-# plot_vorticity_correlation_extrapolation("rbc")
+plot_vorticity_correlation_extrapolation("decay_turb")
+plot_vorticity_correlation_extrapolation("rbc")
