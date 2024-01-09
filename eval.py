@@ -68,7 +68,7 @@ def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR,cum_RFNE):
     import json
     magic_batch = 0
     magic_batch_end = -1
-    json_file = "eval_v4.json"
+    json_file = "eval_v6.json"
     # Check if the results file already exists and load it, otherwise initialize an empty list
     try:
         with open(json_file, "r") as f:
@@ -86,11 +86,11 @@ def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR,cum_RFNE):
     print(f"RFNE cumRFNE {cum_RFNE.mean(axis=0)}")
     print(f"RFNE {RFNE[0,:,0]}")
     print(f"RFNE {RFNE.mean(axis=(0,-1))}")
-    all_results[key]["RFNE"] = RFNE[magic_batch:magic_batch_end,:,0].mean().item()
-    all_results[key]["MAE"] = MAE[magic_batch:magic_batch_end,:,0].mean().item()
-    all_results[key]["MSE"] = MSE[magic_batch:magic_batch_end,:,0].mean().item()
-    all_results[key]["IN"] = IN[magic_batch:magic_batch_end,:,0].mean().item()
-    all_results[key]["RFNE_v2"] = cum_RFNE[magic_batch:magic_batch_end,0].mean().item()
+    all_results[key]["RFNE"] = RFNE[magic_batch:magic_batch_end,:,:].mean().item()
+    all_results[key]["MAE"] = MAE[magic_batch:magic_batch_end,:,:].mean().item()
+    all_results[key]["MSE"] = MSE[magic_batch:magic_batch_end,:,:].mean().item()
+    all_results[key]["IN"] = IN[magic_batch:magic_batch_end,:,:].mean().item()
+    all_results[key]["RFNE_v2"] = cum_RFNE[magic_batch:magic_batch_end,:].mean().item()
     all_results[key]["SSIM"] = SSIM[:magic_batch_end].mean().item()
     all_results[key]["PSNR"] = PSNR[:magic_batch_end].mean().item()
     with open(json_file, "w") as f:
@@ -157,7 +157,7 @@ def eval_NODE(model_path,num_snapshots=20,task_dt=1,result_normalization=False):
         final_tanh = True if args.final_tanh == "True" else False
         model = PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=(height,width), window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t,final_tanh=final_tanh)
     else:
-        model = PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=(height,width), window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t,final_tanh=args.final_tanh)
+        model = PASR_ODE(upscale=args.scale_factor, in_chans=args.in_channels, img_size=(height,width), window_size=window_size, depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler=args.upsampler, resi_conv='1conv',mean=mean,std=std,num_ode_layers = args.ode_layer,ode_method = args.ode_method,ode_kernel_size = args.ode_kernel,ode_padding = args.ode_padding,aug_dim_t=args.aug_dim_t)
     model = torch.nn.DataParallel(model).to(device)
     model.load_state_dict(model_state)
     
@@ -216,24 +216,29 @@ def eval_FNO(model_path,in_channels=3,batch_size=4):
 
 def eval_ConvLSTM(model_path,in_channels=3):
     checkpoint = torch.load(model_path)
-    checkpoint512 =  torch.load("results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt")
-    checkpoint256 = torch.load("results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt")
-    checkpoint1024 = torch.load("results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt")
-    if model_path.split("_")[2]=="512":
-        checkpoint_data = checkpoint512
-    elif model_path.split("_")[2]=="256":
-        checkpoint_data = checkpoint256
-    elif model_path.split("_")[2]=="1024":
-        checkpoint_data = checkpoint1024
+    if "config" in checkpoint.keys():
+        print("config")
+        config = checkpoint['config']
+    else:
+        checkpoint512 =  torch.load("results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt")
+        checkpoint256 = torch.load("results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt")
+        checkpoint1024 = torch.load("results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt")
+        if model_path.split("_")[2]=="512":
+            checkpoint_data = checkpoint512
+        elif model_path.split("_")[2]=="256":
+            checkpoint_data = checkpoint256
+        elif model_path.split("_")[2]=="1024":
+            checkpoint_data = checkpoint1024
+        config = checkpoint_data['config']
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     import argparse
     model_state = checkpoint['model_state_dict']
-    config = checkpoint_data['config']
+    
     args = argparse.Namespace()
     args.__dict__.update(config)
     num_snapshots = 20
-    # stats_loader = DataInfoLoader(args.data_path+"/*/*.h5",args.data) 
-    stats_loader = DataInfoLoader("/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0/*/*.h5",args.data) #/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0
+    #stats_loader = DataInfoLoader(args.data_path+"/*/*.h5",args.data) 
+    stats_loader = DataInfoLoader("/pscratch/sd/j/junyi012/DT_lrsim_256_s4_v0/*/*.h5",args.data) #/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0
     mean,std = get_normalizer(args,stats_loader)
     img_x, img_y = stats_loader.get_shape()
     steps = num_snapshots + 1 
@@ -241,7 +246,7 @@ def eval_ConvLSTM(model_path,in_channels=3):
     model = PhySR(
         n_feats=32,
         n_layers=[1, 2],  # [n_convlstm, n_resblock]
-        upscale_factor=[num_snapshots, 4],  # [t_up, s_up]
+        upscale_factor=[num_snapshots, args.scale_factor],  # [t_up, s_up]
         shift_mean_paras=[mean, std],  
         step=steps,
         in_channels=in_channels,
@@ -251,7 +256,7 @@ def eval_ConvLSTM(model_path,in_channels=3):
     model.load_state_dict(model_state)
     test1_loader,test2_loader,test3_loader = getData_test(upscale_factor = args.scale_factor, 
                                                       timescale_factor= args.timescale_factor,
-                                                      batch_size =16, 
+                                                      batch_size =args.batch_size, 
                                                       data_path = args.data_path,
                                                       num_snapshots = 20,
                                                       noise_ratio = args.noise_ratio,
@@ -289,21 +294,37 @@ def eval_TriLinear(model_path,in_channels=3,batch_size=16,n_snapshots=20):
 
 
 if __name__ == "__main__":
+    # path_lr_sim = {
+    #     "PASR_DT_LR_SIM_1024_s4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
+    #     # "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
+    #     # "PASR_DT_LR_SIM_256_s4":"results/PASR_ODE_small_data_DT_lrsim_256_s4_v0_2557.pt",
+    #     # "ConvLSTM_DT_LR_SIM_1024_s4":"results/ConvLSTM_DT_1024_s4_v0_sequenceLR5733_checkpoint.pt",
+    #     # "ConvLSTM_DT_LR_SIM_512_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR3895_checkpoint.pt",
+    #     # "ConvLSTM_DT_LR_SIM_256_s4":"ConvLSTM_DT_256_s4_v0_sequenceLR865_checkpoint.pt",
+    #     # "FNO_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
+    #     # "FNO_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
+    #     # "FNO_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
+    #     # "TriLinear_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
+    #     # "TriLinear_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
+    #     # "TriLinear_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
+    # }
     path_lr_sim = {
-        "PASR_DT_LR_SIM_1024_s4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
-        # "PASR_DT_LR_SIM_512_s4":"results/PASR_ODE_small_data_DT_lrsim_512_s4_v0_5019.pt",
-        # "PASR_DT_LR_SIM_256_s4":"results/PASR_ODE_small_data_DT_lrsim_256_s4_v0_2557.pt",
-        "ConvLSTM_DT_LR_SIM_1024_s4":"results/ConvLSTM_DT_1024_s4_v0_sequenceLR5733_checkpoint.pt",
-        # "ConvLSTM_DT_LR_SIM_512_s4":"ConvLSTM_DT_512_s4_v0_sequenceLR3895_checkpoint.pt",
-        # "ConvLSTM_DT_LR_SIM_256_s4":"ConvLSTM_DT_256_s4_v0_sequenceLR865_checkpoint.pt",
-        # "FNO_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
-        # "FNO_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
-        # "FNO_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
-        # "TriLinear_DT_LR_SIM_512_s4":"results/FNO_data_DT_512_s4_v0_sequenceLR_1.pt",
-        # "TriLinear_DT_LR_SIM_1024_s4":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
-        # "TriLinear_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
+        "PASR_DT_lrsim_1024_s4_v0_euler":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_1537.pt",
+        "PASR_DT_lrsim_1024_s8_v0_euler":"results/PASR_ODE_small_data_DT_lrsim_1024_s8_v0_7228.pt",
+        "PASR_DT_lrsim_1024_s16_v0_euler":"results/PASR_ODE_small_data_DT_lrsim_1024_s16_v0_5143.pt",
+        "PASR_DT_lrsim_1024_s4_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
+        "PASR_DT_lrsim_1024_s8_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s8_v0_9438.pt",
+        "PASR_DT_lrsim_1024_s16_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s16_v0_4342.pt",
+        "ConvLSTM_DT_1024_s4_v0":"results/ConvLSTM_DT_1024_s4_v0_sequenceLR3785_checkpoint.pt",
+        "ConvLSTM_DT_1024_s8_v0":"results/ConvLSTM_DT_1024_s8_v0_sequenceLR7399_checkpoint.pt",
+        "ConvLSTM_DT_1024_s16_v0":"results/ConvLSTM_DT_1024_s16_v0_sequenceLR6654_checkpoint.pt",
+        "FNO_DT_1024_s4_v0":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
+        "FNO_DT_1024_s8_v0":"results/FNO_data_DT_1024_s8_v0_sequenceLR_1306.pt",
+        "FNO_DT_1024_s16_v0":"results/FNO_data_DT_1024_s16_v0_sequenceLR_4373.pt",
+        "TriLinear_DT_1024_s4_v0":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
+        "TriLinear_DT_1024_s8_v0":"results/FNO_data_DT_1024_s8_v0_sequenceLR_1306.pt",
+        "TriLinear_DT_1024_s16_v0":"results/FNO_data_DT_1024_s16_v0_sequenceLR_4373.pt",
     }
-
 for name,model_path in path_lr_sim.items():
     if name.startswith("PASR"):
         rfne,mse,mae,inf,ssim,psnr,cumRFNE= eval_NODE(model_path)

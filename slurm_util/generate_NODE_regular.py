@@ -7,19 +7,19 @@ DATA_INFO = {'decay_turbulence':["/pscratch/sd/j/junyi012/Decay_Turbulence_small
             "decay_turbulence_lrsim":["../decay_turb_lrsim_short4","3"],
             "decay_turbulence_lrsim_v2":["../DT_shorter","3"],
             "ns_lres_sim_s4":["/pscratch/sd/j/junyi012/NS_lrsim_s4","3"],
-            "DT_lrsim_256_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_256_s4_v0","3"],
+            "DT_lrsim_256_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_256_s4_v0","1"],
             "DT_lrsim_512_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_512_s4_v0","3"],
-            "DT_lrsim_1024_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0","3"],
-            "DT_lrsim_1024_s8_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s8_v0","3"],
-            "DT_lrsim_1024_s16_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s16_v0","3"]
+            "DT_lrsim_1024_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0","1"],
+            "DT_lrsim_1024_s8_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s8_v0","1"],
+            "DT_lrsim_1024_s16_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s16_v0","1"]
              }
 
-MODEL_INFO = {"PASR_ODE_small": {"lr": 1e-3,"batch_size": 16,"epochs": 500,"lr_step":100,"gamma":0.5},}
+MODEL_INFO = {"PASR_ODE_small": {"lr": 5e-4,"batch_size": 16,"epochs": 500,"lr_step":30,"gamma":0.5},}
 
 def generate_bash_script(data_name, model_name,seed=1234,method ="rk4",lamb_p= 0,upsampler="nearest_conv",n_snapshots=20,in_channels=1,timescale_factor=1,scale_factor=4):
     job_name = f"{data_name}_{model_name}_{timescale_factor}_{seed}_{method}_{lamb_p}_{upsampler}_{n_snapshots}"
     short_name = f"{data_name.split('_')[-2]}_{lamb_p}"
-    if "FNO" in model_name:
+    if "" in model_name:
         file = "baseline_FNO.py"
     else:
         file = "train.py"
@@ -57,15 +57,15 @@ bash -c "$cmd1"
     return  job_name
 # Run the function
 if __name__ == "__main__":
-    data_name = ['DT_lrsim_1024_s16_v0']
+    data_name = ['DT_lrsim_1024_s16_v0',"DT_lrsim_1024_s8_v0","DT_lrsim_1024_s4_v0"]
     model_name =  "PASR_ODE_small"
-    for name,scale in zip(data_name,[16,8]):
-        for method in ["euler"]:
+    for name,scale in zip(data_name,[16,8,4]):
+        for method in ["euler","rk4"]:
             for lamb_p in [0.0]:
                 for upsampler in ["pixelshuffle"]:
                     for time in [10]:
                         for n_snapshots in [20]:
-                            job_name = generate_bash_script(data_name=name,model_name=model_name,method=method,lamb_p=lamb_p,upsampler=upsampler,seed=1024,n_snapshots=n_snapshots,timescale_factor=time,in_channels=3,scale_factor=scale)
+                            job_name = generate_bash_script(data_name=name,model_name=model_name,method=method,lamb_p=lamb_p,upsampler=upsampler,seed=1024,n_snapshots=n_snapshots,timescale_factor=time,in_channels=1,scale_factor=scale)
                             with open("run_NODE.sh","a") as f:
                                 print(f"sbatch bash_script/{job_name}.sbatch",file=f)
                             f.close()

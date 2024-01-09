@@ -10,6 +10,11 @@ DATA_INFO = {
     "DT_lrsim_512_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_512_s4_v0","3","8"],
     "DT_lrsim_1024_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0","3","4"],
     "DT_lrsim_1024_s8_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s8_v0","3","4"],
+    "DT_lrsim_256_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_256_s4_v0","1"],
+    "DT_lrsim_512_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_512_s4_v0","3"],
+    "DT_lrsim_1024_s4_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s4_v0","1"],
+    "DT_lrsim_1024_s8_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s8_v0","1"],
+    "DT_lrsim_1024_s16_v0":["/pscratch/sd/j/junyi012/DT_lrsim_1024_s16_v0","1"]
 }
 
 
@@ -46,20 +51,32 @@ srun {cmd_text}
 
 # Run the function
 if __name__ == "__main__":
-    raw_names = ["DT_lrsim_1024_s8_v0"]
-    data_names = ["DT_1024_s8_v0_sequenceLR"]
-    for i,(raw_name,data_name) in enumerate (zip(raw_names,data_names)):
-        data_path, channel,batch = DATA_INFO[raw_name]
-        for ic in [3]:
-            cmd_text = f"python baseline_FNO.py --data_path {data_path} --in_channels {ic} --data {data_name} --epochs 500 --lr 0.001 --lr_step 100 --gamma 0.5 --batch_size 32 --seed 3407 --n_snapshots 20 --timescale_factor 10"
+    data_names = ["DT_LRcoord_1024_s4_v0","DT_LRcoord_1024_s8_v0","DT_LRcoord_1024_s16_v0"]
+    raw_names = ["DT_lrsim_1024_s4_v0","DT_lrsim_1024_s8_v0","DT_lrsim_1024_s16_v0"]
+    for data_name,scale,raw_name in zip(data_names,[4,4,8],raw_names):
+        data_path, channel = DATA_INFO[raw_name]
+        for ic in [1]:
+            cmd_text = f"python baseline_FNO_inferIC.py --data_path {data_path} --in_channels {ic} --data {data_name} --epochs 500 --lr 0.001 --lr_step 100 --gamma 0.5 --batch_size {scale} --seed 1023 --n_snapshots 20 --timescale_factor 10 --scale_factor {scale}"
             jobname = generate_bash_script(data_name, "FNO", cmd_text=cmd_text)
             with open(f"run_FNO.sh", "a") as f:
                 f.write(f"sbatch bash_script/{jobname}.sbatch\n")
-    data_names2 = ["DT_1024_s8_v0_sequenceLR"]
-    for i,(raw_name,data_name) in enumerate (zip(raw_names,data_names2)):
-        data_path, channel,batch = DATA_INFO[raw_name]
-        for ic in [3]:
-            cmd_text = f"python baseline_ConvLSTM.py --data_path {data_path} --in_channels {ic} --data {data_name} --batch_size {batch} --seed 3407 --n_snapshots 20 --timescale_factor 10"
+    # raw_names = ["DT_lrsim_1024_s8_v0"]
+    # data_names = ["DT_1024_s8_v0_sequenceLR"]
+    # for i,(raw_name,data_name) in enumerate (zip(raw_names,data_names)):
+    #     data_path, channel,batch = DATA_INFO[raw_name]
+    #     for ic in [3]:
+    #         cmd_text = f"python baseline_FNO.py --data_path {data_path} --in_channels {ic} --data {data_name} --epochs 500 --lr 0.001 --lr_step 100 --gamma 0.5 --batch_size 32 --seed 3407 --n_snapshots 20 --timescale_factor 10"
+    #         jobname = generate_bash_script(data_name, "FNO", cmd_text=cmd_text)
+    #         with open(f"run_FNO.sh", "a") as f:
+    #             f.write(f"sbatch bash_script/{jobname}.sbatch\n")
+    data_names2 = ["DT_1024_s4_v0_sequenceLR","DT_1024_s8_v0_sequenceLR","DT_1024_s16_v0_sequenceLR"]
+    raw_names = ["DT_lrsim_1024_s4_v0","DT_lrsim_1024_s8_v0","DT_lrsim_1024_s16_v0"]
+    scale_factor = [4,8,16]
+
+    for i,(raw_name,data_name,scale) in enumerate (zip(raw_names,data_names2,scale_factor)):
+        data_path, channel = DATA_INFO[raw_name]
+        for ic in [1]:
+            cmd_text = f"python baseline_ConvLSTM.py --data_path {data_path} --in_channels {ic} --data {data_name} --seed 3407 --n_snapshots 20 --timescale_factor 10 --batch_size 16 --scale_factor {scale}"
             jobname = generate_bash_script(data_name, "ConvLSTM", cmd_text=cmd_text)
             with open(f"run_ConvLSTM.sh", "a") as f:
                 f.write(f"sbatch bash_script/{jobname}.sbatch\n")

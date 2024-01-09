@@ -9,3 +9,4 @@ from .PASR_ODE import PASR_ODE
 from .FNO3D_v2 import FNO3D_v2
 from .ConvLSTM_old import PhySR_old
 from .TriLinear import TriLinear
+from .Bicubic import Bicubic

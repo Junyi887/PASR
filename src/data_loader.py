@@ -77,7 +77,7 @@ def getData_test(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10I
              upscale_factor= 4,timescale_factor = 1, num_snapshots = 20,
              noise_ratio = 0.0, crop_size = 128, method = "bicubic", 
              batch_size = 1, std = [0.6703, 0.6344, 8.3615],in_channels = 1):
-    if data_name == "lrsim":
+    if data_name == "lrsim_visual":
         test_dataset = GetDataset_lres_viz(data_path+"/test", "no_roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
         test_loader = DataLoader(test_dataset,batch_size=batch_size,shuffle=False,sampler = None,drop_last = False,pin_memory = False)
         test_dataset_viz = GetDataset_lres_viz(data_path+"/viz", "no_roll_out",torch.from_numpy , upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
@@ -140,6 +140,9 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
     elif "coord" in data_name:
         print("Loader for FNO_v2 with coordinates cat as input")
         dataset = FNO_Special_Loader_Fluid(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+    elif "LRcoord" in data_name:
+        print("Loader for FNO_v2 with coordinates cat as input")
+        dataset = FNO_Special_Loader_Fluid_LR(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
     elif "sequenceLR" in data_name:
         print("Normal Loader for ConvLSTM Low Res")
         dataset = GetDataset_diffIC_LowRes_sequence(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
@@ -335,6 +338,36 @@ class FNO_Special_Loader_Fluid(BaseDataset):
         y = torch.stack(y_samples, dim=1)
         return X, y
 
+class FNO_Special_Loader_Fluid_LR(BaseDataset):
+    """return B, C, T,H, W"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Additional initialization specific to this dataset
+        self.upsample = transforms.Resize((self.img_shape_x,self.img_shape_y),Image.BICUBIC,antialias=False)
+    def __getitem__(self, global_idx):
+        file_idx, local_idx = self.get_indices(global_idx)
+        self.ensure_correct_index(global_idx, local_idx)
+        gridx,gridy,gridt = torch.tensor(np.linspace(0,1,self.img_shape_x+1)[:-1]),torch.tensor(np.linspace(0,1,self.img_shape_y+1)[:-1]),torch.tensor(np.linspace(0,1,self.num_snapshots+1))
+        # gridx = gridx.reshape(1,1,self.img_shape_x,1).repeat([1,self.num_snapshots+1,1,self.img_shape_y])
+        # gridy = gridy.reshape(1,1,1,self.img_shape_y).repeat([1,self.num_snapshots+1,self.img_shape_x,1])
+        # gridt = gridt.reshape(1,self.num_snapshots+1,1,1).repeat([1,1,self.img_shape_x,self.img_shape_y])
+
+        if self.files[file_idx] is None:
+            self._open_file(file_idx)
+        channel_names = self.get_channel_names()
+        LR_channel_names = self.get_LR_channel_names()
+        # Load the current sample
+        y_current = self.load_sample(file_idx, local_idx,channel_names)
+        X_lr = self.load_sample(file_idx, local_idx,LR_channel_names)
+        X_interp = self.upsample(X_lr)
+        X_interp = X_interp.reshape(self.n_in_channels,1,self.img_shape_x,self.img_shape_y).repeat([1, self.num_snapshots+1, 1,1])
+        X = torch.cat([X_interp,gridx,gridy,gridt],dim=0)
+        # Load future samples
+        y_future = self.load_future_samples(file_idx, local_idx,channel_names)
+        # Combine current and future samples
+        y_samples = [y_current] + y_future
+        y = torch.stack(y_samples, dim=1)
+        return X, y
 
 class Special_Loader_Fluid(BaseDataset):
     """return B, C, T,H, W"""
