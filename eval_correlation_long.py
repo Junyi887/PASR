@@ -30,7 +30,33 @@ from src.util.eval_util import *
 from src.util.util_data_processing import get_normalizer,DataInfoLoader
 import logging
 import random
+def eval_Trilinear_correlation(model_path,num_snapshots=20,task_dt=1,result_normalization=False,timescale_factor=5):
+    checkpoint = torch.load(model_path)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    import argparse
 
+    model_state = checkpoint['model_state_dict']
+    config = checkpoint['config']
+    args = argparse.Namespace()
+    args.__dict__.update(config)
+    test1_loader,test2_loader,test3_loader = getData_test(upscale_factor = args.scale_factor, 
+                                                      timescale_factor=timescale_factor,
+                                                      batch_size = 32, 
+                                                      data_path = args.data_path,
+                                                      num_snapshots = num_snapshots,
+                                                      noise_ratio = args.noise_ratio,
+                                                      data_name = args.data,
+                                                      in_channels=args.in_channels,)
+    model = TriLinear(upscale_factor=args.scale_factor,num_snapshots=num_snapshots).to(device)
+    for i,(inputs,targets) in enumerate(test3_loader):
+        inputs = inputs.to(device)
+        targets = targets.to(device)
+        preds = model(inputs)
+        preds = preds.detach().cpu().numpy()
+        targets = targets.detach().cpu().numpy()
+        inputs = inputs.detach().cpu().numpy()
+        break
+    return inputs,targets,preds
 
 def eval_NODE_correlation(model_path,num_snapshots=20,task_dt=1,result_normalization=False,timescale_factor=5):
     checkpoint = torch.load(model_path)
@@ -56,7 +82,7 @@ def eval_NODE_correlation(model_path,num_snapshots=20,task_dt=1,result_normaliza
     
     test1_loader,test2_loader,test3_loader = getData_test(upscale_factor = args.scale_factor, 
                                                       timescale_factor=timescale_factor,
-                                                      batch_size = 32, 
+                                                      batch_size = 64, 
                                                       data_path = args.data_path,
                                                       num_snapshots = num_snapshots,
                                                       noise_ratio = args.noise_ratio,
@@ -81,48 +107,92 @@ if __name__ == "__main__":
         "PASR_DT_lrsim_1024_s8_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s8_v0_9438.pt",
         "PASR_DT_lrsim_1024_s16_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s16_v0_4342.pt",
     }
-    
+    path_trilinear = {
+        "TriLinear_DT_1024_s4_v0":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
+        "TriLinear_DT_1024_s8_v0":"results/FNO_data_DT_1024_s8_v0_sequenceLR_1306.pt",
+        "TriLinear_DT_1024_s16_v0":"results/FNO_data_DT_1024_s16_v0_sequenceLR_4373.pt",
+    }
     # err_euler = []
     # err_rk4 = []
     label = [r"$\times 4$",r"$\times 8$",r"$\times 16$"]
     xlabel = [r"$\frac{\Delta t}{8}$",r"$\frac{\Delta t}{4}$",r"$\frac{\Delta t}{2}$",r"$\Delta t$",]
     corr_list = []
-    from scipy.stats import pearsonr
-    for name,model_path in path_lr_euler.items():
-        for n_snapshot,task_dt,timescale,in zip([100],[1.0],[5]):
-            inputs,targets,preds = eval_NODE_correlation(model_path,num_snapshots=n_snapshot,task_dt=task_dt,result_normalization=False,timescale_factor=timescale)
-            print(inputs.shape,targets.shape,preds.shape)
-            targets = targets[:,:-1,0,:,:]
-            preds = preds[:,:-1,0,:,:]
-            correlation = np.zeros(preds.shape[1]*preds.shape[0])
-            for i in range(preds.shape[0]):
-                for t in range (preds.shape[1]):
-                    pred_flat = preds[i,t].flatten()
-                    ref_flat = targets[i,t].flatten()
-                    corr, _ = pearsonr(ref_flat, pred_flat)
-                    correlation[i*preds.shape[1]+t] = corr
-        corr_list.append(correlation)
+    # from scipy.stats import pearsonr
+    # for name,model_path in path_lr_euler.items():
+    #     for n_snapshot,task_dt,timescale,in zip([10],[0.5],[10]):
+    #         inputs,targets,preds = eval_NODE_correlation(model_path,num_snapshots=n_snapshot,task_dt=task_dt,result_normalization=False,timescale_factor=timescale)
+    #         print(inputs.shape,targets.shape,preds.shape)
+    #         targets = targets[:,:-1,0,:,:]
+    #         preds = preds[:,:-1,0,:,:]
+    #         correlation = np.zeros(preds.shape[1]*preds.shape[0])
+    #         for i in range(preds.shape[0]):
+    #             for t in range (preds.shape[1]):
+    #                 pred_flat = preds[i,t].flatten()
+    #                 ref_flat = targets[i,t].flatten()
+    #                 corr, _ = pearsonr(ref_flat, pred_flat)
+    #                 correlation[i*preds.shape[1]+t] = corr
+    #     corr_list.append(correlation)
+    # np.save("pred_correlation_euler.npy",corr_list)
+    # corr_list = []
+    # for name,model_path in path_lr_rk4.items():
+    #     for n_snapshot,task_dt,timescale,in zip([10],[0.5],[10]):
+    #         inputs,targets,preds = eval_NODE_correlation(model_path,num_snapshots=n_snapshot,task_dt=task_dt,result_normalization=False,timescale_factor=timescale)
+    #         print(inputs.shape,targets.shape,preds.shape)
+    #         targets = targets[:,:-1,0,:,:]
+    #         preds = preds[:,:-1,0,:,:]
+    #         correlation = np.zeros(preds.shape[1]*preds.shape[0])
+    #         for i in range(preds.shape[0]):
+    #             for t in range (preds.shape[1]):
+    #                 pred_flat = preds[i,t].flatten()
+    #                 ref_flat = targets[i,t].flatten()
+    #                 corr, _ = pearsonr(ref_flat, pred_flat)
+    #                 correlation[i*preds.shape[1]+t] = corr
+    #     corr_list.append(correlation)
+    # np.save("pred_correlation_rk4.npy",corr_list)
+    # corr_list = []
+    # for name,model_path in path_trilinear.items():
+    #     for n_snapshot,task_dt,timescale,in zip([10],[0.5],[10]):
+    #         inputs,targets,preds = eval_Trilinear_correlation(model_path,num_snapshots=n_snapshot,task_dt=task_dt,result_normalization=False,timescale_factor=timescale)
+    #         print(inputs.shape,targets.shape,preds.shape)
+    #         targets = targets[:,0,:-1,:,:]
+    #         preds = preds[:,0,:-1,:,:]
+    #         correlation = np.zeros(preds.shape[1]*preds.shape[0])
+    #         for i in range(preds.shape[0]):
+    #             for t in range (preds.shape[1]):
+    #                 pred_flat = preds[i,t].flatten()
+    #                 ref_flat = targets[i,t].flatten()
+    #                 corr, _ = pearsonr(ref_flat, pred_flat)
+    #                 correlation[i*preds.shape[1]+t] = corr
+    #     corr_list.append(correlation)
+    # np.save("pred_correlation_trilinear.npy",corr_list)
 
-    np.save("pred_correlation_euler.npy",corr_list)
-    # corr_list = np.load("pred_correlation_euler.npy")
+
+    # # corr_list = np.load("pred_correlation_euler.npy")
+    # corr_list_truth = np.load("DNS_correlations.npy")
+    # print(len(corr_list),len(corr_list_truth))
+    # corr_list_euler = np.load("pred_correlation_euler.npy")
+    corr_list_rk4 = np.load("pred_correlation_rk4.npy")
     corr_list_truth = np.load("DNS_correlations.npy")
-    print(len(corr_list),len(corr_list_truth))
+    # corr_list_trilinear = np.load("pred_correlation_trilinear.npy")
     fig = plt.figure(figsize=(5,5))
     import seaborn as sns
-    color_platte_euler = sns.color_palette("YlGnBu_r", 3)
-    color_platte_rk4 = sns.color_palette("YlOrBr_r", 3)
-    print(len(corr_list[0]),len(corr_list_truth[0]))
-    x1 = np.arange(0,10*len(corr_list[0]),10)
-    x2 = np.arange(0,len(corr_list_truth[0]))
+    color_platte_rk4 = sns.color_palette("YlGnBu_r", 3)
+    color_platte_truth = sns.color_palette("YlOrBr_r", 3)
+    # print(len(corr_list[0]),len(corr_list_truth[0]))
+    x2 = np.arange(0,len(corr_list_truth[0]),1)
+    x1 = np.arange(0,5*len(corr_list_rk4[0]),5)
+
     print(x1.shape,x2.shape)
     for i in range (3):
-        plt.plot(x1,corr_list[i],color=color_platte_euler[i],label=f"NODE {label[i]}")
-        plt.plot(np.arange(0,len(corr_list_truth[i]),1),corr_list_truth[i+1],color=color_platte_rk4[i],label=f"DNS {label[i]}")
+        # plt.plot(x1,corr_list[i],color=color_platte_euler[i],label=f"euler {label[i]}")
+        plt.plot(x1,corr_list_rk4[i],color=color_platte_rk4[i],label=f"rk4 {label[i]}")
+        plt.plot(x2,corr_list_truth[i],color=color_platte_truth[i],label=f"Truth {label[i]}",linestyle="--")
     plt.legend(fontsize=11)
     plt.yticks(fontsize=11)
     plt.ylabel("Correlation",fontsize=11)
     plt.xlabel("Time step",fontsize=11)
-    plt.savefig("correlation.pdf",bbox_inches='tight')
+    # plt.xlim(0,1000)
+    plt.savefig("correlation_v2.pdf",bbox_inches='tight')
 
 # def plot_vorticity_correlation(data_name,folder_name ="4090_results/"):
 #     # data_truth = np.load(f"{folder_name}hr_target_{data_name}.npy")

@@ -68,7 +68,7 @@ def dump_json(key, RFNE, MAE, MSE, IN, SSIM, PSNR,cum_RFNE):
     import json
     magic_batch = 0
     magic_batch_end = -1
-    json_file = "eval_v6.json"
+    json_file = "eval_v7.json"
     # Check if the results file already exists and load it, otherwise initialize an empty list
     try:
         with open(json_file, "r") as f:
@@ -268,7 +268,7 @@ def eval_ConvLSTM(model_path,in_channels=3):
     return [RFNE1,RFNE2,RFNE3], [MSE1,MSE2,MSE3], [MAE1,MAE2,MAE3], [IN1,IN2,IN3], [SSIM1,SSIM2,SSIM3], [PSNR1,PSNR2,PSNR3],[cum_RFNE1,cum_RFNE2,cum_RFNE3]
 
 
-def eval_TriLinear(model_path,in_channels=3,batch_size=16,n_snapshots=20):
+def eval_TriLinear(model_path,in_channels=3,batch_size=32,n_snapshots=20):
     checkpoint = torch.load(model_path)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     import argparse
@@ -286,7 +286,7 @@ def eval_TriLinear(model_path,in_channels=3,batch_size=16,n_snapshots=20):
                                                       num_snapshots = n_snapshots,
                                                       noise_ratio = args.noise_ratio,
                                                       data_name = args.data,
-                                                      in_channels=in_channels,)
+                                                      in_channels=1,)
     RFNE1, MAE1, MSE1, IN1, cum_RFNE1, PSNR1, SSIM1 = process_loader_baselines(test1_loader, model, device, args)
     RFNE2, MAE2, MSE2, IN2, cum_RFNE2, PSNR2, SSIM2 = process_loader_baselines(test2_loader, model, device, args)
     RFNE3, MAE3, MSE3, IN3, cum_RFNE3, PSNR3, SSIM3 = process_loader_baselines(test3_loader, model, device, args)
@@ -309,18 +309,18 @@ if __name__ == "__main__":
     #     # "TriLinear_DT_LR_SIM_256_s4":"results/FNO_data_DT_256_s4_v0_sequenceLR_2508.pt",
     # }
     path_lr_sim = {
-        "PASR_DT_lrsim_1024_s4_v0_euler":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_1537.pt",
-        "PASR_DT_lrsim_1024_s8_v0_euler":"results/PASR_ODE_small_data_DT_lrsim_1024_s8_v0_7228.pt",
-        "PASR_DT_lrsim_1024_s16_v0_euler":"results/PASR_ODE_small_data_DT_lrsim_1024_s16_v0_5143.pt",
-        "PASR_DT_lrsim_1024_s4_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
-        "PASR_DT_lrsim_1024_s8_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s8_v0_9438.pt",
-        "PASR_DT_lrsim_1024_s16_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s16_v0_4342.pt",
-        "ConvLSTM_DT_1024_s4_v0":"results/ConvLSTM_DT_1024_s4_v0_sequenceLR3785_checkpoint.pt",
-        "ConvLSTM_DT_1024_s8_v0":"results/ConvLSTM_DT_1024_s8_v0_sequenceLR7399_checkpoint.pt",
-        "ConvLSTM_DT_1024_s16_v0":"results/ConvLSTM_DT_1024_s16_v0_sequenceLR6654_checkpoint.pt",
-        "FNO_DT_1024_s4_v0":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
-        "FNO_DT_1024_s8_v0":"results/FNO_data_DT_1024_s8_v0_sequenceLR_1306.pt",
-        "FNO_DT_1024_s16_v0":"results/FNO_data_DT_1024_s16_v0_sequenceLR_4373.pt",
+        # "PASR_DT_lrsim_1024_s4_v0_euler":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_1537.pt",
+        # "PASR_DT_lrsim_1024_s8_v0_euler":"results/PASR_ODE_small_data_DT_lrsim_1024_s8_v0_7228.pt",
+        # "PASR_DT_lrsim_1024_s16_v0_euler":"results/PASR_ODE_small_data_DT_lrsim_1024_s16_v0_5143.pt",
+        # "PASR_DT_lrsim_1024_s4_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s4_v0_8137.pt",
+        # "PASR_DT_lrsim_1024_s8_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s8_v0_9438.pt",
+        # "PASR_DT_lrsim_1024_s16_v0_rk4":"results/PASR_ODE_small_data_DT_lrsim_1024_s16_v0_4342.pt",
+        # "ConvLSTM_DT_1024_s4_v0":"results/ConvLSTM_DT_1024_s4_v0_sequenceLR3785_checkpoint.pt",
+        # "ConvLSTM_DT_1024_s8_v0":"results/ConvLSTM_DT_1024_s8_v0_sequenceLR7399_checkpoint.pt",
+        # "ConvLSTM_DT_1024_s16_v0":"results/ConvLSTM_DT_1024_s16_v0_sequenceLR6654_checkpoint.pt",
+        # "FNO_DT_1024_s4_v0":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
+        # "FNO_DT_1024_s8_v0":"results/FNO_data_DT_1024_s8_v0_sequenceLR_1306.pt",
+        # "FNO_DT_1024_s16_v0":"results/FNO_data_DT_1024_s16_v0_sequenceLR_4373.pt",
         "TriLinear_DT_1024_s4_v0":"results/FNO_data_DT_1024_s4_v0_sequenceLR_6804.pt",
         "TriLinear_DT_1024_s8_v0":"results/FNO_data_DT_1024_s8_v0_sequenceLR_1306.pt",
         "TriLinear_DT_1024_s16_v0":"results/FNO_data_DT_1024_s16_v0_sequenceLR_4373.pt",

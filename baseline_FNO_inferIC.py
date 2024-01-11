@@ -257,7 +257,7 @@ if __name__ == "__main__":
     modes3 = [8, 8, 8, 8]
 
 
-    model = FNO3D_v2(modes1, modes2, modes3,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels+3, out_dim=args.in_channels, act='gelu', mean=mean,std=std)
+    model = FNOd3D_v2(modes1, modes2, modes3,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels+3, out_dim=args.in_channels, act='gelu', mean=mean,std=std)
     model = torch.nn.DataParallel(model).to(device)
     # model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
