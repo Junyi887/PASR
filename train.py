@@ -74,7 +74,7 @@ def validation(args,model, val1_loader,val2_loader,device):
             input_loss1 += input_loss.item()
             RFNE1_loss += RFNE_t.mean().item()
             psnr1_loss += psnr(out, target).item()
-    result_loader1 = [input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE1_loss /len(val1_loader),psnr1_loss/len(val1_loader)]
+    result_loader1 = [input_loss1/len(val1_loader), target_loss1/len(val1_loader), RFNE1_loss /len(val1_loader),psnr1_loss/len(val1_loader)] if len(val1_loader)>0 else [input_loss1, target_loss1, RFNE1_loss,psnr1_loss]
     target_loss2 = 0 
     input_loss2 = 0
     RFNE2_loss = 0
@@ -91,7 +91,7 @@ def validation(args,model, val1_loader,val2_loader,device):
             input_loss2 += input_loss.item()
             RFNE2_loss += RFNE_t.mean().item()
             psnr2_loss += psnr(out, target).item()
-    result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader),psnr2_loss/len(val2_loader)]
+    result_loader2 = [input_loss2/len(val2_loader), target_loss2/len(val2_loader), RFNE2_loss /len(val2_loader),psnr2_loss/len(val2_loader)] if len(val2_loader)>0 else [input_loss2, target_loss2, RFNE2_loss,psnr2_loss]
 
     return result_loader1,result_loader2
 
@@ -147,6 +147,7 @@ def train(args,model, trainloader, val1_loader,val2_loader, optimizer,device,sav
             optimizer.step()
             avg_loss += loss.item()
         run['train/train_loss'].log(avg_loss / len(trainloader))
+        run['train/RFNE'].log((torch.norm(target-out_t,dim=(-1,-2))/torch.norm(target,dim=(-1,-2))).mean().item())
         scheduler.step()
         # for faster training
         if epoch %1 == 0:
@@ -275,6 +276,7 @@ if __name__ == "__main__":
     window_size = args.window_size
     height = (img_x // args.scale_factor // window_size + 1) * window_size
     width = (img_y // args.scale_factor // window_size + 1) * window_size
+    print(f"hegiht: {height}, width: {width}")
     if args.final_tanh.lower() in ["true","t","yes","y","1","on"]:
         final_tanh = True
     else:

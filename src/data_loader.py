@@ -120,7 +120,7 @@ def getData(data_name = "rbc_diff_IC", data_path =  "../rbc_diff_IC/rbc_10IC",
         return train_loader,val1_loader,val2_loader,test1_loader,test2_loader
     else:
         train_loader = get_data_loader(data_name, data_path, '/train', "train", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
-        val1_loader = get_data_loader(data_name, data_path, '/val', "val", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
+        val1_loader = get_data_loader(data_name, data_path, '/val', "test", upscale_factor, timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std,in_channels)
         val2_loader = get_data_loader(data_name, data_path, '/test', "no_roll_out", upscale_factor,timescale_factor,num_snapshots,noise_ratio, crop_size, method, batch_size, std, in_channels)
         test1_loader = get_data_loader(data_name, data_path, '/test', "test", upscale_factor,timescale_factor,num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
         test2_loader = get_data_loader(data_name, data_path, '/test', "no_roll_out", upscale_factor,timescale_factor, num_snapshots, noise_ratio, crop_size, method, batch_size, std, in_channels)
@@ -137,6 +137,13 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
     elif "lrsim" in data_name:
         print("Loader for NODE with low res as input")
         dataset = GetDataset_diffIC_LowRes(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+    elif "era5" in data_name:
+        print("Loader for ERA5")
+        dataset = GetClimateDatasets(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+    elif "era5_sequence" in data_name:
+        print("special Loader for ERA5")
+        dataset = GetClimateDatasets_special(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+
     elif "coord" in data_name:
         print("Loader for FNO_v2 with coordinates cat as input")
         dataset = FNO_Special_Loader_Fluid(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
@@ -156,6 +163,9 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
     elif state =="val":
         shuffle = True
         drop_last = drop_last
+    # elif state =="no_roll_out":
+    #     shuffle = False
+    #     drop_last = False
     else:
         shuffle = False
         drop_last = drop_last
@@ -520,7 +530,7 @@ class GetClimateDatasets(BaseDataset):
         # self.files_paths = glob.glob(self.location + "/data/*.h5")
         # Additional initialization specific to this dataset
     def _get_files_stats(self):
-        self.files_paths = glob.glob(self.location + "/data/*.h5") #only take s9
+        self.files_paths = glob.glob(self.location  +"/*.h5") #only take s9
         self.files_paths.sort()
         self.n_files = len(self.files_paths)
         print("Found {} files".format(self.n_files))

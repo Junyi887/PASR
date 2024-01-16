@@ -103,7 +103,7 @@ class DataInfoLoader():
     Returns:
     - The minimum and maximum values of all data.
     """
-    if "climate" in self.data_name:
+    if "climate" in self.data_name or self.data_name.startswith("era5"):
       return np.array([self.min_all_data.min(axis = 0)]), np.array([self.max_all_data.max(axis = 0)])
     else:
       return self.min_all_data.min(axis = 0), self.max_all_data.max(axis = 0)
@@ -118,7 +118,7 @@ class DataInfoLoader():
     counts = [1]*self.n_files
     mean_list = []
     std_list = []
-    if "climate" in self.data_name:
+    if "climate" in self.data_name or self.data_name.startswith("era5"):
       mean_list.append(self.mean_all_data.mean(axis = 0))
       std_list.append(self.std_all_data.mean(axis = 0))
       return np.stack(mean_list), np.stack(std_list)
@@ -146,7 +146,7 @@ class DataInfoLoader():
     self.files_paths = glob.glob(self.data_path) #only take s9
     self.files_paths.sort()
     self.n_files = len(self.files_paths)
-    if self.data_name.startswith("climate"):
+    if self.data_name.startswith("climate") or self.data_name.startswith("era5"):
       print("Found {} files".format(self.n_files))
       for i in range(self.n_files):
         with h5py.File(self.files_paths[i], 'r') as _f:
