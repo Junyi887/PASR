@@ -206,6 +206,7 @@ if __name__ == "__main__":
         "TriLinear_DT_1024_s8_v0":"results/FNO_data_DT_1024_s8_v0_sequenceLR_1306.pt",
         "TriLinear_DT_1024_s16_v0":"results/FNO_data_DT_1024_s16_v0_sequenceLR_4373.pt",
     }
+    import os
     def get_POD(data,channel=0,number_components=3):
         # data input should be in shape of B,T,H,W
         import numpy as np
@@ -215,17 +216,37 @@ if __name__ == "__main__":
         pca.fit(data)
         return pca
     for scale in [4,8,16]:
-        inputs,targets,preds = eval_NODE_POD(path_lr_sim[f"PASR_DT_lrsim_1024_s{scale}_v0_rk4"])
-        _,_,pred_convLSTM = eval_ConvLSTM_POD(path_lr_sim[f"ConvLSTM_DT_1024_s{scale}_v0"])
-        _,_,pred_FNO = eval_FNO_POD(path_lr_sim[f"FNO_DT_1024_s{scale}_v0"])
-        _,_,pred_Tilinear= eval_TriLinear_POD(path_lr_sim[f"TriLinear_DT_1024_s{scale}_v0"])
-        pca0 = get_POD(inputs[:7,0:1,:,:])
-        pca1 = get_POD(targets[:7,:-1,0,:,:])
-        pca2 = get_POD(preds[:7,:-1,0,:,:])
-        pca3 = get_POD(pred_convLSTM[:7,0,:-1,:,:])
-        pca4 = get_POD(pred_FNO[:7,0,:-1,:,:])
-        pca5 = get_POD(pred_Tilinear[:7,0,:-1,:,:])
-
+        if os.path.exists(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_0.npy") == False:
+            inputs,targets,preds = eval_NODE_POD(path_lr_sim[f"PASR_DT_lrsim_1024_s{scale}_v0_rk4"])
+            _,_,pred_convLSTM = eval_ConvLSTM_POD(path_lr_sim[f"ConvLSTM_DT_1024_s{scale}_v0"])
+            _,_,pred_FNO = eval_FNO_POD(path_lr_sim[f"FNO_DT_1024_s{scale}_v0"])
+            _,_,pred_Tilinear= eval_TriLinear_POD(path_lr_sim[f"TriLinear_DT_1024_s{scale}_v0"])
+            pca0 = get_POD(inputs[:7,0:1,:,:])
+            pca1 = get_POD(targets[:7,:-1,0,:,:])
+            pca2 = get_POD(preds[:7,:-1,0,:,:])
+            pca3 = get_POD(pred_convLSTM[:7,0,:-1,:,:])
+            pca4 = get_POD(pred_FNO[:7,0,:-1,:,:])
+            pca5 = get_POD(pred_Tilinear[:7,0,:-1,:,:])
+            np.save(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_0.npy",pca0.components_)
+            np.save(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_1.npy",pca1.components_)
+            np.save(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_2.npy",pca2.components_)
+            np.save(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_3.npy",pca3.components_)
+            np.save(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_4.npy",pca4.components_)
+            np.save(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_5.npy",pca5.components_)
+            pca_components0 = pca0.components_
+            pca_components1 = pca1.components_
+            pca_components2 = pca2.components_
+            pca_components3 = pca3.components_
+            pca_components4 = pca4.components_
+            pca_components5 = pca5.components_
+        else:
+            pca_components0 = np.load(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_0.npy")
+            pca_components1 = np.load(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_1.npy")
+            pca_components2 = np.load(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_2.npy")
+            pca_components3 = np.load(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_3.npy")
+            pca_components4 = np.load(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_4.npy")
+            pca_components5 = np.load(f"/pscratch/sd/j/junyi012/PASR_v0/results_buffer/PAC_x{scale}_5.npy")
+        
         mode0 =[]
         mode1 = []
         mode2 = []
@@ -234,14 +255,20 @@ if __name__ == "__main__":
         mode5 = []
         import seaborn
         colormap = seaborn.cm.icefire
-        fig,ax = plt.subplots(3,6,figsize=(12,6))
+        fig,ax = plt.subplots(3,6,figsize=(6.1,3.2))
         for i in range (3):
-            mode1.append(pca1.components_[i].reshape(1024,1024))
-            mode2.append(pca2.components_[i].reshape(1024,1024))
-            mode3.append(pca3.components_[i].reshape(1024,1024))
-            mode4.append(pca4.components_[i].reshape(1024,1024))
-            mode5.append(pca5.components_[i].reshape(1024,1024))
-            mode0.append(pca0.components_[i].reshape(1024//scale,1024//scale))
+            # mode1.append(pca1.components_[i].reshape(1024,1024))
+            # mode2.append(pca2.components_[i].reshape(1024,1024))
+            # mode3.append(pca3.components_[i].reshape(1024,1024))
+            # mode4.append(pca4.components_[i].reshape(1024,1024))
+            # mode5.append(pca5.components_[i].reshape(1024,1024))
+            # mode0.append(pca0.components_[i].reshape(1024//scale,1024//scale))
+            mode1.append(pca_components1[i].reshape(1024,1024))
+            mode2.append(pca_components2[i].reshape(1024,1024))
+            mode3.append(pca_components3[i].reshape(1024,1024))
+            mode4.append(pca_components4[i].reshape(1024,1024))
+            mode5.append(pca_components5[i].reshape(1024,1024))
+            mode0.append(pca_components0[i].reshape(1024//scale,1024//scale))
             ax[i,0].imshow(mode1[i],cmap=colormap)
             ax[i,1].imshow(mode2[i],cmap=colormap)
             ax[i,2].imshow(mode3[i],cmap=colormap)
@@ -251,12 +278,15 @@ if __name__ == "__main__":
         for i in range(3):
             for j in range(6):
                 ax[i,j].axis("off")
-        ax[0,0].set_title("HR")
-        ax[0,1].set_title("Ours")
-        ax[0,2].set_title("ConvLSTM")
-        ax[0,3].set_title("FNO")
-        ax[0,4].set_title("TriLinear")
-        ax[0,5].set_title("LR")
+        ax[0,0].set_title("HR",fontsize=9)
+        ax[0,1].set_title("Ours",fontsize=9)
+        ax[0,2].set_title("ConvLSTM",fontsize=9)
+        ax[0,3].set_title("FNO",fontsize=9)
+        ax[0,4].set_title("TriLinear",fontsize=9)
+        ax[0,5].set_title("LR",fontsize=9)
+        fig.tight_layout(w_pad=0.25,h_pad=0.25,pad=0.25)
+        # fig.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.2, hspace=0.2)
+
         fig.savefig(f"PCA_x{scale}.pdf",bbox_inches="tight",transparent=True)
 
 # for name,model_path in path_lr_sim.items():

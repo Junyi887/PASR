@@ -25,10 +25,9 @@ from tqdm import tqdm
 import h5py
 from src.models import *
 from src.util import *
-from legacy_scripts.data_loader_nersc import getData
 import logging
 import argparse
- 
+from src.data_loader import getData
 import neptune 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -222,7 +221,7 @@ if __name__ == "__main__":
                                                       data_name = args.data,
                                                       in_channels=args.in_channels,)
 
-    stats_loader = DataInfoLoader(args.data_path+"/*/*.h5")
+    stats_loader = DataInfoLoader(args.data_path+"/*/*.h5",data_name= args.data)
     def get_normalizer(args,stats_loader=stats_loader):
         if args.normalization == "True":
             mean, std = stats_loader.get_mean_std()
@@ -252,12 +251,12 @@ if __name__ == "__main__":
     img_x,img_y = stats_loader.get_shape()
 
     layers = [32,32,32,32,32]
-    modes1 = [8, 8, 8, 8]
-    modes2 = [8, 8, 8, 8]
-    modes3 = [8, 8, 8, 8]
+    modes1 = [args.modes]*4
+    modes2 = [args.modes]*4
+    modes3 = [args.modes]*4
 
 
-    model = FNOd3D_v2(modes1, modes2, modes3,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels+3, out_dim=args.in_channels, act='gelu', mean=mean,std=std)
+    model = FNO3D_v2(modes1, modes2, modes3,width=args.width, fc_dim=args.hidden_dim,layers=layers,in_dim=args.in_channels+3, out_dim=args.in_channels, act='gelu', mean=mean,std=std)
     model = torch.nn.DataParallel(model).to(device)
     # model = torch.nn.DataParallel(model).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)

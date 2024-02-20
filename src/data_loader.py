@@ -137,14 +137,16 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
     elif "lrsim" in data_name:
         print("Loader for NODE with low res as input")
         dataset = GetDataset_diffIC_LowRes(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
-    elif "era5" in data_name:
-        print("Loader for ERA5")
-        dataset = GetClimateDatasets(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
     elif "era5_sequence" in data_name:
         print("special Loader for ERA5")
         dataset = GetClimateDatasets_special(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
-
-    elif "coord" in data_name:
+    elif "era5_coord" in data_name:
+        print("!!! Loader for ERA5 with coordinates cat as input")
+        dataset = FNO_Special_Loader_Climate(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+    elif "era5" in data_name:
+        print("Loader for ERA5")
+        dataset = GetClimateDatasets(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
+    elif "fluid_coord" in data_name:
         print("Loader for FNO_v2 with coordinates cat as input")
         dataset = FNO_Special_Loader_Fluid(data_path+data_tag, state, transform, upscale_factor,timescale_factor, num_snapshots,noise_ratio, std, crop_size, method,in_channels)
     elif "LRcoord" in data_name:
@@ -175,9 +177,45 @@ def get_data_loader(data_name, data_path, data_tag, state, upscale_factor, times
                             num_workers = 2, # TODO: make a param
                             shuffle = shuffle, 
                             sampler = None,
-                            drop_last = drop_last,
+                            drop_last = False,
+                            collate_fn=lambda x: pad_collate(x),
                             pin_memory = False)
     return dataloader
+import random
+
+def pad_collate(batch, devices=4, pad_with='repeat'):
+    """
+    Custom collate function to pad the last batch for even distribution across devices.
+    Assumes each item in the batch is a tuple of (features, label).
+    """
+    # Separate features and labels
+    features, labels = zip(*batch)
+    features = list(features)
+    labels = list(labels)
+
+    # Calculate the desired batch size
+    batch_size = len(batch)
+    desired_batch_size = batch_size + ((devices - (batch_size % devices)) % devices)
+
+    # Pad features and labels if needed
+    if desired_batch_size > batch_size:
+        if pad_with == 'repeat':
+            for _ in range(desired_batch_size - batch_size):
+                features.append(random.choice(features))
+                labels.append(random.choice(labels))
+        # Add other padding strategies if needed
+
+    # Combine features and labels back into tuples
+    padded_batch = list(zip(features, labels))
+
+    # Convert lists of tuples to tuples of lists
+    padded_batch = tuple(map(list, zip(*padded_batch)))
+
+    # Convert lists to tensors
+    padded_batch = tuple(torch.stack(items) for items in padded_batch)
+
+    return padded_batch
+
 
 class BaseDataset(Dataset):
     def __init__(self, location, state, transform, upscale_factor, timescale_factor, num_snapshots, noise_ratio, std, crop_size, method, in_channels):
@@ -675,20 +713,30 @@ class FNO_Special_Loader_Climate(GetClimateDatasets):
         gridx = gridx.reshape(1,1,self.img_shape_x,1).repeat([1,self.num_snapshots+1,1,self.img_shape_y])
         gridy = gridy.reshape(1,1,1,self.img_shape_y).repeat([1,self.num_snapshots+1,self.img_shape_x,1])
         gridt = gridt.reshape(1,self.num_snapshots+1,1,1).repeat([1,1,self.img_shape_x,self.img_shape_y])
-
         if self.files[file_idx] is None:
             self._open_file(file_idx)
-        channel_names = self.get_channel_names()
-        # Load the current sample
-        y_current = self.load_sample(file_idx, local_idx,channel_names)
-        X_lr = self.get_X(y_current)
+        # lr 
+        if local_idx !=self.idx_matrix[global_idx%self.input_per_file][0]:
+                raise ValueError(f"Invalid Input index: {local_idx} vs index matrix {self.idx_matrix[global_idx%self.input_per_file][0]}")
+        if self.files[file_idx] is None:
+            self._open_file(file_idx)
+        w = self.files[file_idx][local_idx]
+        w = self.transform(w)
+        y = w.unsqueeze(0)
+        X_lr = self.get_X(y)
+        y_samples = [y]
+        for i in range(1, self.num_snapshots+1):
+            local_idx_future = local_idx+i*self.timescale_factor
+            if local_idx_future !=self.idx_matrix[global_idx%self.input_per_file][i]:
+                raise ValueError(f"Invalid target index: {local_idx_future} vs index matrix {self.idx_matrix[global_idx%self.input_per_file][0]}")
+            w = self.files[file_idx][local_idx_future]
+            w = self.transform(w)
+            y = w.unsqueeze(0)
+            y_samples.append(y) 
         X_interp = self.upsample(X_lr)
         X_interp = X_interp.reshape(self.n_in_channels,1,self.img_shape_x,self.img_shape_y).repeat([1, self.num_snapshots+1, 1,1])
         X = torch.cat([X_interp,gridx,gridy,gridt],dim=0)
         # Load future samples
-        y_future = self.load_future_samples(file_idx, local_idx,channel_names)
-        # Combine current and future samples
-        y_samples = [y_current] + y_future
         y = torch.stack(y_samples, dim=1)
         return X, y
 

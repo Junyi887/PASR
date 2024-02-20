@@ -473,7 +473,7 @@ class PASR_ODE(nn.Module):
 
         
 
-        return x[:, :, :H*self.upscale, :W*self.upscale]
+        return z0
 
     def flops(self):
         flops = 0

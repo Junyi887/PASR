@@ -6,8 +6,8 @@ DATA_INFO = {'decay_turbulence':["/pscratch/sd/j/junyi012/Decay_Turbulence_small
              "burgers2D":["/pscratch/sd/j/junyi012/burger2D_10/","3"],
             "decay_turbulence_lrsim":["../decay_turb_lrsim_short4","3"],
             "decay_turbulence_lrsim_v2":["../DT_shorter","3"],
-            "era5":["/pscratch/sd/j/junyi012/climate_sigma4_v2",0],
-            "era5_sequence":["/pscratch/sd/j/junyi012/climate_sigma4_v2",0],
+            "era5":["/pscratch/sd/j/junyi012/climate_sigma4_v2",1],
+            "era5_sequence":["/pscratch/sd/j/junyi012/climate_sigma4_v2",1],
              }
 
 MODEL_INFO = {"PASR_ODE_small": {"lr": 1e-3,"batch_size": 16,"epochs": 500,"lr_step":40,"gamma":0.5},}

@@ -263,7 +263,7 @@ def get_normalizer(args,stats_loader):
         return mean,std
 if __name__ == "__main__":
   print("hello")
-  info = DataInfoLoader("/pscratch/sd/j/junyi012/climate_data/s4_sig4/data/*.h5",data_name= "climate")
+  info = DataInfoLoader("/pscratch/sd/j/junyi012/climate_sigma4_v2/*/*",data_name= "era5")
   mean, std = info.get_mean_std()
   print()
   print(info.get_mean_std())

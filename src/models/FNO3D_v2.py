@@ -81,6 +81,7 @@ class FNO3D_v2(nn.Module):
 
         '''
         # dimension in LR
+        # print(x.shape)
         B,C,T,H,W = x.shape
         # x = F.interpolate(x, size=(self.hr_shape[2],self.hr_shape[3],self.hr_shape[4]), mode='trilinear', align_corners=False)
         x = self.shift_mean(x, 'sub')
