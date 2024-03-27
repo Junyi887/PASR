@@ -195,7 +195,7 @@ def plot_vorticity_correlation(data_name,folder_name ="4090_results/"):
         correlation_FNO[t] = corr_FNO
     # color_profile = ['#ffffcc','#a1dab4','#41b6c4','#2c7fb8','#253494'] # from light to dark
     color_profile = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00']
-    fig,axs = plt.subplots(1,1,figsize=(3.6,3.6*8/10))
+    fig,axs = plt.subplots(1,1,figsize=(3.6,3.6*6/10))
     alpha = 1
     axs.set_xticks(np.arange(0,pred.shape[1],1))
     axs.plot(np.arange(0,pred.shape[1],1),correlations,color=color_profile[0],label="Ours")
@@ -208,17 +208,19 @@ def plot_vorticity_correlation(data_name,folder_name ="4090_results/"):
     axs.scatter(np.arange(0,pred.shape[1],1),correlation_tri,color = color_profile[3],marker = "*")
     axs.axhline(y = 0.95, color = 'k', linestyle = 'dashed',alpha=0.5,label="95% reference line") 
     if data_name =="RBC":
-        axs.legend(fontsize=9,frameon=False)
+        axs.legend(fontsize=9,frameon=False) 
     axs.set_xticks(np.arange(0,pred.shape[1],5),[0,None,0.5,None,1])
-    if data_name =="RBC":
-        axs.set_yticks(np.arange(0.85,1,0.1))
-    else:
-        axs.set_yticks(np.arange(0.85,1,0.1))
-    axs.set_ylabel("Vorticity correlation",fontsize=11)
-    axs.set_xlabel("time",fontsize=11)
+    axs.set_yticks(np.arange(0.85,1,0.1))
+    axs.set_ylabel("Vorticity correlation",fontsize=9)
+    axs.set_xlabel("time",fontsize=9)
     axs.set_ylim(0.85,1.01)
+    fig.tight_layout()
     # axs.set_title(f"vorticity correlation -- {data_name}")
     # fig.savefig(f"vorticity_correlation_{data_name}.png",dpi=300,bbox_inches='tight')
+    np.save(f"vorticity_correlation_{data_name}.npy",correlations)
+    np.save(f"vorticity_correlation_tri_{data_name}.npy",correlation_tri)
+    np.save(f"vorticity_correlation_convL_{data_name}.npy",correlation_convL)
+    np.save(f"vorticity_correlation_FNO_{data_name}.npy",correlation_FNO)
 
     fig.savefig(f"vorticity_correlation_{data_name}.pdf",bbox_inches='tight',transparent=True)
 
@@ -414,10 +416,10 @@ def plot_energy_specturm_overlay2(data_name,folder_name ="4090_results/"):
         realsize_pred_convL, EK_avsphr_pred_convL,result_dict_pred_convL = energy_specturm(u_pred_convL,v_pred_convL)
         realsize_pred_FNO, EK_avsphr_pred_FNO,result_dict_pred_FNO = energy_specturm(u_pred_FNO,v_pred_FNO)
 
-        fig, ax = plt.subplots(figsize=(3.6,3.6*8/10))
+        fig, ax = plt.subplots(figsize=(3.6,3.6*6/10))
         # ax.set_title(f"Kinetic Energy Spectrum -- {data_name}")
-        ax.set_xlabel(r"k",fontsize=11)
-        ax.set_ylabel(r"TKE of the k$^{th}$ wavenumber",fontsize=11)
+        ax.set_xlabel(r"Wavenumber k",fontsize=10)
+        ax.set_ylabel(r"Energy E[k]",fontsize=10)
         # Use ax.set_xlim to avoid issues with plt when having multiple axes
         # Replace 0 with a small positive number (e.g., 1)
         ax.set_xlim(left=1, right=x_bound)
@@ -429,13 +431,24 @@ def plot_energy_specturm_overlay2(data_name,folder_name ="4090_results/"):
         # color_platte = ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e'] # first on color brewer
         # color_platte = ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854'] # second 
 
-# Create a custom color map from the listed colors
+        # Create a custom color map from the listed colors
         alpha = 1.0
         ax.loglog(np.arange(0, realsize_truth), EK_avsphr_truth[0:realsize_truth], c = 'k',label="Truth",alpha=1)
         ax.loglog(np.arange(0, realsize_pred), EK_avsphr_pred[0:realsize_pred], c=color_platte[0], alpha=alpha,label="Ours")
         ax.loglog(np.arange(0, realsize_pred_convL), EK_avsphr_pred_convL[0:realsize_pred_convL], c=color_platte[1], alpha=alpha,label="ConvLSTM")
         ax.loglog(np.arange(0, realsize_pred_tri), EK_avsphr_pred_tri[0:realsize_pred_tri], c = color_platte[2], alpha=alpha,label="Trilinear")
         ax.loglog(np.arange(0, realsize_pred_FNO), EK_avsphr_pred_FNO[0:realsize_pred_FNO], c=color_platte[3], alpha=alpha,label="FNO3D")
+        if batch == save_batch:
+            np.save(f"energy_spectrum_realsize_truth_{data_name}.npy",realsize_truth)
+            np.save(f"energy_spectrum_realsize_pred_{data_name}.npy",realsize_pred)
+            np.save(f"energy_spectrum_realsize_pred_tri_{data_name}.npy",realsize_pred_tri)
+            np.save(f"energy_spectrum_realsize_pred_convL_{data_name}.npy",realsize_pred_convL)
+            np.save(f"energy_spectrum_realsize_pred_FNO_{data_name}.npy",realsize_pred_FNO)
+            np.save(f"energy_spectrum_EK_avsphr_truth_{data_name}.npy",EK_avsphr_truth)
+            np.save(f"energy_spectrum_EK_avsphr_pred_{data_name}.npy",EK_avsphr_pred)
+            np.save(f"energy_spectrum_EK_avsphr_pred_tri_{data_name}.npy",EK_avsphr_pred_tri)
+            np.save(f"energy_spectrum_EK_avsphr_pred_convL_{data_name}.npy",EK_avsphr_pred_convL)
+            np.save(f"energy_spectrum_EK_avsphr_pred_FNO_{data_name}.npy",EK_avsphr_pred_FNO)
 
         axins = zoomed_inset_axes(ax,zoom_in_factor,loc='lower left') # [x0, y0, width, height]
         axins.set_xlim(x1, x2)
@@ -458,10 +471,11 @@ def plot_energy_specturm_overlay2(data_name,folder_name ="4090_results/"):
         axins.set_xticks([])
         axins.set_yticks([])
         axins.minorticks_off()
+        fig.tight_layout()
         plt.draw()
         # ax.indicate_inset_zoom(axins, edgecolor="black")
-        if data_name =="RBC":
-            ax.legend(loc='upper right',fontsize=9,frameon=False) 
+        # if data_name =="RBC":
+        #     ax.legend(loc='upper right',fontsize=8.5,frameon=False) 
         # Save the figure using fig.savefig instead of plt.savefig to avoid context issues
         fig.savefig(f"{data_name}_energy_specturm_{batch}.png", dpi =300,bbox_inches='tight')
         if batch ==save_batch:
