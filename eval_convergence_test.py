@@ -105,7 +105,7 @@ if __name__ == "__main__":
     err_euler = np.load("err_euler.npy")
     err_rk4 = np.load("err_rk4.npy")
 
-    fig = plt.figure(figsize=(5,5))
+    fig = plt.figure(figsize=(2.7,2.7))
     import seaborn as sns
     color_platte_euler = sns.color_palette("YlGnBu_r", 3)
     color_platte_rk4 = sns.color_palette("YlOrBr_r", 3)
@@ -113,12 +113,12 @@ if __name__ == "__main__":
         plt.plot(range(len(xlabel)),err_euler[i]/err_euler[i][-1],'-o',color=color_platte_euler[i],label=f"Euler at {label[i]}")
     for i in range (len(err_rk4)):
         plt.plot(range(len(xlabel)),err_rk4[i]/err_rk4[i][-1],'-o',color=color_platte_rk4[i],label=f"rk4 at {label[i]}")
-    plt.legend(fontsize=11)
-    plt.xticks(range(len(xlabel)),xlabel,fontsize=11)
+    plt.legend(fontsize=8.5)
+    plt.xticks(range(len(xlabel)),xlabel,fontsize=8.5)
     plt.yscale("log")
     plt.yticks(fontsize=11)
-    plt.ylabel("Relative error",fontsize=11)
-    plt.xlabel("Time step",fontsize=11)
+    plt.ylabel("Relative error",fontsize=8.5)
+    plt.xlabel("Time step",fontsize=8.5)
     plt.savefig("relative_error_convergence.pdf",bbox_inches='tight')
 
 # def plot_vorticity_correlation(data_name,folder_name ="4090_results/"):

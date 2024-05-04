@@ -249,12 +249,9 @@ if __name__ == "__main__":
             mean, std = mean * args.in_channels, std * args.in_channels
             return mean,std
     mean,std = get_normalizer(args)
-    mean = mean
-    std = std 
     print("mean ",mean)
     print("std  ", std)
     img_x,img_y = stats_loader.get_shape()
-    mean,std = get_normalizer(args)
 
     #layers = [64, 64, 64, 64, 64]
     layers = [args.width, args.width, args.width, args.width, args.width]

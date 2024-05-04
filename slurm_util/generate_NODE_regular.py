@@ -19,7 +19,7 @@ MODEL_INFO = {"PASR_ODE_small": {"lr": 5e-4,"batch_size": 16,"epochs": 500,"lr_s
 def generate_bash_script(data_name, model_name,seed=1234,method ="rk4",lamb_p= 0,upsampler="nearest_conv",n_snapshots=20,in_channels=1,timescale_factor=1,scale_factor=4):
     job_name = f"{data_name}_{model_name}_{timescale_factor}_{seed}_{method}_{lamb_p}_{upsampler}_{n_snapshots}"
     short_name = f"{data_name.split('_')[-2]}_{lamb_p}"
-    if "" in model_name:
+    if "FNO" in model_name:
         file = "baseline_FNO.py"
     else:
         file = "train.py"
@@ -31,7 +31,7 @@ def generate_bash_script(data_name, model_name,seed=1234,method ="rk4",lamb_p= 0
 
     bash_content = f"""#!/bin/bash
 #SBATCH --time=23:00:00
-#SBATCH --account=dasrepo_g
+#SBATCH --account=m4633_g
 #SBATCH --job-name={short_name}
 #SBATCH -C gpu&hbm80g
 #SBATCH -q regular
@@ -65,7 +65,8 @@ if __name__ == "__main__":
                 for upsampler in ["pixelshuffle"]:
                     for time in [10]:
                         for n_snapshots in [20]:
-                            job_name = generate_bash_script(data_name=name,model_name=model_name,method=method,lamb_p=lamb_p,upsampler=upsampler,seed=1024,n_snapshots=n_snapshots,timescale_factor=time,in_channels=1,scale_factor=scale)
-                            with open("run_NODE.sh","a") as f:
-                                print(f"sbatch bash_script/{job_name}.sbatch",file=f)
-                            f.close()
+                            for seed in [1512,49,830,1852,2515]:
+                                job_name = generate_bash_script(data_name=name,model_name=model_name,method=method,lamb_p=lamb_p,upsampler=upsampler,seed=seed,n_snapshots=n_snapshots,timescale_factor=time,in_channels=3,scale_factor=scale)
+                                with open("run_NODE.sh","a") as f:
+                                    print(f"sbatch bash_script/{job_name}.sbatch",file=f)
+                                f.close()

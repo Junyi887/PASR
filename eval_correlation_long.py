@@ -114,7 +114,7 @@ if __name__ == "__main__":
     }
     # err_euler = []
     # err_rk4 = []
-    label = [r"$\times 4$",r"$\times 8$",r"$\times 16$"]
+    label = [r"$\times 4$"]
     xlabel = [r"$\frac{\Delta t}{8}$",r"$\frac{\Delta t}{4}$",r"$\frac{\Delta t}{2}$",r"$\Delta t$",]
     corr_list = []
     # from scipy.stats import pearsonr
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     corr_list_rk4 = np.load("pred_correlation_rk4.npy")
     corr_list_truth = np.load("DNS_correlations.npy")
     # corr_list_trilinear = np.load("pred_correlation_trilinear.npy")
-    fig = plt.figure(figsize=(5,5))
+    fig = plt.figure(figsize=(3,3))
     import seaborn as sns
     color_platte_rk4 = sns.color_palette("YlGnBu_r", 3)
     color_platte_truth = sns.color_palette("YlOrBr_r", 3)
@@ -183,16 +183,16 @@ if __name__ == "__main__":
     x1 = np.arange(0,5*len(corr_list_rk4[0]),5)
 
     print(x1.shape,x2.shape)
-    for i in range (3):
+    for i in range (0):
         # plt.plot(x1,corr_list[i],color=color_platte_euler[i],label=f"euler {label[i]}")
         plt.plot(x1,corr_list_rk4[i],color=color_platte_rk4[i],label=f"rk4 {label[i]}")
         plt.plot(x2,corr_list_truth[i],color=color_platte_truth[i],label=f"Truth {label[i]}",linestyle="--")
-    plt.legend(fontsize=11)
-    plt.yticks(fontsize=11)
-    plt.ylabel("Correlation",fontsize=11)
-    plt.xlabel("Time step",fontsize=11)
+    plt.legend(fontsize=8.5)
+    plt.yticks(fontsize=8.5)
+    plt.ylabel("Correlation",fontsize=8.5)
+    plt.xlabel("Time step",fontsize=8.5)
     # plt.xlim(0,1000)
-    plt.savefig("correlation_v2.pdf",bbox_inches='tight')
+    plt.savefig("correlation_long_evolution.pdf",bbox_inches='tight')
 
 # def plot_vorticity_correlation(data_name,folder_name ="4090_results/"):
 #     # data_truth = np.load(f"{folder_name}hr_target_{data_name}.npy")
