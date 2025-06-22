@@ -209,6 +209,16 @@ if __name__ == "__main__":
     import os
     def get_POD(data,channel=0,number_components=3):
         # data input should be in shape of B,T,H,W
+        # using sklearn data shape should be (sample, features) 
+        '''
+        if use torch.svd, data shape should be (feature, sample)
+        
+        Note that the data used in POD should be fluctuation only (data - data.mean(dim=time_axis)). 
+        
+        For this decaying turbulence dataset in particular, the time average is 0. So we didn't normalize it. 
+
+        Details refer to https://arc.aiaa.org/doi/10.2514/1.j056060
+        '''
         import numpy as np
         from sklearn.decomposition import PCA
         pca = PCA(n_components=number_components)
