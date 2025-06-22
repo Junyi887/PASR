@@ -159,9 +159,17 @@ if __name__ == "__main__":
         import numpy as np
         from sklearn.decomposition import PCA
         pca = PCA(n_components=number_components)
-        data = data.reshape(data.shape[0]*data.shape[1],-1) # flatten the spatial dimension
-        pca.fit(data)
-        return pca
+        data = data.reshape(data.shape[0]*data.shape[1],-1) # flatten the spatial dimension as features
+        pca.fit(data) # using sklearn data shape should be (sample, features) 
+        '''
+        if use torch.svd, data shape should be (feature, sample)
+        
+        Note that the data used in POD should be fluctuation only (data - data.mean(dim=time_axis)). 
+        
+        For this decaying turbulence dataset in particular, the time average is 0. So we didn't normalize it. 
+
+        Details refer to https://arc.aiaa.org/doi/10.2514/1.j056060
+        '''
     # for name,model_path in path_lr_sim.items():
     #     inputs,targets,preds = eval_NODE_POD(model_path)
     inputs,targets,preds1 = eval_NODE_POD(path_lr_sim["PASR_DT_lrsim_1024_s4_v0_euler"])
